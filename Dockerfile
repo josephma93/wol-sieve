@@ -11,7 +11,7 @@ COPY package*.json ./
 RUN npm ci --include=prod
 
 # Copy the rest of the application code to the container
-COPY . .
+COPY ./dist ./dist
 
 # Stage 2: Create a smaller production image
 FROM alpine:3.18
@@ -43,4 +43,4 @@ EXPOSE $WS_PORT
 USER node
 
 # Use dumb-init to handle kernel signals and start the application
-ENTRYPOINT ["dumb-init", "./bin/www"]
+ENTRYPOINT ["dumb-init", "node", "dist/index.js"]
