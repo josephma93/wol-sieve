@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json.schemastore.org/nodemon.json",
+  "watch": ["src"],
+  "ext": "ts,json",
+  "ignore": ["node_modules", "dist"],
+  "exec": "npm run format && npm run build && node --env-file=.env dist/index.js",
+  "execMap": {
+    "ts": "ts-node"
+  },
+  "colours": true,
+  "delay": 2000,
+  "verbose": true
+}
