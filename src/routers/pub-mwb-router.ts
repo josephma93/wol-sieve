@@ -7,13 +7,13 @@ import {
 	extractChristianLiving,
 	extractFieldMinistry,
 	extractFullWeekProgram,
-	ExtractionInput,
 	extractSongData,
 	extractSpiritualGems,
 	extractTreasuresTalk,
 	extractWeekDateSpan,
 	extractWeeklyBibleRead,
 } from '../scrappers/pub-mwb/pub-mwb.js';
+import { ExtractionInput } from '../scrappers/generics.js';
 
 export const pubMwbRouter = express.Router();
 

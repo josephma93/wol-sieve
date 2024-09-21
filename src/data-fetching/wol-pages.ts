@@ -75,3 +75,41 @@ async function _fetchThisWeekMeetingHtml(): Promise<string | Error> {
  *      Error object (or null if no error occurred) and the second element is HTML content (or null if an error occurred).
  */
 export const fetchThisWeekMeetingHtml = wrapAsyncOp(_fetchThisWeekMeetingHtml);
+
+/**
+ * Fetches this week's Watchtower ariticle's HTML from the WOL website.
+ * @returns A promise that resolves to either the HTML content as a string or an Error object if any error occurs.
+ * 		The string is the HTML content of fetching article assigned for this week. This is the same to pressing watchtower article link found in today's page.
+ */
+async function _fetchThisWeekWatchtowerHtml(): Promise<string | Error> {
+	let opRes = await fetchThisWeekMeetingHtml();
+	if (opErrored(opRes)) {
+		return opRes.err;
+	}
+
+	log.debug('Selecting watchtower article link');
+	const anchorElement = getCheerioSelectionOrThrow(
+		cheerio.load(opRes.res),
+		CONSTANTS.CSS_SELECTOR_FOR_WATCHTOWER_ARTICLE_LINK,
+	);
+	const wArticleHref = anchorElement.attr('href');
+
+	log.debug(`Value for href: [${wArticleHref}]`);
+	if (!wArticleHref) {
+		const msg = `No href found for watchtower article link, website structure may have changed`;
+		log.warn(msg);
+		return new Error(msg);
+	}
+
+	const wArticleHtmlUrl = `${CONSTANTS.WOL_URL}${wArticleHref}`;
+	log.info(`Fetching watchtower HTML content from [${wArticleHtmlUrl}]`);
+	opRes = await getHtmlContent(wArticleHtmlUrl);
+	return opRes.err ?? opRes.res;
+}
+
+/**
+ * Fetches this week's meeting HTML from the WOL website with error handling.
+ * @returns A promise that resolves to a tuple where the first element is an
+ *      Error object (or null if no error occurred) and the second element is HTML content (or null if an error occurred).
+ */
+export const fetchThisWeekWatchtowerHtml = wrapAsyncOp(_fetchThisWeekWatchtowerHtml);

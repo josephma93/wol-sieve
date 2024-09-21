@@ -29,11 +29,13 @@ export function wrapAsyncOp<T, A extends any[]>(
 	};
 }
 
+export declare type AsyncOperationResult<T> = SuccessResult<T> | ErrorResult;
+
 /**
  * Checks if the operation result is an error
  * @param result - The operation result to check
  * @returns true if the result is an error
  */
-export function opErrored(result: SuccessResult<unknown> | ErrorResult): result is ErrorResult {
+export function opErrored<T>(result: AsyncOperationResult<T>): result is ErrorResult {
 	return result.err !== null;
 }
