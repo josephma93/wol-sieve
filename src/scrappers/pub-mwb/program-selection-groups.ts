@@ -71,9 +71,9 @@ export function getAndValidateSongSelections($: CheerioAPI): {
 	middleSong: ReturnType<CheerioAPI>;
 	closingSong: ReturnType<CheerioAPI>;
 } {
-	const startingSong = $(CONSTANTS.STARTING_SONG_CSS_SELECTOR);
-	const middleSong = $(CONSTANTS.MIDDLE_SONG_CSS_SELECTOR);
-	const closingSong = $(CONSTANTS.FINAL_SONG_CSS_SELECTOR);
+	const startingSong = $(CONSTANTS.PUB_MWB_CSS_SELECTOR_STARTING_SONG);
+	const middleSong = $(CONSTANTS.PUB_MWB_CSS_SELECTOR_MIDDLE_SONG);
+	const closingSong = $(CONSTANTS.PUB_MWB_CSS_SELECTOR_FINAL_SONG);
 	assertIsH3(startingSong);
 	assertIsH3(middleSong);
 	assertIsH3(closingSong);
@@ -92,7 +92,7 @@ function getAndValidateGodsTreasuresSelections(
 	$: CheerioAPI,
 	fieldMinistryHeadline: Cheerio<any>,
 ): GodsTreasuresSelections {
-	const treasuresTalk = $(CONSTANTS.TREASURES_TALK_CSS_SELECTOR);
+	const treasuresTalk = $(CONSTANTS.PUB_MWB_CSS_SELECTOR_TREASURES_TALK);
 	const points2and3 = treasuresTalk.nextUntil(fieldMinistryHeadline);
 	if (points2and3.length !== 4) {
 		const msg = `Unexpected number of elements for points 2 and 3. Expected 4, got ${points2and3.length}`;
@@ -175,8 +175,8 @@ export function buildFieldMinistrySelections($: CheerioAPI): FieldMinistrySelect
  * @throws {Error} If the DOM structure is not as expected.
  */
 function buildAndValidateHeadlineSelections($: CheerioAPI): FieldMinistryHeadlineSelections {
-	const fieldMinistryHeadline = $(CONSTANTS.FIELD_MINISTRY_HEADLINE_CSS_SELECTOR);
-	const christianLivingHeadline = $(CONSTANTS.CHRISTIAN_LIVING_HEADLINE_CSS_SELECTOR);
+	const fieldMinistryHeadline = $(CONSTANTS.PUB_MWB_CSS_SELECTOR_FIELD_MINISTRY_HEADLINE);
+	const christianLivingHeadline = $(CONSTANTS.PUB_MWB_CSS_SELECTOR_CHRISTIAN_LIVING_HEADLINE);
 	assertHeadlineDOMStructure(fieldMinistryHeadline, christianLivingHeadline);
 	return { fieldMinistryHeadline, christianLivingHeadline };
 }
@@ -195,7 +195,7 @@ export function buildRelevantProgramGroupSelections($: CheerioAPI): RelevantProg
 	const { christianLiving, bibleStudy } = getAndValidateChristianLivingSelections(middleSong, closingSong);
 
 	return {
-		introduction: $(CONSTANTS.INTRODUCTION_CSS_SELECTOR),
+		introduction: $(CONSTANTS.PUB_MWB_CSS_SELECTOR_INTRODUCTION),
 		songs,
 		startingSong,
 		treasuresTalk,

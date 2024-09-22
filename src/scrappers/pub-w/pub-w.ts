@@ -1,4 +1,5 @@
 import { logger } from '../../kernel/index.js';
+import { CONSTANTS } from '../../kernel/index.js';
 import { ExtractionInput, processExtractionInput } from '../generics.js';
 import { CheerioAPI } from 'cheerio';
 import { fetchAndParseAnchorReferenceOrThrow } from '../../data-fetching/reference-json.js';
@@ -55,9 +56,10 @@ function removeStrongTag(question: ReturnType<CheerioAPI>): string {
  * @returns An object containing the headline and points of the teach block.
  */
 function extractTeachBlock($: CheerioAPI): TeachBlock {
-	const teachBlockCSSClass = '.dc-ttClassStyle--unset';
-	let teachBlockHeadline = cleanText(getCheerioSelectionOrThrow($, `${teachBlockCSSClass} h2`).text());
-	const teachBlockPoints: string[] = $(`${teachBlockCSSClass} ul li p`)
+	const teachBlockHeadline = cleanText(
+		getCheerioSelectionOrThrow($, CONSTANTS.PUB_W_CSS_SELECTOR_TEACH_BLOCK_HEADLINE).text(),
+	);
+	const teachBlockPoints: string[] = $(CONSTANTS.PUB_W_CSS_SELECTOR_TEACH_BLOCK_POINTS)
 		.map((_, elem) => cleanText($(elem).text()))
 		.get();
 
@@ -135,7 +137,7 @@ function parseLine(line: string): ParsedQuestion[] {
 function extractContents($: CheerioAPI): Promise<Content[]> {
 	let footnoteIndex = 1;
 
-	const promises = $('p.qu')
+	const promises = $(CONSTANTS.PUB_W_CSS_SELECTOR_QUESTION)
 		.map(async (_, elem) => {
 			const question = $(elem);
 			const pNumbers = extractParagraphNumbers(question);
@@ -150,7 +152,7 @@ function extractContents($: CheerioAPI): Promise<Content[]> {
 
 			log.debug(`Processing question [${dataPid}]`);
 
-			const relatedParagraphs = $(`p[data-rel-pid="[${dataPid}]"]`);
+			const relatedParagraphs = $(CONSTANTS.PUB_W_CSS_SELECTOR_RELATED_PARAGRAPH(dataPid));
 
 			const promises = relatedParagraphs.map(async (index, paraElem) => {
 				const para = $(paraElem);
@@ -158,7 +160,7 @@ function extractContents($: CheerioAPI): Promise<Content[]> {
 				log.debug(`Extracting paragraph [${index}] related to question [${dataPid}]`);
 
 				const promises = para
-					.find('a:not([data-video])')
+					.find(CONSTANTS.PUB_W_CSS_SELECTOR_RELATED_PARAGRAPH_LINK)
 					.map(async (_, anchor) => {
 						const anchorRef = $(anchor);
 						const refText = anchorRef.text();
@@ -210,10 +212,10 @@ function extractContents($: CheerioAPI): Promise<Content[]> {
 export async function extractArticleContents(input: ExtractionInput): Promise<WatchtowerArticleData> {
 	const { $ } = processExtractionInput(input);
 
-	const articleNumber = cleanText($('p.contextTtl').find('strong').first().text());
-	const articleTitle = cleanText($('h1').find('strong').first().text());
-	const articleThemeScrip = cleanText($('p.themeScrp').text());
-	const articleTopic = cleanText($('#tt9 p:nth-of-type(2)').text());
+	const articleNumber = cleanText($(CONSTANTS.PUB_W_CSS_SELECTOR_ARTICLE_NUMBER).text());
+	const articleTitle = cleanText($(CONSTANTS.PUB_W_CSS_SELECTOR_ARTICLE_TITLE).text());
+	const articleThemeScrip = cleanText($(CONSTANTS.PUB_W_CSS_SELECTOR_ARTICLE_THEME_SCRIP).text());
+	const articleTopic = cleanText($(CONSTANTS.PUB_W_CSS_SELECTOR_ARTICLE_TOPIC).text());
 
 	const contents = await extractContents($);
 	const teachBlock = extractTeachBlock($);

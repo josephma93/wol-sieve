@@ -316,8 +316,8 @@ function parseSectionHeadlineDataFromElement($element: ReturnType<CheerioAPI>): 
  */
 function getTimeBoxFromElement($selection: ReturnType<CheerioAPI>): number {
 	log.info('Extracting time box from element');
-	const msg = `No selection found for selector [${CONSTANTS.LINE_WITH_TIME_BOX_CSS_SELECTOR}]`;
-	let $lineWithTimeBox = $selection.find(CONSTANTS.LINE_WITH_TIME_BOX_CSS_SELECTOR);
+	const msg = `No selection found for selector [${CONSTANTS.PUB_MWB_CSS_SELECTOR_LINE_WITH_TIME_BOX}]`;
+	let $lineWithTimeBox = $selection.find(CONSTANTS.PUB_MWB_CSS_SELECTOR_LINE_WITH_TIME_BOX);
 	if (!$lineWithTimeBox.length) {
 		log.error(msg);
 		throw new Error(msg);
@@ -346,7 +346,7 @@ export async function extractTreasuresTalk(input: ExtractionInput): Promise<Trea
 	input.selectionBuilder = ($) => buildGodsTreasuresSelections($).treasuresTalk;
 	const { selection: $treasuresTalkSelection } = processExtractionInput(input);
 	const headlineData = parseSectionHeadlineDataFromElement(
-		$treasuresTalkSelection.find(CONSTANTS.LINE_WITH_SECTION_NUMBER_CSS_SELECTOR),
+		$treasuresTalkSelection.find(CONSTANTS.PUB_MWB_CSS_SELECTOR_LINE_WITH_SECTION_NUMBER),
 	);
 
 	const result: TreasuresTalkData = {
