@@ -34,7 +34,7 @@ jobs:
       run: sudo systemctl restart warp-svc.service && sleep 5
 
     - name: warp-cli connect
-      run: warp-cli --accept-tos connect && sleep20
+      run: warp-cli --accept-tos connect && sleep 20
 
     - name: Set route ip
       run: sudo ip route add 192.168.1.0/24 dev CloudflareWARP
