@@ -96,7 +96,7 @@ services:
       - WS_PORT=3389
       - WS_LOG_LEVEL=info
     ports:
-      - "3389:3389"
+      - '3389:3389'
     restart: unless-stopped
 ```
 
