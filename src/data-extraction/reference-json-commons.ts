@@ -109,7 +109,7 @@ export function isJsonContentAcceptableForReferenceExtraction(
 	json: any | DefaultPublicationRefResponse | BiblicalPassageRefResponse,
 ): boolean {
 	let isValid = true;
-	if (!Array.isArray(json.items) || json.items.length !== 1) {
+	if (!Array.isArray(json.items) || json.items.length < 1) {
 		log.error(`JSON content doesn't contain exactly one item. JSON content: ${JSON.stringify(json)}`);
 		isValid = false;
 	}

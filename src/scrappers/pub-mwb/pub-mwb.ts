@@ -32,7 +32,7 @@ interface SongData {
 	songData: PubSjjParsedData;
 }
 
-interface WeeklyBibleReadData {
+export interface WeeklyBibleReadData {
 	bookName: string;
 	bookNumber: number;
 	firstChapter: number;
