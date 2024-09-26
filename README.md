@@ -14,10 +14,10 @@ site. Please review the WOL's Terms and Conditions of Use before using this tool
 
 You can configure `wol-sieve` using the following environment variables:
 
-- `NODE_ENV`: Sets the environment mode. Should be set to `production` in a production environment (default:
-  `production`).
-- `WS_PORT`: Specifies the port the web server listens on (default: `3389`).
-- `WS_LOG_LEVEL`: Defines the log level. Accepted values are `info`, `warn`, `error`, `debug`, etc. (default: `info`).
+-   `NODE_ENV`: Sets the environment mode. Should be set to `production` in a production environment (default:
+    `production`).
+-   `WS_PORT`: Specifies the port the web server listens on (default: `3389`).
+-   `WS_LOG_LEVEL`: Defines the log level. Accepted values are `info`, `warn`, `error`, `debug`, etc. (default: `info`).
 
 These variables can be passed when running the Docker container directly with the `-e` option or through the
 `docker-compose.yml` file, as shown in the example.
@@ -50,9 +50,9 @@ This command will start the `wol-sieve` container in detached mode (`-d`), expos
 
 You can also configure the behavior of `wol-sieve` using the following environment variables:
 
-- `NODE_ENV`: Defines the environment mode (`production` by default).
-- `WS_PORT`: Specifies the port the application listens on (default: `3389`).
-- `WS_LOG_LEVEL`: Sets the logging level (`info`, `warn`, `error`, etc.; default: `info`).
+-   `NODE_ENV`: Defines the environment mode (`production` by default).
+-   `WS_PORT`: Specifies the port the application listens on (default: `3389`).
+-   `WS_LOG_LEVEL`: Sets the logging level (`info`, `warn`, `error`, etc.; default: `info`).
 
 Here’s how you can run the Docker container while overriding some of these environment variables:
 
@@ -62,9 +62,9 @@ docker run -d --name wol-sieve -e NODE_ENV=development -e WS_PORT=8080 -e WS_LOG
 
 In this example:
 
-- The app is run in `development` mode.
-- The port `8080` is exposed instead of the default `3389`.
-- The log level is set to `debug`.
+-   The app is run in `development` mode.
+-   The port `8080` is exposed instead of the default `3389`.
+-   The log level is set to `debug`.
 
 ### Stopping and Removing the Container
 
@@ -88,16 +88,16 @@ service:
 ```yaml
 version: '3.8'
 services:
-  wol-sieve:
-    image: joesofteng/wol-sieve:latest
-    container_name: wol-sieve
-    environment:
-      - NODE_ENV=production
-      - WS_PORT=3389
-      - WS_LOG_LEVEL=info
-    ports:
-      - '3389:3389'
-    restart: unless-stopped
+    wol-sieve:
+        image: joesofteng/wol-sieve:latest
+        container_name: wol-sieve
+        environment:
+            - NODE_ENV=production
+            - WS_PORT=3389
+            - WS_LOG_LEVEL=info
+        ports:
+            - '3389:3389'
+        restart: unless-stopped
 ```
 
 ### Starting the Service with Docker Compose

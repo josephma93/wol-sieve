@@ -56,17 +56,26 @@ function removeStrongTag(question: ReturnType<CheerioAPI>): string {
  * @returns An object containing the headline and points of the teach block.
  */
 function extractTeachBlock($: CheerioAPI): TeachBlock {
-	const teachBlockHeadline = cleanText(
-		getCheerioSelectionOrThrow($, CONSTANTS.PUB_W_CSS_SELECTOR_TEACH_BLOCK_HEADLINE).text(),
-	);
-	const teachBlockPoints: string[] = $(CONSTANTS.PUB_W_CSS_SELECTOR_TEACH_BLOCK_POINTS)
-		.map((_, elem) => cleanText($(elem).text()))
-		.get();
+	try {
+		const teachBlockHeadline = cleanText(
+			getCheerioSelectionOrThrow($, CONSTANTS.PUB_W_CSS_SELECTOR_TEACH_BLOCK_HEADLINE).text(),
+		);
+		const teachBlockPoints: string[] = $(CONSTANTS.PUB_W_CSS_SELECTOR_TEACH_BLOCK_POINTS)
+			.map((_, elem) => cleanText($(elem).text()))
+			.get();
 
-	return {
-		headline: teachBlockHeadline,
-		points: teachBlockPoints,
-	};
+		return {
+			headline: teachBlockHeadline,
+			points: teachBlockPoints,
+		};
+	} catch (e: any) {
+		log.warn(`Unable to extract teach block due to: ${e.message}`);
+
+		return {
+			headline: CONSTANTS.UNABLE_TO_EXTRACT_REFERENCE,
+			points: [],
+		};
+	}
 }
 
 /**
