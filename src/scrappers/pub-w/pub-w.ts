@@ -1,4 +1,4 @@
-import { logger } from '../../kernel/index.js';
+import { logger, opErrored } from '../../kernel/index.js';
 import { CONSTANTS } from '../../kernel/index.js';
 import { ExtractionInput, processExtractionInput } from '../generics.js';
 import { CheerioAPI } from 'cheerio';
@@ -163,15 +163,20 @@ function extractContents($: CheerioAPI): Promise<Content[]> {
 					.find(CONSTANTS.PUB_W_CSS_SELECTOR_RELATED_PARAGRAPH_LINK)
 					.map(async (_, anchor) => {
 						const anchorRef = $(anchor);
-						const refText = anchorRef.text();
-						log.debug(`Extracting reference: [${refText}]`);
+						const mnemonic = anchorRef.text();
+						log.debug(`Extracting reference: [${mnemonic}]`);
 						const fnIndex = footnoteIndex++;
-						anchorRef.replaceWith(`${refText} [^${fnIndex}]`);
+						anchorRef.replaceWith(`${mnemonic} [^${fnIndex}]`);
 						const opRes = await fetchAndParseAnchorReferenceOrThrow(anchorRef);
-						if (opRes.err) {
-							throw opRes.err;
+						let refContents = CONSTANTS.UNABLE_TO_EXTRACT_REFERENCE;
+						if (opErrored(opRes)) {
+							log.warn(
+								`Unable to load reference data for mnemonic: [${mnemonic}] due to: [${opRes.err.message}]`,
+							);
+						} else {
+							refContents = opRes.res.parsedContent;
 						}
-						return [fnIndex, opRes.res.parsedContent] as [number, string];
+						return [fnIndex, refContents] as [number, string];
 					})
 					.get();
 

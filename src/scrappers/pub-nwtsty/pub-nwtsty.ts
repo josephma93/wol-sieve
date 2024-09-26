@@ -1,4 +1,4 @@
-import { ErrorResult, logger, opErrored, wrapAsyncOp } from '../../kernel/index.js';
+import { CONSTANTS, ErrorResult, logger, opErrored, wrapAsyncOp } from '../../kernel/index.js';
 import * as cheerio from 'cheerio';
 import { fetchAndParseAnchorReferenceOrThrow } from '../../data-fetching/reference-json.js';
 import { CheerioAPI } from 'cheerio';
@@ -139,7 +139,7 @@ async function _extractBibleReferences(html: string): Promise<BiblicalBookRefere
 						log.warn(
 							`Unable to load reference data for mnemonic: [${mnemonic}] due to: [${opRes.err.message}]`,
 						);
-						refContents = 'UNABLE_TO_EXTRACT_REFERENCE';
+						refContents = CONSTANTS.UNABLE_TO_EXTRACT_REFERENCE;
 					} else {
 						refContents = opRes.res.parsedContent;
 					}

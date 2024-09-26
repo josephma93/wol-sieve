@@ -27,7 +27,7 @@ export const CONSTANTS = Object.freeze(
 		CSS_SELECTOR_FOR_TODAYS_NAVIGATION_LINK: '#menuToday .todayNav',
 		CSS_SELECTOR_FOR_WATCHTOWER_ARTICLE_LINK: '.todayItem.pub-w:nth-child(2) .itemData a',
 
-		// Reference extraction
+		UNABLE_TO_EXTRACT_REFERENCE: 'UNEXPECTED_ERROR_UNABLE_TO_EXTRACT_REFERENCE',
 		PUB_CODE_WATCHTOWER: 'pub-w',
 		PUB_CODE_BIBLE: 'pub-nwtsty',
 
