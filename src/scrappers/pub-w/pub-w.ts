@@ -12,20 +12,27 @@ interface TeachBlock {
 	points: string[];
 }
 
-interface Paragraph {
+interface ParagraphData {
 	content: string;
 	references: Record<number, string>;
 }
 
-type ParsedQuestion = {
+interface QuestionPartData {
 	label?: string;
 	text: string;
+}
+
+type QuestionData = {
+	pNumbers: number[];
+	parts: QuestionPartData[];
+	// Present only if `parts` length is 1
+	questionText?: string;
 };
 
-interface Content {
+interface ContentData {
 	pNumbers: number[];
-	questions: ParsedQuestion[];
-	paragraphs: Paragraph[];
+	questionData: Omit<QuestionData, 'pNumbers'>;
+	paragraphs: ParagraphData[];
 }
 
 interface WatchtowerArticleData {
@@ -33,21 +40,8 @@ interface WatchtowerArticleData {
 	articleTitle: string;
 	articleThemeScrip: string;
 	articleTopic: string;
-	contents: Content[];
+	contents: ContentData[];
 	teachBlock: TeachBlock;
-}
-
-/**
- * Removes the first <strong> tag from the question element and returns the trimmed text.
- * @param question - Cheerio element representing the question.
- * @returns The text content of the question without the first <strong> tag.
- */
-function removeStrongTag(question: ReturnType<CheerioAPI>): string {
-	const strongTag = question.find('strong').first();
-	if (strongTag.length) {
-		strongTag.remove();
-	}
-	return cleanText(question.text());
 }
 
 /**
@@ -79,46 +73,59 @@ function extractTeachBlock($: CheerioAPI): TeachBlock {
 }
 
 /**
- * Extracts numbers from the first <strong> tag within the question element.
- * @param question - Cheerio element representing the question.
- * @returns An array of numbers extracted from the <strong> tag.
+ * Parses a question with optional labels (a), b), etc.)
+ * @param question The question element containing the text to parse
+ * @returns Parsed question data
  */
-function extractParagraphNumbers(question: ReturnType<CheerioAPI>): number[] {
-	const strongTag = question.find('strong').first();
-	if (strongTag.length) {
-		const questionText = strongTag.text().trim();
-		const numbers = questionText.match(/\d+/g);
-		return numbers ? numbers.map(Number) : [];
+function extractQuestionData(question: ReturnType<CheerioAPI>): QuestionData {
+	const questionTxt = cleanText(question.text());
+	const pNumbers: number[] = [];
+
+	const pNumberRegex = /^\s*(\d+(?:[\s,-]*\d+)*?)\.\s*/;
+
+	const pNumberMatch = questionTxt.match(pNumberRegex);
+	let remainingLine = questionTxt;
+	if (pNumberMatch) {
+		const numbersStr = pNumberMatch[1];
+		const tokens = numbersStr.split(/\s*,\s*/);
+		for (const token of tokens) {
+			if (token.includes('-')) {
+				const [startStr, endStr] = token.split('-').map((s) => s.trim());
+				const start = parseInt(startStr, 10);
+				const end = parseInt(endStr, 10);
+				if (!isNaN(start) && !isNaN(end) && start <= end) {
+					for (let i = start; i <= end; i++) {
+						pNumbers.push(i);
+					}
+				}
+			} else {
+				const num = parseInt(token.trim(), 10);
+				if (!isNaN(num)) {
+					pNumbers.push(num);
+				}
+			}
+		}
+		remainingLine = questionTxt.substring(pNumberMatch[0].length);
 	}
-	return [];
-}
 
-/**
- * Parses a single line of text containing questions with optional labels (a), b), etc.)
- * @param line The line of text to parse
- * @returns An array of ParsedQuestion objects
- */
-function parseLine(line: string): ParsedQuestion[] {
-	const parsedQuestions: ParsedQuestion[] = [];
+	const parsedQuestions: QuestionPartData[] = [];
 
-	// Regex to match labels like 'a)', 'b)', etc., followed by a space or the start of the question
-	const labelRegex = /([a-zA-Z])\)\s*/g;
+	const labelRegex = /\b([a-zA-Z])\)&nbsp;|\b([a-zA-Z])\)\s*/g;
 
-	// Find all label matches with their indices
-	const matches: RegExpExecArray[] = [];
+	const matches: { index: number; label: string; 0: string }[] = [];
 	let match: RegExpExecArray | null;
-	while ((match = labelRegex.exec(line)) !== null) {
-		matches.push(match);
+	while ((match = labelRegex.exec(remainingLine)) !== null) {
+		const label = match[1] || match[2];
+		matches.push({ ...match, label });
 	}
 
 	if (matches.length > 0) {
-		// If there are labeled questions, split accordingly
 		for (let i = 0; i < matches.length; i++) {
 			const currentMatch = matches[i];
-			const label = currentMatch[1];
+			const label = currentMatch.label;
 			const startIndex = currentMatch.index + currentMatch[0].length;
-			const endIndex = i + 1 < matches.length ? matches[i + 1].index : line.length;
-			const questionText = line.substring(startIndex, endIndex).trim();
+			const endIndex = i + 1 < matches.length ? matches[i + 1].index : remainingLine.length;
+			const questionText = remainingLine.substring(startIndex, endIndex).trim();
 
 			parsedQuestions.push({
 				label: label,
@@ -126,8 +133,7 @@ function parseLine(line: string): ParsedQuestion[] {
 			});
 		}
 	} else {
-		// If there are no labels, treat the entire line as a single question
-		const trimmedLine = line.trim();
+		const trimmedLine = remainingLine.trim();
 		if (trimmedLine.length > 0) {
 			parsedQuestions.push({
 				text: trimmedLine,
@@ -135,22 +141,26 @@ function parseLine(line: string): ParsedQuestion[] {
 		}
 	}
 
-	return parsedQuestions;
+	return {
+		pNumbers,
+		parts: parsedQuestions,
+		questionText: parsedQuestions.length === 1 ? parsedQuestions[0].text : undefined,
+	};
 }
 
 /**
  * Extracts the contents from the soup.
  * @param $ - Cheerio API instance.
- * @returns An array of Content objects.
+ * @returns An array of ContentData objects.
  */
-function extractContents($: CheerioAPI): Promise<Content[]> {
+function extractContents($: CheerioAPI): Promise<ContentData[]> {
 	let footnoteIndex = 1;
 
 	const promises = $(CONSTANTS.PUB_W_CSS_SELECTOR_QUESTION)
 		.map(async (_, elem) => {
 			const question = $(elem);
-			const pNumbers = extractParagraphNumbers(question);
-			const qText = removeStrongTag(question);
+			const qText = cleanText(question.text());
+			const questionData = extractQuestionData(question);
 
 			const dataPid = question.attr('data-pid');
 			if (!dataPid) {
@@ -204,13 +214,21 @@ function extractContents($: CheerioAPI): Promise<Content[]> {
 				};
 			});
 
-			const paragraphs: Paragraph[] = await Promise.all(promises);
+			const paragraphs: ParagraphData[] = await Promise.all(promises);
+
+			const cleanedQuestionData: ContentData['questionData'] = {
+				parts: questionData.parts,
+			};
+
+			if (questionData.questionText) {
+				cleanedQuestionData.questionText = questionData.questionText;
+			}
 
 			return {
-				pNumbers,
-				questions: parseLine(qText),
+				pNumbers: questionData.pNumbers,
+				questionData: cleanedQuestionData,
 				paragraphs,
-			} as Content;
+			} as ContentData;
 		})
 		.get();
 
