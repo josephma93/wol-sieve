@@ -24,11 +24,13 @@ interface QuestionPartData {
 
 type QuestionData = {
 	pNumbers: number[];
+	rawQuestionTxt: string;
 	parts: QuestionPartData[];
 };
 
 interface ContentData {
 	pNumbers: number[];
+	rawQuestionTxt: QuestionData['rawQuestionTxt'];
 	questionParts: QuestionData['parts'];
 	questionTextIfSingle?: QuestionPartData['text'];
 	paragraphs: ParagraphData[];
@@ -77,13 +79,13 @@ function extractTeachBlock($: CheerioAPI): TeachBlock {
  * @returns Parsed question data
  */
 function extractQuestionData(question: ReturnType<CheerioAPI>): QuestionData {
-	const questionTxt = cleanText(question.text());
+	const rawQuestionTxt = cleanText(question.text());
 	const pNumbers: number[] = [];
 
 	const pNumberRegex = /^\s*(\d+(?:[\s,-]*\d+)*?)\.\s*/;
 
-	const pNumberMatch = questionTxt.match(pNumberRegex);
-	let remainingLine = questionTxt;
+	const pNumberMatch = rawQuestionTxt.match(pNumberRegex);
+	let remainingLine = rawQuestionTxt;
 	if (pNumberMatch) {
 		const numbersStr = pNumberMatch[1];
 		const tokens = numbersStr.split(/\s*,\s*/);
@@ -104,7 +106,7 @@ function extractQuestionData(question: ReturnType<CheerioAPI>): QuestionData {
 				}
 			}
 		}
-		remainingLine = questionTxt.substring(pNumberMatch[0].length);
+		remainingLine = rawQuestionTxt.substring(pNumberMatch[0].length);
 	}
 
 	const parsedQuestions: QuestionPartData[] = [];
@@ -142,6 +144,7 @@ function extractQuestionData(question: ReturnType<CheerioAPI>): QuestionData {
 
 	return {
 		pNumbers,
+		rawQuestionTxt,
 		parts: parsedQuestions,
 	};
 }
