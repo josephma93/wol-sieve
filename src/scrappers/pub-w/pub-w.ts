@@ -216,13 +216,15 @@ function extractContents($: CheerioAPI): Promise<ContentData[]> {
 			});
 
 			const paragraphs: ParagraphData[] = await Promise.all(promises);
-
-			return {
+			const result: ContentData = {
 				pNumbers: questionData.pNumbers,
 				questionParts: questionData.parts,
 				questionTextIfSingle: questionData.parts.length === 1 ? questionData.parts[0].text : undefined,
+				rawQuestionTxt: questionData.rawQuestionTxt,
 				paragraphs,
-			} as ContentData;
+			};
+
+			return result;
 		})
 		.get();
 
