@@ -25,13 +25,12 @@ interface QuestionPartData {
 type QuestionData = {
 	pNumbers: number[];
 	parts: QuestionPartData[];
-	// Present only if `parts` length is 1
-	questionText?: string;
 };
 
 interface ContentData {
 	pNumbers: number[];
-	questionData: Omit<QuestionData, 'pNumbers'>;
+	questionParts: QuestionData['parts'];
+	questionTextIfSingle?: QuestionPartData['text'];
 	paragraphs: ParagraphData[];
 }
 
@@ -144,7 +143,6 @@ function extractQuestionData(question: ReturnType<CheerioAPI>): QuestionData {
 	return {
 		pNumbers,
 		parts: parsedQuestions,
-		questionText: parsedQuestions.length === 1 ? parsedQuestions[0].text : undefined,
 	};
 }
 
@@ -216,17 +214,10 @@ function extractContents($: CheerioAPI): Promise<ContentData[]> {
 
 			const paragraphs: ParagraphData[] = await Promise.all(promises);
 
-			const cleanedQuestionData: ContentData['questionData'] = {
-				parts: questionData.parts,
-			};
-
-			if (questionData.questionText) {
-				cleanedQuestionData.questionText = questionData.questionText;
-			}
-
 			return {
 				pNumbers: questionData.pNumbers,
-				questionData: cleanedQuestionData,
+				questionParts: questionData.parts,
+				questionTextIfSingle: questionData.parts.length === 1 ? questionData.parts[0].text : undefined,
 				paragraphs,
 			} as ContentData;
 		})
