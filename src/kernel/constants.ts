@@ -42,6 +42,7 @@ export const CONSTANTS = Object.freeze(
 		PUB_MWB_CSS_SELECTOR_FIELD_MINISTRY_HEADLINE: '.dc-icon--wheat',
 		PUB_MWB_CSS_SELECTOR_MIDWAY_SONG_HEADLINE: '.dc-icon--music',
 		PUB_MWB_CSS_SELECTOR_CHRISTIAN_LIVING_HEADLINE: '.dc-icon--sheep',
+		PUB_MWB_CSS_SELECTOR_BLEED_EDGE_GROUPS: '.dc-bleedToArticleEdge',
 
 		PUB_W_CSS_SELECTOR_ARTICLE_NUMBER: 'p.contextTtl strong',
 		PUB_W_CSS_SELECTOR_ARTICLE_TITLE: 'h1 strong:first-child',

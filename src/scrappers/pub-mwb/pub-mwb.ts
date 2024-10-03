@@ -316,9 +316,16 @@ function parseSectionHeadlineDataFromElement($element: ReturnType<CheerioAPI>): 
  */
 function getTimeBoxFromElement($selection: ReturnType<CheerioAPI>): number {
 	log.info('Extracting time box from element');
-	const msg = `No selection found for selector [${CONSTANTS.PUB_MWB_CSS_SELECTOR_LINE_WITH_TIME_BOX}]`;
+	const msg = `No selection found for element with time box information.`;
 	let $lineWithTimeBox = $selection.find(CONSTANTS.PUB_MWB_CSS_SELECTOR_LINE_WITH_TIME_BOX);
 	if (!$lineWithTimeBox.length) {
+		if ($selection.parent().is(CONSTANTS.PUB_MWB_CSS_SELECTOR_BLEED_EDGE_GROUPS)) {
+			// bleed edge scenarios
+			$lineWithTimeBox = $selection.find(`> *:first-child > p`);
+		}
+	}
+
+	if ($lineWithTimeBox.length !== 1) {
 		log.error(msg);
 		throw new Error(msg);
 	}
@@ -526,8 +533,8 @@ interface HeadlineContentGroup {
 	contents: ReturnType<CheerioAPI>[];
 }
 
-function buildHeadlineToContentGroups(fieldMinistry: ReturnType<CheerioAPI>, $: CheerioAPI): HeadlineContentGroup[] {
-	return fieldMinistry.toArray().reduce((acc, el) => {
+function buildHeadlineToContentGroups(contentSelection: ReturnType<CheerioAPI>, $: CheerioAPI): HeadlineContentGroup[] {
+	return contentSelection.toArray().reduce((acc, el) => {
 		const $el = $(el);
 
 		if ($el.is('h3')) {
@@ -535,6 +542,13 @@ function buildHeadlineToContentGroups(fieldMinistry: ReturnType<CheerioAPI>, $: 
 				heading: $el,
 				contents: [],
 			});
+		} else if ($el.is(CONSTANTS.PUB_MWB_CSS_SELECTOR_BLEED_EDGE_GROUPS)) {
+			acc.push(
+				...buildHeadlineToContentGroups(
+					$el.find(`> *:not(${CONSTANTS.PUB_MWB_CSS_SELECTOR_BLEED_EDGE_GROUPS})`),
+					$,
+				),
+			);
 		} else {
 			acc.at(-1)?.contents.push($el);
 		}
