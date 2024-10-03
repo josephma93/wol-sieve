@@ -2,7 +2,7 @@ import express from 'express';
 import { pinoHttp } from 'pino-http';
 import { logger, addPingEndpoint, startServer } from './kernel/index.js';
 import { wolRouter } from './routers/index.js';
-import { pubMwbRouter } from './routers/pub-mwb-router.js';
+import { pubMwbRouter } from './routers/pub-mwb.js';
 import { pubWRouter } from './routers/pub-w.js';
 import { pubNwtstyRouter } from './routers/pub-nwtsty.js';
 
