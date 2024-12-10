@@ -402,6 +402,82 @@ export async function extractTreasuresTalk(input: ExtractionInput): Promise<Trea
 }
 
 /**
+ * Extracts the spiritual gem question from a given paragraph element.
+ *
+ * If the paragraph element contains exactly two anchor (<a>) tags,
+ * the text content between them is extracted, excluding the first
+ * and last two characters.
+ *
+ * Otherwise, the function attempts to match and extract the text
+ * that appears after a period and before an opening parenthesis.
+ *
+ * @param $pElem - The Cheerio element containing the paragraph with the spiritual gem question.
+ * @returns The extracted spiritual gem question as a string.
+ */
+function extractSpiritualGemQuestion($pElem: ReturnType<CheerioAPI>): string {
+	if ($pElem.filter('a').length === 2) {
+		return $pElem
+			.contents()
+			.filter(function () {
+				return this.nodeType === 3; /* TEXT_NODE */
+			})
+			.eq(0)
+			.text()
+			.slice(2, -2);
+	}
+	const pFullText = cleanText($pElem.text());
+	return (pFullText.match(/(?<=\. ).*?(?= \()/g) ?? [''])[0];
+}
+
+/**
+ * Retrieves all <a> elements within the given Cheerio element that are:
+ * - Enclosed within parentheses ()
+ * - Located at the far right end of the element's content
+ *
+ * Assumptions:
+ * - All links are placed one after the other without interruptions.
+ * - The input element is a single Cheerio element (ReturnType<CheerioAPI>).
+ *
+ * @param element - The parent Cheerio element to search within
+ * @param $ The cheerio instance.
+ * @returns An array of Cheerio <a> elements that match the criteria
+ */
+function getSurroundedLinksAtFarRight(element: ReturnType<CheerioAPI>, $: CheerioAPI) {
+	const links = [];
+	const children = element.contents().toArray();
+
+	let collecting = false;
+
+	// Iterate from the last child to the first
+	for (let i = children.length - 1; i >= 0; i--) {
+		const child = children[i];
+
+		if (child.type === 'text') {
+			const text = child.data;
+
+			if (!collecting) {
+				// Check for closing parenthesis ')'
+				if (/\)/.test(text)) {
+					collecting = true;
+				}
+			} else {
+				// Check for opening parenthesis '(' to stop collecting
+				if (/\(/.test(text)) {
+					break;
+				}
+			}
+		} else if (child.type === 'tag' && child.name === 'a') {
+			if (collecting) {
+				// Prepend the link to maintain the original order
+				links.unshift($(child));
+			}
+		}
+	}
+
+	return links;
+}
+
+/**
  * Extracts the spiritual gems data from the given input.
  * @param input The input object necessary values for correct extraction.
  * @returns The extracted data.
@@ -421,7 +497,7 @@ export async function extractSpiritualGems(input: ExtractionInput): Promise<Spir
 		answerSources: [],
 	};
 
-	const $scriptureAnchorSelection = $content.find(`a.b`);
+	const $scriptureAnchorSelection = $content.find(`a.b:first-child`);
 	if ($scriptureAnchorSelection.length !== 1) {
 		const msg = `Unexpected number of elements for scripture anchor.`;
 		log.error(msg);
@@ -435,22 +511,16 @@ export async function extractSpiritualGems(input: ExtractionInput): Promise<Spir
 	}
 	printedQuestionData.scriptureContents = opRes.res.parsedContent;
 
-	printedQuestionData.question = $scriptureAnchorSelection
-		.parent()
-		.contents()
-		.filter(function () {
-			return this.nodeType === 3; /* TEXT_NODE */
-		})
-		.eq(0)
-		.text()
-		.slice(2, -2);
+	const $pElement = $scriptureAnchorSelection.parent();
 
-	const $answerSelection = $content.find(`a`).slice(1); // Skip the first element, which is the scripture reference.
+	printedQuestionData.question = extractSpiritualGemQuestion($pElement);
+
+	const $answerSelection = getSurroundedLinksAtFarRight($pElement, input.$!);
 
 	log.debug(`Processing [${$answerSelection.length}] answer sources`);
 
 	for (let i = 0; i < $answerSelection.length; i++) {
-		const $answer = $answerSelection.eq(i);
+		const $answer = $answerSelection[i];
 		opRes = await fetchAndParseAnchorReferenceOrThrow($answer);
 		if (opRes.err) {
 			throw opRes.err;
