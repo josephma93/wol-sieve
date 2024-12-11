@@ -161,7 +161,10 @@ async function _extractBibleReferences(html: string): Promise<BiblicalBookRefere
 			{ entries, sharedMnemonicReferences },
 			{ sectionKey, sectionTitle, referenceDataInAnchors }: SectionDataForProcess,
 		) => {
-			const scripture = extractPubNwtstyReferenceAsText($(`[id*="${sectionKey}"]`), $);
+			const matchingElements = $(`#article [id*="${sectionKey}"]`).filter((_, el) => {
+				return new RegExp(`^[^\d-]*${sectionKey}(?!\\d)`).test($(el).attr('id') ?? '');
+			});
+			const scripture = extractPubNwtstyReferenceAsText(matchingElements, $);
 
 			const references = referenceDataInAnchors.map(({ mnemonic }) => {
 				const trackingObj = mnemonicExtractionTracking.get(mnemonic)!;
