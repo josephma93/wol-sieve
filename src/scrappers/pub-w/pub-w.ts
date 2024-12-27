@@ -1,5 +1,4 @@
-import { logger, opErrored } from '../../kernel/index.js';
-import { CONSTANTS } from '../../kernel/index.js';
+import { CONSTANTS, logger, opErrored } from '../../kernel/index.js';
 import { ExtractionInput, processExtractionInput } from '../generics.js';
 import { CheerioAPI } from 'cheerio';
 import { fetchAndParseAnchorReferenceOrThrow } from '../../data-fetching/reference-json.js';
@@ -13,6 +12,8 @@ interface TeachBlock {
 }
 
 interface ParagraphData {
+	number: number;
+	originalContent: string;
 	content: string;
 	references: Record<number, string>;
 }
@@ -83,8 +84,8 @@ function extractQuestionData(question: ReturnType<CheerioAPI>): QuestionData {
 	const pNumbers: number[] = [];
 
 	const pNumberRegex = /^\s*(\d+(?:[\s,-]*\d+)*?)\.\s*/;
-
 	const pNumberMatch = rawQuestionTxt.match(pNumberRegex);
+
 	let remainingLine = rawQuestionTxt;
 	if (pNumberMatch) {
 		const numbersStr = pNumberMatch[1];
@@ -110,7 +111,6 @@ function extractQuestionData(question: ReturnType<CheerioAPI>): QuestionData {
 	}
 
 	const parsedQuestions: QuestionPartData[] = [];
-
 	const labelRegex = /\b([a-zA-Z])\)&nbsp;|\b([a-zA-Z])\)\s*/g;
 
 	const matches: { index: number; label: string; 0: string }[] = [];
@@ -150,85 +150,120 @@ function extractQuestionData(question: ReturnType<CheerioAPI>): QuestionData {
 }
 
 /**
- * Extracts the contents from the soup.
- * @param $ - Cheerio API instance.
- * @returns An array of ContentData objects.
+ * Fetches and replaces references for a paragraph in parallel.
+ * Returns an array of [footnoteIndex, referenceText].
  */
-function extractContents($: CheerioAPI): Promise<ContentData[]> {
-	let footnoteIndex = 1;
+async function extractReferences(
+	$: CheerioAPI,
+	para: ReturnType<CheerioAPI>,
+	footnoteIndexRef: { value: number },
+): Promise<[number, string][]> {
+	const anchorElems = para.find(CONSTANTS.PUB_W_CSS_SELECTOR_RELATED_PARAGRAPH_LINK);
 
-	const promises = $(CONSTANTS.PUB_W_CSS_SELECTOR_QUESTION)
-		.map(async (_, elem) => {
-			const question = $(elem);
-			const qText = cleanText(question.text());
-			const questionData = extractQuestionData(question);
+	const referencePromises = anchorElems.map(async (_, anchor) => {
+		const anchorRef = $(anchor);
+		const mnemonic = anchorRef.text();
+		log.debug(`Extracting reference: [${mnemonic}]`);
 
-			const dataPid = question.attr('data-pid');
-			if (!dataPid) {
-				const msg = `Missing data-pid for question ${qText}`;
-				log.error(msg);
-				throw new Error(msg);
-			}
+		const currentIndex = footnoteIndexRef.value;
+		footnoteIndexRef.value += 1; // increment for the next footnote
 
-			log.debug(`Processing question [${dataPid}]`);
+		// Mutates the DOM: replace the anchor with footnote marker
+		anchorRef.replaceWith(`${mnemonic} [^${currentIndex}]`);
 
-			const relatedParagraphs = $(CONSTANTS.PUB_W_CSS_SELECTOR_RELATED_PARAGRAPH(dataPid));
+		const opRes = await fetchAndParseAnchorReferenceOrThrow(anchorRef);
+		let refContents = CONSTANTS.UNABLE_TO_EXTRACT_REFERENCE;
+		if (opErrored(opRes)) {
+			log.warn(`Unable to load reference data for mnemonic: [${mnemonic}] due to: [${opRes.err.message}]`);
+		} else {
+			refContents = opRes.res.parsedContent;
+		}
+		return [currentIndex, refContents] as [number, string];
+	});
 
-			const promises = relatedParagraphs.map(async (index, paraElem) => {
-				const para = $(paraElem);
+	return Promise.all(referencePromises.get());
+}
 
-				log.debug(`Extracting paragraph [${index}] related to question [${dataPid}]`);
+/**
+ * Extracts all paragraphs for a given question in parallel.
+ */
+async function extractParagraphs(
+	$: CheerioAPI,
+	questionPid: string,
+	footnoteIndexRef: { value: number },
+): Promise<ParagraphData[]> {
+	const relatedParagraphs = $(CONSTANTS.PUB_W_CSS_SELECTOR_RELATED_PARAGRAPH(questionPid));
 
-				const promises = para
-					.find(CONSTANTS.PUB_W_CSS_SELECTOR_RELATED_PARAGRAPH_LINK)
-					.map(async (_, anchor) => {
-						const anchorRef = $(anchor);
-						const mnemonic = anchorRef.text();
-						log.debug(`Extracting reference: [${mnemonic}]`);
-						const fnIndex = footnoteIndex++;
-						anchorRef.replaceWith(`${mnemonic} [^${fnIndex}]`);
-						const opRes = await fetchAndParseAnchorReferenceOrThrow(anchorRef);
-						let refContents = CONSTANTS.UNABLE_TO_EXTRACT_REFERENCE;
-						if (opErrored(opRes)) {
-							log.warn(
-								`Unable to load reference data for mnemonic: [${mnemonic}] due to: [${opRes.err.message}]`,
-							);
-						} else {
-							refContents = opRes.res.parsedContent;
-						}
-						return [fnIndex, refContents] as [number, string];
-					})
-					.get();
+	const paragraphPromises = relatedParagraphs.map(async (_, paraElem) => {
+		const para = $(paraElem);
+		log.debug(`Extracting paragraph related to question [${questionPid}]`);
 
-				const tuples = await Promise.all(promises);
-				const references: Record<number, string> = tuples.reduce(
-					(accum, [num, txt]: [number, string]) => {
-						accum[num] = txt;
-						return accum;
-					},
-					{} as Record<number, string>,
-				);
+		const originalParagraphText = para.text();
+		const paragraphNumber = parseFloat(para.find('.parNum').attr('data-pnum') || 'NaN');
 
-				return {
-					content: cleanText(para.text()),
-					references,
-				};
-			});
+		const referenceTuples = await extractReferences($, para, footnoteIndexRef);
 
-			const paragraphs: ParagraphData[] = await Promise.all(promises);
-			const result: ContentData = {
-				pNumbers: questionData.pNumbers,
-				questionParts: questionData.parts,
-				questionTextIfSingle: questionData.parts.length === 1 ? questionData.parts[0].text : undefined,
-				rawQuestionTxt: questionData.rawQuestionTxt,
-				paragraphs,
-			};
+		const references: Record<number, string> = referenceTuples.reduce(
+			(accum, [num, txt]) => {
+				accum[num] = txt;
+				return accum;
+			},
+			{} as Record<number, string>,
+		);
 
-			return result;
-		})
-		.get();
+		const mutatedParagraphText = para.text();
 
-	return Promise.all(promises);
+		return {
+			number: paragraphNumber,
+			originalContent: cleanText(originalParagraphText),
+			content: cleanText(mutatedParagraphText),
+			references,
+		};
+	});
+
+	return Promise.all(paragraphPromises.get());
+}
+
+/**
+ * Extracts the contents from the soup, returning an array of ContentData objects.
+ * This function remains the orchestrator, but now each paragraph has two versions.
+ * @param $ - Cheerio API instance.
+ * @returns Promise of an array of ContentData objects.
+ */
+async function extractContents($: CheerioAPI): Promise<ContentData[]> {
+	// Keep a single footnote counter that we pass by reference
+	const footnoteIndexRef = { value: 1 };
+
+	const questionElems = $(CONSTANTS.PUB_W_CSS_SELECTOR_QUESTION);
+
+	// For each question, extract its data and related paragraphs in parallel
+	const contentPromises = questionElems.map(async (_, elem) => {
+		const question = $(elem);
+		const qText = cleanText(question.text());
+		const questionData = extractQuestionData(question);
+
+		const dataPid = question.attr('data-pid');
+		if (!dataPid) {
+			const msg = `Missing data-pid for question ${qText}`;
+			log.error(msg);
+			throw new Error(msg);
+		}
+
+		log.debug(`Processing question [${dataPid}]`);
+
+		// Extract all paragraphs associated with this question
+		const paragraphs = await extractParagraphs($, dataPid, footnoteIndexRef);
+
+		return {
+			pNumbers: questionData.pNumbers,
+			questionParts: questionData.parts,
+			questionTextIfSingle: questionData.parts.length === 1 ? questionData.parts[0].text : undefined,
+			rawQuestionTxt: questionData.rawQuestionTxt,
+			paragraphs,
+		};
+	});
+
+	return Promise.all(contentPromises.get());
 }
 
 /**
