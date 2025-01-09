@@ -14,6 +14,7 @@ import {
 	extractWeeklyBibleRead,
 } from '../scrappers/pub-mwb/pub-mwb.js';
 import { ExtractionInput } from '../scrappers/generics.js';
+import { getHtmlContent } from '../data-fetching/raw.js';
 
 export const pubMwbRouter = express.Router();
 
@@ -31,6 +32,20 @@ async function fillHtmlContent(req: Request, res: Response, next: NextFunction) 
 	}
 
 	res.locals.html = html;
+	next();
+}
+
+async function fetchHtmlFromSourceUrl(req: Request, res: Response, next: NextFunction) {
+	const sourceUrl = req.query.source_url as string;
+
+	if (sourceUrl && sourceUrl.includes('wol.jw.org')) {
+		const opRes = await getHtmlContent(sourceUrl);
+		if (opErrored(opRes)) {
+			return res.status(500).json({ error: opRes.err.message });
+		}
+		req.body.html = opRes.res;
+	}
+
 	next();
 }
 
@@ -53,7 +68,7 @@ function createRoute(path: string, scrapperOperation: ScrapperMethod) {
 	pubMwbRouter
 		.route(path)
 		.post(fillHtmlContent, handleRequest(scrapperOperation))
-		.get(fillHtmlContent, handleRequest(scrapperOperation));
+		.get(fetchHtmlFromSourceUrl, fillHtmlContent, handleRequest(scrapperOperation));
 }
 
 // Now, define the routes using the createRoute function to eliminate duplication
