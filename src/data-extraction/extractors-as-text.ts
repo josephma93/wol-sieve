@@ -41,19 +41,21 @@ export function extractPubNwtstyReferenceAsText(
 	let $: CheerioAPI;
 
 	if (typeof content === 'string') {
-		$ = cheerio.load(content);
-		context = $('*');
+		$ = $document ?? cheerio.load(content);
+		context = $(content);
 	} else {
+		$ = $document ?? cheerio.load('');
 		context = content;
-		if (!$document) {
-			throw new Error('This method signature requires a CheerioAPI to be present.');
-		}
-		$ = $document;
 	}
 
 	context.find('a.fn, a.b').remove();
-	context.find('.sl, .sz').each((_, el) => {
-		$(el).append('<span> </span>');
+	context.find('.sz').each((_, el) => {
+		const element = $(el);
+		const previousText = element.prev().text();
+		// Fix por padding spacing
+		if (previousText && !/\s$/.test(previousText) && !/^\s/.test(element.text())) {
+			element.prepend(' ');
+		}
 	});
 
 	return cleanText(context.text()).replace(/(\s\n|\n\s)/g, '\n');
