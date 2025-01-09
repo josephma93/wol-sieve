@@ -1,4 +1,5 @@
 import { logger, CONSTANTS } from '../../kernel/index.js';
+import * as cheerio from 'cheerio';
 import { CheerioAPI } from 'cheerio';
 import { ExtractionInput, processExtractionInput } from '../generics.js';
 import { parsePubSjj, PubSjjParsedData } from '../../data-extraction/extractors-as-obj.js';
@@ -42,6 +43,7 @@ export interface WeeklyBibleReadData {
 
 interface TalkPoint {
 	text: string;
+	originalContent: string;
 	footnotes: number[];
 }
 
@@ -317,7 +319,7 @@ function parseSectionHeadlineDataFromElement($element: ReturnType<CheerioAPI>): 
 function getTimeBoxFromElement($selection: ReturnType<CheerioAPI>): number {
 	log.info('Extracting time box from element');
 	const msg = `No selection found for element with time box information.`;
-	let $lineWithTimeBox = $selection.find(CONSTANTS.PUB_MWB_CSS_SELECTOR_LINE_WITH_TIME_BOX);
+	let $lineWithTimeBox = cheerio.load($selection.toString())(CONSTANTS.PUB_MWB_CSS_SELECTOR_LINE_WITH_TIME_BOX);
 	if (!$lineWithTimeBox.length) {
 		if ($selection.parent().is(CONSTANTS.PUB_MWB_CSS_SELECTOR_BLEED_EDGE_GROUPS)) {
 			// bleed edge scenarios
@@ -372,9 +374,11 @@ export async function extractTreasuresTalk(input: ExtractionInput): Promise<Trea
 		const $point = $points.eq(i);
 		const talkPoint: TalkPoint = {
 			text: '',
+			originalContent: '',
 			footnotes: [],
 		};
 		let pointText = cleanText($point.text());
+		let originalPointText = pointText;
 		const $references = $point.find(`a`);
 
 		log.debug(`Processing point [${i + 1}] with [${$references.length}] references`);
@@ -393,6 +397,7 @@ export async function extractTreasuresTalk(input: ExtractionInput): Promise<Trea
 		}
 
 		talkPoint.text = pointText;
+		talkPoint.originalContent = originalPointText;
 		result.points.push(talkPoint);
 		log.debug(`Added talk point [${i + 1}]`);
 	}
