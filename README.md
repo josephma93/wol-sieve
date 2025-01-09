@@ -128,50 +128,54 @@ To run the `wol-sieve` project locally for development, follow these steps:
 
 Ensure you have the following installed on your machine:
 
-- **Node.js**: Version specified in the `.nvmrc` file. You can use [nvm](https://github.com/nvm-sh/nvm) to manage Node.js versions.
-- **npm**: Comes with Node.js, used for managing packages.
+-   **Node.js**: Version specified in the `.nvmrc` file. You can use [nvm](https://github.com/nvm-sh/nvm) to manage Node.js versions.
+-   **npm**: Comes with Node.js, used for managing packages.
 
 ### Setup
 
 1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/yourusername/wol-sieve.git
-   cd wol-sieve
-   ```
+
+    ```bash
+    git clone https://github.com/yourusername/wol-sieve.git
+    cd wol-sieve
+    ```
 
 2. **Install dependencies**:
-   ```bash
-   npm install
-   ```
+
+    ```bash
+    npm install
+    ```
 
 3. **Set up environment variables**:
    Create a `.env` file in the root directory and configure the necessary environment variables as described in the "Environment Variables" section.
 
 ### Development Workflow
 
-- **Compile TypeScript**:
-  The project uses TypeScript, and you need to compile it before running. Use the following command to compile the TypeScript files:
-  ```bash
-  npm run build
-  ```
+-   **Compile TypeScript**:
+    The project uses TypeScript, and you need to compile it before running. Use the following command to compile the TypeScript files:
 
-- **Run the development server**:
-  Use `nodemon` to automatically restart the server on file changes:
-  ```bash
-  npm start
-  ```
+    ```bash
+    npm run build
+    ```
 
-- **Code Formatting**:
-  The project uses Prettier for code formatting. Ensure your code is formatted correctly by running:
-  ```bash
-  npm run format
-  ```
+-   **Run the development server**:
+    Use `nodemon` to automatically restart the server on file changes:
+
+    ```bash
+    npm start
+    ```
+
+-   **Code Formatting**:
+    The project uses Prettier for code formatting. Ensure your code is formatted correctly by running:
+    ```bash
+    npm run format
+    ```
 
 ### Additional Notes
 
-- The `tsconfig.json` file is configured to target `ES2023` and uses `NodeNext` for module resolution.
-- The `nodemon.json` file is set up to watch for changes in `.ts` and `.json` files within the `src` directory.
-- Ensure your code adheres to the style guidelines specified in the `.prettierrc` file.
+-   The `tsconfig.json` file is configured to target `ES2023` and uses `NodeNext` for module resolution.
+-   The `nodemon.json` file is set up to watch for changes in `.ts` and `.json` files within the `src` directory.
+-   Ensure your code adheres to the style guidelines specified in the `.prettierrc` file.
 
 By following these steps, you can set up the project for local development and ensure a smooth workflow with TypeScript and Prettier.
 
