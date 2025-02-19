@@ -379,7 +379,7 @@ export async function extractTreasuresTalk(input: ExtractionInput): Promise<Trea
 		};
 		let pointText = cleanText($point.text());
 		let originalPointText = pointText;
-		const $references = $point.find(`a`);
+		const $references = $point.find(`a:not([data-video])`);
 
 		log.debug(`Processing point [${i + 1}] with [${$references.length}] references`);
 
