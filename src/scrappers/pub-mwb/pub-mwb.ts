@@ -164,8 +164,16 @@ export function extractSongData(input: ExtractionInput): Promise<SongData[]> {
 			const songNumber = text.match(/\d+/);
 			if (!songNumber || songNumber.length !== 1) {
 				const msg = `Expected song number, found [${text}]. The document structure may have changed.`;
-				log.error(msg);
-				throw new Error(msg);
+				log.warn(msg);
+				return {
+					songNumber: -1,
+					songData: {
+						name: text,
+						themeScripture: '',
+						content: '',
+						closingContent: '',
+					},
+				};
 			}
 
 			const songNumberNumber = parseInt(songNumber[0], 10);
