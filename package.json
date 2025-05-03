@@ -6,7 +6,10 @@
   "scripts": {
     "start": "nodemon",
     "format": "prettier . --write",
-    "build": "tsc"
+    "build": "tsc",
+    "docker:build": "docker build -t dkr-reg.home.leaflex.site/$(node -p \"require('./package.json').name\"):latest .",
+    "docker:push": "docker push dkr-reg.home.leaflex.site/$(node -p \"require('./package.json').name\"):latest",
+    "docker:buildnpush": "npm run docker:build && npm run docker:push"
   },
   "devDependencies": {
     "@types/express": "^4.17.21",
