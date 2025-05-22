@@ -18,12 +18,12 @@ interface ParagraphData {
 	references: Record<number, string>;
 }
 
-interface QuestionPartData {
+export interface QuestionPartData {
 	label?: string;
 	text: string;
 }
 
-type QuestionData = {
+export type QuestionData = {
 	pNumbers: number[];
 	rawQuestionTxt: string;
 	parts: QuestionPartData[];
@@ -79,7 +79,7 @@ function extractTeachBlock($: CheerioAPI): TeachBlock {
  * @param question The question element containing the text to parse
  * @returns Parsed question data
  */
-function extractQuestionData(question: ReturnType<CheerioAPI>): QuestionData {
+export function extractQuestionData(question: ReturnType<CheerioAPI>): QuestionData {
 	const rawQuestionTxt = cleanText(question.text());
 	const pNumbers: number[] = [];
 
