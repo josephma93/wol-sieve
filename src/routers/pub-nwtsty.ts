@@ -121,33 +121,6 @@ pubNwtstyRouter.get('/', validateLinksMiddleware, async function (req: Request, 
 });
 
 /**
- * Fills missing shared mnemonic references in the entries.
- *
- * @param entries - The entries to fill.
- * @param sharedMnemonicReferences - The shared mnemonic references to fill.
- * @returns The entries with filled missing shared mnemonic references.
- */
-function fillMissingSharedMnemonicReferences(
-	entries: BiblicalPassageRefEntry[],
-	sharedMnemonicReferences: BiblicalBookReferenceData['sharedMnemonicReferences'],
-) {
-	return entries.map((entry) => {
-		return {
-			...entry,
-			references: entry.references.map((reference) => {
-				return {
-					...reference,
-					refContents:
-						reference.refContents === null
-							? sharedMnemonicReferences[reference.mnemonic]
-							: reference.refContents,
-				};
-			}),
-		};
-	});
-}
-
-/**
  * Extracts all Bible references and groups them by LLM token count for easier consumption.
  * If no links are provided, links are fetched from the weekly Bible reading assignment.
  *
