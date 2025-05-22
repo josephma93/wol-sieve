@@ -5,6 +5,7 @@ import { CheerioAPI } from 'cheerio';
 import { cleanText } from '../../data-extraction/generic.js';
 import { extractPubNwtstyReferenceAsText } from '../../data-extraction/extractors-as-text.js';
 import { getHtmlContent } from '../../data-fetching/raw.js';
+import { get_encoding } from 'tiktoken';
 
 const log = logger.child({ ...logger.bindings(), label: 'pub-w-nwtsty' });
 
@@ -68,13 +69,14 @@ function pickRelevantDOMData($: CheerioAPI): SectionDataForProcess[] {
 
 interface RefEntry {
 	mnemonic: string;
-	refContents: string;
+	refContents: string | null;
 }
 
 interface BiblicalPassageRefEntry {
 	citation: string;
 	scripture: string;
 	references: RefEntry[];
+	referenceTokenCount: number;
 }
 
 interface BiblicalBookReferenceData {
@@ -94,6 +96,18 @@ interface MnemonicExtractionTrackingData {
 }
 
 declare type MnemonicDataFetchingPromises = MnemonicExtractionTrackingData['operationPromise'][];
+
+/**
+ * Compute how make AI tokes the given string has.
+ * @param {string} text String to token out
+ * @returns {number} Number of tokes for the given string.
+ */
+function computeNumberOfTokensForString(text: string): number {
+	const encoding = get_encoding('o200k_base');
+	let tokenCount = encoding.encode(text).length;
+	encoding.free();
+	return tokenCount;
+}
 
 /**
  * Parses the Bible reference from the provided HTML content.
@@ -165,26 +179,31 @@ async function _extractBibleReferences(html: string): Promise<BiblicalBookRefere
 				return new RegExp(`^[^\d-]*${sectionKey}(?!\\d)`).test($(el).attr('id') ?? '');
 			});
 			const scripture = extractPubNwtstyReferenceAsText(matchingElements, $);
+			let referenceTokenCount = 0;
 
 			const references = referenceDataInAnchors.map(({ mnemonic }) => {
 				const trackingObj = mnemonicExtractionTracking.get(mnemonic)!;
-				let refContents = trackingObj.refContents;
+				referenceTokenCount += computeNumberOfTokensForString(trackingObj.refContents);
 
 				if (trackingObj.seenCounter > 1) {
-					sharedMnemonicReferences[mnemonic] = refContents;
-					refContents = `SEE: sharedMnemonicReferences["${mnemonic}"]`;
+					sharedMnemonicReferences[mnemonic] = trackingObj.refContents;
+					return {
+						mnemonic,
+						refContents: null,
+					};
+				} else {
+					return {
+						mnemonic,
+						refContents: trackingObj.refContents,
+					};
 				}
-
-				return {
-					mnemonic,
-					refContents,
-				};
 			});
 
 			entries.push({
 				citation: sectionTitle,
 				scripture,
 				references,
+				referenceTokenCount,
 			});
 
 			return { entries, sharedMnemonicReferences };
