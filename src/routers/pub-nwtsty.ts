@@ -8,11 +8,10 @@ const log = logger.child({ ...logger.bindings(), label: 'pub-w-nwtsty' });
 
 export const pubNwtstyRouter = express();
 
-// Extend the Request interface to include custom properties
 declare module 'express' {
 	interface Request {
 		validatedLinks?: string[];
-		tokenLimit?: number; // Add tokenLimit to the Request interface
+		tokenLimit?: number;
 	}
 }
 
@@ -104,9 +103,7 @@ async function validateTokenLimitMiddleware(req: Request, res: Response, next: N
  */
 pubNwtstyRouter.get('/', validateLinksMiddleware, async function (req: Request, res: Response) {
 	try {
-		// Access validated links from the request object
 		const links = req.validatedLinks as string[];
-
 		const extractionResult = await extractReferencesFromLinks(links);
 
 		return res.status(200).json(extractionResult);
@@ -133,11 +130,8 @@ pubNwtstyRouter.get(
 	async function (req: Request, res: Response) {
 		try {
 			const links = req.validatedLinks as string[];
-
 			const dynamicTokenLimit = req.tokenLimit as number;
-
 			const linkExtractionResult = (await extractReferencesFromLinks(links)).results;
-
 			const clusteredResults = clusterBiblicalPassageEntries(linkExtractionResult, dynamicTokenLimit);
 
 			return res.status(200).json(clusteredResults);
