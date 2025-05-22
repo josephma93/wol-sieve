@@ -72,14 +72,14 @@ interface RefEntry {
 	refContents: string | null;
 }
 
-interface BiblicalPassageRefEntry {
+export interface BiblicalPassageRefEntry {
 	citation: string;
 	scripture: string;
 	references: RefEntry[];
 	referenceTokenCount: number;
 }
 
-interface BiblicalBookReferenceData {
+export interface BiblicalBookReferenceData {
 	entries: BiblicalPassageRefEntry[];
 	sharedMnemonicReferences: Record<string, string>;
 }
@@ -217,7 +217,7 @@ async function _extractBibleReferences(html: string): Promise<BiblicalBookRefere
 
 const extractBibleReferences = wrapAsyncOp(_extractBibleReferences);
 
-interface NwtstyReferenceDataResult extends BiblicalBookReferenceData {
+export interface NwtstyReferenceDataResult extends BiblicalBookReferenceData {
 	link: string;
 }
 
