@@ -1,11 +1,7 @@
 import { logger, opErrored } from '../kernel/index.js';
 import express, { Request, Response, NextFunction } from 'express';
 import { buildDefaultLinks, isValidWolBibleBookUrl } from '../scrappers/pub-nwtsty/extras.js';
-import {
-	BiblicalBookReferenceData,
-	BiblicalPassageRefEntry,
-	extractReferencesFromLinks,
-} from '../scrappers/pub-nwtsty/pub-nwtsty.js';
+import { extractReferencesFromLinks } from '../scrappers/pub-nwtsty/pub-nwtsty.js';
 import { clusterBiblicalPassageEntries } from '../services/pub-nwtsty.js';
 
 const log = logger.child({ ...logger.bindings(), label: 'pub-w-nwtsty' });
