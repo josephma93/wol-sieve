@@ -4,10 +4,10 @@ import { CheerioAPI } from 'cheerio';
 const log = logger.child({ ...logger.bindings(), label: 'dom-validation' });
 
 /**
- * Validate that the given selection is a h3 element.
+ * Validate that the given selection matches the provided CSS selector.
  * @param selection The selection to check.
  * @param selector The selector to assert against.
- * @throws {Error} If the selection is not a h3 element.
+ * @throws {Error} If the selection does not match the selector.
  */
 export function assertSelectionIs(selection: ReturnType<CheerioAPI>, selector: string) {
 	if (!selection.is(selector)) {

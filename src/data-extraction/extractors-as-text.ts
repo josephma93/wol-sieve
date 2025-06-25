@@ -52,7 +52,7 @@ export function extractPubNwtstyReferenceAsText(
 	context.find('.sz').each((_, el) => {
 		const element = $(el);
 		const previousText = element.prev().text();
-		// Fix por padding spacing
+		// Fix for padding spacing
 		if (previousText && !/\s$/.test(previousText) && !/^\s/.test(element.text())) {
 			element.prepend(' ');
 		}
