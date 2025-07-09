@@ -24,6 +24,7 @@ import {
 	detectReferenceDataType,
 	fetchAnchorReferenceData,
 	isJsonContentAcceptableForReferenceExtraction,
+	PublicationRefDetectionData,
 } from '../../data-extraction/reference-json-commons.js';
 
 const log = logger.child({ ...logger.bindings(), label: 'pub-mwb-scraper' });
@@ -47,12 +48,18 @@ interface TalkPoint {
 	footnotes: number[];
 }
 
+interface CitationData extends PublicationRefDetectionData {
+	mnemonic: string;
+	footnoteNumber: number;
+}
+
 interface TreasuresTalkData {
 	sectionNumber: number;
 	timeBox: number;
 	heading: string;
 	points: TalkPoint[];
 	footnotes: Record<number, string>;
+	citations: CitationData[];
 }
 
 interface AnswerSource {
@@ -372,6 +379,7 @@ export async function extractTreasuresTalk(input: ExtractionInput): Promise<Trea
 		heading: headlineData.headline,
 		points: [],
 		footnotes: {},
+		citations: [],
 	};
 
 	const $points = $treasuresTalkSelection.find(`> div > p`);
@@ -401,6 +409,15 @@ export async function extractTreasuresTalk(input: ExtractionInput): Promise<Trea
 			}
 			result.footnotes[footnoteKey] = opRes.res.parsedContent;
 			talkPoint.footnotes.push(footnoteKey);
+			result.citations.push({
+				mnemonic: refText,
+				footnoteNumber: footnoteKey,
+				isPubW: opRes.res.isPubW,
+				isPubNwtsty: opRes.res.isPubNwtsty,
+				isPubG: opRes.res.isPubG,
+				issueName: opRes.res.issueName,
+				itemTitle: opRes.res.itemTitle,
+			});
 			log.debug(`Added footnote [${footnoteKey}] for reference: [${refText}]`);
 		}
 

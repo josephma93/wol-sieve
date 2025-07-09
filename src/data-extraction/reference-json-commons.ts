@@ -42,6 +42,7 @@ export interface BasePublicationItem {
 	categories: string[];
 	pubType: string;
 	publicationTitle: string;
+	source: string;
 }
 
 /**
@@ -82,6 +83,9 @@ export interface DefaultPublicationRefResponse extends BasePublicationRefRespons
 export interface PublicationRefDetectionData {
 	isPubW: boolean;
 	isPubNwtsty: boolean;
+	isPubG: boolean;
+	issueName: string;
+	itemTitle: string;
 }
 
 /**
@@ -134,8 +138,12 @@ export function detectReferenceDataType(itemData: BasePublicationItem): Publicat
 	const articleClasses = itemData.articleClasses;
 	const isPubW = new RegExp(`\\b${CONSTANTS.PUB_CODE_WATCHTOWER}\\b`, 'i').test(articleClasses);
 	const isPubNwtsty = new RegExp(`\\b${CONSTANTS.PUB_CODE_BIBLE}\\b`, 'i').test(articleClasses);
+	const isPubG = new RegExp(`\\b${CONSTANTS.PUB_CODE_AWAKE}\\b`, 'i').test(articleClasses);
 	return {
 		isPubW,
 		isPubNwtsty,
+		isPubG,
+		issueName: isPubNwtsty ? itemData.source : itemData.publicationTitle,
+		itemTitle: itemData.title,
 	};
 }
