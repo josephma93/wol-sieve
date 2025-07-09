@@ -4,24 +4,22 @@ This document summarises conventions and practices used within the **wol-sieve**
 
 ## Directory layout
 
-- `src/` – TypeScript source files.
-- `dist/` – Compiled output produced by `npm run build`.
-- `node_modules/` – Package dependencies (not committed).
-- Configuration files such as [`.prettierrc`](./.prettierrc),
-  [`tsconfig.json`](./tsconfig.json), [`nodemon.json`](./nodemon.json) and
-  [`.nvmrc`](./.nvmrc) live in the project root.
+-   `src/` – TypeScript source files.
+-   `dist/` – Compiled output produced by `npm run build`.
+-   `node_modules/` – Package dependencies (not committed).
+-   Configuration files such as [`.prettierrc`](./.prettierrc),
+    [`tsconfig.json`](./tsconfig.json) and [`.nvmrc`](./.nvmrc) live in the project root.
 
 ## Tooling
 
-- **Node.js** version specified in [`.nvmrc`](./.nvmrc) (`v22.8.0`).
-- The project is written in TypeScript and compiled with `tsc` (`npm run build`).
-- `nodemon` watches the `src` folder for development and runs formatting and compilation automatically before executing the built code.
-- `prettier` formats the codebase (`npm run format`).
+-   **Node.js** version specified in [`.nvmrc`](./.nvmrc) (`v22.8.0`).
+-   The project is written in TypeScript and compiled with `tsc` (`npm run build`).
+-   `nodemon` watches the `src` folder for development and runs formatting and compilation automatically before executing the built code.
+-   `prettier` formats the codebase (`npm run format`).
 
 ## Formatting rules
 
 Prettier settings are defined in [`.prettierrc`](./.prettierrc). It uses tabs with a width of four spaces and enforces trailing commas and single quotes. JSON and YAML files override these settings to use spaces, and Dockerfiles use two spaces and double quotes.
-
 
 ## TypeScript configuration
 
@@ -47,19 +45,19 @@ The utility `wrapAsyncOp` converts async functions into ones that return a `{err
 
 ```ts
 export function wrapAsyncOp<T, A extends any[]>(
-    asyncFunc: (...args: A) => Promise<T | Error>,
+	asyncFunc: (...args: A) => Promise<T | Error>,
 ): (...args: A) => Promise<{ err: Error | null; res: T | null }> {
-    return async function (...args: A) {
-        try {
-            const result = await asyncFunc(...args);
-            if (result instanceof Error) {
-                return { err: result, res: null };
-            }
-            return { err: null, res: result };
-        } catch (error) {
-            return { err: error as Error, res: null };
-        }
-    };
+	return async function (...args: A) {
+		try {
+			const result = await asyncFunc(...args);
+			if (result instanceof Error) {
+				return { err: result, res: null };
+			}
+			return { err: null, res: result };
+		} catch (error) {
+			return { err: error as Error, res: null };
+		}
+	};
 }
 ```
 
@@ -71,16 +69,16 @@ Common Express logic lives in `src/kernel/express-generics.ts`. Notable helpers 
 
 ```ts
 export function addGetAndPostScrappingRoute({
-    router,
-    path,
-    defaultHtmlGenerator,
-    scrapperOperation,
+	router,
+	path,
+	defaultHtmlGenerator,
+	scrapperOperation,
 }: GetAndPostRouteSettings) {
-    // middleware then handler
-    router
-        .route(path)
-        .post(fillHtmlContentMiddleware, scrapperMiddleware)
-        .get(fillHtmlContentMiddleware, scrapperMiddleware);
+	// middleware then handler
+	router
+		.route(path)
+		.post(fillHtmlContentMiddleware, scrapperMiddleware)
+		.get(fillHtmlContentMiddleware, scrapperMiddleware);
 }
 ```
 

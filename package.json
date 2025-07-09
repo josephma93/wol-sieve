@@ -4,9 +4,12 @@
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
-    "start": "nodemon",
-    "format": "prettier . --write",
+    "start": "./run.sh start",
+    "start:debug": "./run.sh debug",
+    "start:inspect": "./run.sh inspect",
     "build": "tsc",
+    "serve": "./run.sh serve",
+    "format": "prettier . --write",
     "docker:build": "docker build -t dkr-reg.home.leaflex.site/$(node -p \"require('./package.json').name\"):latest .",
     "docker:push": "docker push dkr-reg.home.leaflex.site/$(node -p \"require('./package.json').name\"):latest",
     "docker:buildnpush": "npm run docker:build && npm run docker:push"
