@@ -1,7 +1,7 @@
 import { logger, CONSTANTS } from '../../kernel/index.js';
 import * as cheerio from 'cheerio';
 import { CheerioAPI } from 'cheerio';
-import { ExtractionInput, processExtractionInput } from '../generics.js';
+import { ExtractionContextOptions, createExtractionContext } from '../generics.js';
 import { parsePubSjj, PubSjjParsedData } from '../../data-extraction/extractors-as-obj.js';
 import { opErrored } from '../../kernel/index.js';
 import {
@@ -139,9 +139,9 @@ interface FullWeekProgramData {
  * @returns The extracted data.
  * @throws {Error} If the extraction fails.
  */
-export function extractWeekDateSpan(input: ExtractionInput): string {
+export function extractWeekDateSpan(input: ExtractionContextOptions): string {
 	log.info('Starting to extract week date span');
-	const { $ } = processExtractionInput(input);
+	const { $ } = createExtractionContext(input);
 	const $el = getCheerioSelectionOrThrow($, '#p1');
 	const result = $el.text().toLowerCase();
 	log.info(`Extracted week date span: [${result}]`);
@@ -154,9 +154,9 @@ export function extractWeekDateSpan(input: ExtractionInput): string {
  * @returns The extracted data.
  * @throws {Error} If the extraction fails.
  */
-export function extractSongData(input: ExtractionInput): Promise<SongData[]> {
+export function extractSongData(input: ExtractionContextOptions): Promise<SongData[]> {
 	input.selectionBuilder = ($) => getAndValidateSongSelections($).songs;
-	const { $, selection: $songsSelection } = processExtractionInput(input);
+	const { $, selection: $songsSelection } = createExtractionContext(input);
 	const $songAnchors = $songsSelection.map((_, anchor) => $(anchor).find('a'));
 	if ($songAnchors.length !== 3) {
 		const msg = `Expected 3 song anchors, found [${$songAnchors.length}]. The document structure may have changed.`;
@@ -215,7 +215,7 @@ export function extractSongData(input: ExtractionInput): Promise<SongData[]> {
  * @returns The extracted data.
  * @throws {Error} If the extraction fails.
  */
-export async function extractWeeklyBibleRead(input: ExtractionInput): Promise<WeeklyBibleReadData> {
+export async function extractWeeklyBibleRead(input: ExtractionContextOptions): Promise<WeeklyBibleReadData> {
 	function extractBookNameFromTooltipCaption(caption: string) {
 		const pattern = /^(.*?)(?=\d+:)/;
 		const match = caption.match(pattern);
@@ -228,7 +228,7 @@ export async function extractWeeklyBibleRead(input: ExtractionInput): Promise<We
 	}
 
 	log.info('Starting to extract Bible read data');
-	const { $ } = processExtractionInput(input);
+	const { $ } = createExtractionContext(input);
 	const $anchorSelection = getCheerioSelectionOrThrow($, '#p2 a');
 
 	const result: WeeklyBibleReadData = {
@@ -364,11 +364,11 @@ function getTimeBoxFromElement($selection: ReturnType<CheerioAPI>): number {
  * @returns The extracted data.
  * @throws {Error} If the extraction fails.
  */
-export async function extractTreasuresTalk(input: ExtractionInput): Promise<TreasuresTalkData> {
+export async function extractTreasuresTalk(input: ExtractionContextOptions): Promise<TreasuresTalkData> {
 	log.info('Extracting treasures talk data');
 
 	input.selectionBuilder = ($) => buildGodsTreasuresSelections($).treasuresTalk;
-	const { selection: $treasuresTalkSelection } = processExtractionInput(input);
+	const { selection: $treasuresTalkSelection } = createExtractionContext(input);
 	const headlineData = parseSectionHeadlineDataFromElement(
 		$treasuresTalkSelection.find(CONSTANTS.PUB_MWB_CSS_SELECTOR_LINE_WITH_SECTION_NUMBER),
 	);
@@ -513,11 +513,11 @@ function getSurroundedLinksAtFarRight(element: ReturnType<CheerioAPI>, $: Cheeri
  * @returns The extracted data.
  * @throws {Error} If the extraction fails.
  */
-export async function extractSpiritualGems(input: ExtractionInput): Promise<SpiritualGemsData> {
+export async function extractSpiritualGems(input: ExtractionContextOptions): Promise<SpiritualGemsData> {
 	log.info('Extracting spiritual gems data');
 
 	input.selectionBuilder = ($) => buildGodsTreasuresSelections($).spiritualGems;
-	const { selection: $spiritualGemsSelection } = processExtractionInput(input);
+	const { selection: $spiritualGemsSelection } = createExtractionContext(input);
 	const $content = $spiritualGemsSelection.eq(1);
 
 	const printedQuestionData: PrintedQuestion = {
@@ -583,11 +583,11 @@ export async function extractSpiritualGems(input: ExtractionInput): Promise<Spir
  * @returns The extracted data.
  * @throws {Error} If the extraction fails.
  */
-export async function extractBibleRead(input: ExtractionInput): Promise<BibleReadData> {
+export async function extractBibleRead(input: ExtractionContextOptions): Promise<BibleReadData> {
 	log.info('Extracting Bible reading data');
 
 	input.selectionBuilder = ($) => buildGodsTreasuresSelections($).bibleRead;
-	const { selection: $bibleReadSelection } = processExtractionInput(input);
+	const { selection: $bibleReadSelection } = createExtractionContext(input);
 	const $content = $bibleReadSelection.eq(1);
 	const headlineData = parseSectionHeadlineDataFromElement($bibleReadSelection.eq(0));
 	const result = {
@@ -663,7 +663,7 @@ function buildHeadlineToContentGroups(contentSelection: ReturnType<CheerioAPI>, 
  * @returns The extracted data.
  * @throws {Error} If the extraction fails.
  */
-export async function extractFieldMinistry(input: ExtractionInput): Promise<FieldMinistryAssignmentData[]> {
+export async function extractFieldMinistry(input: ExtractionContextOptions): Promise<FieldMinistryAssignmentData[]> {
 	function extractBetweenParentheses(text: string) {
 		const extractRegex = /\)\s*\s*(.*?)\s*(?=\s*\()/;
 		const match = text.match(extractRegex);
@@ -675,7 +675,7 @@ export async function extractFieldMinistry(input: ExtractionInput): Promise<Fiel
 
 	log.info('Extracting field ministry data');
 	input.selectionBuilder = ($) => buildFieldMinistrySelections($).fieldMinistry;
-	const { $, selection: $fieldMinistrySelection } = processExtractionInput(input);
+	const { $, selection: $fieldMinistrySelection } = createExtractionContext(input);
 	const assignmentGroups = buildHeadlineToContentGroups($fieldMinistrySelection, $);
 
 	const promises = assignmentGroups.map(async ({ heading, contents: [assignmentContents] }) => {
@@ -728,7 +728,7 @@ export async function extractFieldMinistry(input: ExtractionInput): Promise<Fiel
  * @returns The extracted data.
  * @throws {Error} If the extraction fails.
  */
-export function extractChristianLiving(input: ExtractionInput): ChristianLivingSectionData[] {
+export function extractChristianLiving(input: ExtractionContextOptions): ChristianLivingSectionData[] {
 	function polishElementText($el: ReturnType<CheerioAPI>) {
 		let result = $el.text();
 		result = cleanText(result);
@@ -738,7 +738,7 @@ export function extractChristianLiving(input: ExtractionInput): ChristianLivingS
 
 	log.info('Extracting Christian Living section data');
 	input.selectionBuilder = ($) => buildChristianLivingSelections($).christianLiving;
-	const { $, selection: $christianLivingSelection } = processExtractionInput(input);
+	const { $, selection: $christianLivingSelection } = createExtractionContext(input);
 	const sectionGroups = buildHeadlineToContentGroups($christianLivingSelection, $);
 
 	return sectionGroups.map(({ heading, contents }) => {
@@ -760,10 +760,10 @@ export function extractChristianLiving(input: ExtractionInput): ChristianLivingS
  * @returns The extracted data.
  * @throws {Error} If the extraction fails.
  */
-export function extractBibleStudy(input: ExtractionInput): CongregationBibleStudyData {
+export function extractBibleStudy(input: ExtractionContextOptions): CongregationBibleStudyData {
 	log.info('Extracting Bible study section data');
 	input.selectionBuilder = ($) => buildChristianLivingSelections($).bibleStudy;
-	const { $, selection: $bibleStudySelection } = processExtractionInput(input);
+	const { $, selection: $bibleStudySelection } = createExtractionContext(input);
 	const headlineData = parseSectionHeadlineDataFromElement($bibleStudySelection.eq(0));
 
 	const result: CongregationBibleStudyData = {
@@ -791,9 +791,9 @@ export function extractBibleStudy(input: ExtractionInput): CongregationBibleStud
  * @returns The extracted data.
  * @throws {Error} If the extraction fails.
  */
-export async function extractFullWeekProgram(input: ExtractionInput): Promise<FullWeekProgramData> {
+export async function extractFullWeekProgram(input: ExtractionContextOptions): Promise<FullWeekProgramData> {
 	log.info('Starting full week program extraction');
-	const inputObj = processExtractionInput(input);
+	const inputObj = createExtractionContext(input);
 	const { $ } = inputObj;
 	const programGroups = buildRelevantProgramGroupSelections($);
 

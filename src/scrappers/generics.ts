@@ -4,14 +4,14 @@ import * as cheerio from 'cheerio';
 
 const log = logger.child({ ...logger.bindings(), label: 'scraper-generics' });
 
-export interface ExtractionInput {
+export interface ExtractionContextOptions {
 	$?: CheerioAPI;
 	html?: string;
 	selection?: ReturnType<CheerioAPI>;
 	selectionBuilder?: ($: CheerioAPI) => ReturnType<CheerioAPI>;
 }
 
-interface ExtractorInputWithDefaults extends ExtractionInput {
+interface ExtractionContext extends ExtractionContextOptions {
 	$: CheerioAPI;
 	html: string;
 	selection: ReturnType<CheerioAPI>;
@@ -23,7 +23,7 @@ interface ExtractorInputWithDefaults extends ExtractionInput {
  * @returns The input object with the default values filled in.
  * @throws If something is wrong with the input.
  */
-export function processExtractionInput(input: ExtractionInput): ExtractorInputWithDefaults {
+export function createExtractionContext(input: ExtractionContextOptions): ExtractionContext {
 	let { $, html, selection, selectionBuilder } = input;
 
 	const isCheerioProvided = !!$;

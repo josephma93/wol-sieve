@@ -1,4 +1,4 @@
-import { ExtractionInput, processExtractionInput } from '../generics.js';
+import { ExtractionContextOptions, createExtractionContext } from '../generics.js';
 import { CheerioAPI } from 'cheerio';
 import { cleanText } from '../../data-extraction/generic.js';
 import { CONSTANTS, logger, opErrored, wrapAsyncOp } from '../../kernel/index.js';
@@ -162,9 +162,9 @@ async function parseLesson($: CheerioAPI, $article: ReturnType<CheerioAPI>): Pro
 	};
 }
 
-export async function extractLfbContents(input: ExtractionInput): Promise<LfbItem> {
+export async function extractLfbContents(input: ExtractionContextOptions): Promise<LfbItem> {
 	log.debug('Starting LFB content extraction...');
-	const cc = processExtractionInput({ ...input, selectionBuilder: ($) => $('#article') });
+	const cc = createExtractionContext({ ...input, selectionBuilder: ($) => $('#article') });
 	const $article = cc.selection;
 	let result: LfbItem;
 	if (detectHasGbLetter($article)) {

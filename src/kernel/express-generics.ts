@@ -3,7 +3,7 @@ import { logger } from './logger.js';
 import http, { Server } from 'http';
 import { Application, Express, NextFunction, Request, Response, Router } from 'express';
 import { AsyncOperationResult, opErrored } from './async-ops.js';
-import { ExtractionInput } from '../scrappers/generics.js';
+import { ExtractionContextOptions } from '../scrappers/generics.js';
 
 const log = logger.child({ ...logger.bindings(), label: 'express-generics' });
 
@@ -96,7 +96,7 @@ export function addPingEndpoint(app: Application): void {
 	app.get('/ping', (_: Request, res: Response) => res.send('pong'));
 }
 
-export declare type ScrapperMethod = (input: ExtractionInput) => Promise<any> | any;
+export declare type ScrapperMethod = (input: ExtractionContextOptions) => Promise<any> | any;
 
 export declare type GetAndPostRouteSettings = {
 	router: Router;

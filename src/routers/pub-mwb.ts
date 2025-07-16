@@ -13,7 +13,7 @@ import {
 	extractWeekDateSpan,
 	extractWeeklyBibleRead,
 } from '../scrappers/pub-mwb/pub-mwb.js';
-import { ExtractionInput } from '../scrappers/generics.js';
+import { ExtractionContextOptions } from '../scrappers/generics.js';
 import { getHtmlContent } from '../data-fetching/raw.js';
 
 export const pubMwbRouter = express.Router();
@@ -49,7 +49,7 @@ async function fetchHtmlFromSourceUrl(req: Request, res: Response, next: NextFun
 	next();
 }
 
-declare type ScrapperMethod = (input: ExtractionInput) => Promise<any> | any;
+declare type ScrapperMethod = (input: ExtractionContextOptions) => Promise<any> | any;
 
 function handleRequest(scrapperOperation: ScrapperMethod) {
 	return async function scrapperMiddleware(_: Request, res: Response) {

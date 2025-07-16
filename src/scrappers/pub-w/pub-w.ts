@@ -1,5 +1,5 @@
 import { CONSTANTS, logger, opErrored } from '../../kernel/index.js';
-import { ExtractionInput, processExtractionInput } from '../generics.js';
+import { ExtractionContextOptions, createExtractionContext } from '../generics.js';
 import { CheerioAPI } from 'cheerio';
 import { fetchAndParseAnchorReferenceOrThrow } from '../../data-fetching/reference-json.js';
 import { cleanText, getCheerioSelectionOrThrow } from '../../data-extraction/generic.js';
@@ -272,8 +272,8 @@ async function extractContents($: CheerioAPI): Promise<ContentData[]> {
  * @returns The extracted data.
  * @throws {Error} If the extraction fails.
  */
-export async function extractArticleContents(input: ExtractionInput): Promise<WatchtowerArticleData> {
-	const { $ } = processExtractionInput(input);
+export async function extractArticleContents(input: ExtractionContextOptions): Promise<WatchtowerArticleData> {
+	const { $ } = createExtractionContext(input);
 
 	const articleNumber = cleanText($(CONSTANTS.PUB_W_CSS_SELECTOR_ARTICLE_NUMBER).text());
 	const articleTitle = cleanText($(CONSTANTS.PUB_W_CSS_SELECTOR_ARTICLE_TITLE).text());
