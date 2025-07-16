@@ -24,6 +24,7 @@
   "dependencies": {
     "cheerio": "^1.0.0",
     "express": "^4.21.0",
+    "markify-ts": "^0.0.18",
     "pino": "^9.4.0",
     "pino-http": "^10.3.0",
     "tiktoken": "^1.0.21"

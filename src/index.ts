@@ -5,6 +5,7 @@ import { wolRouter } from './routers/index.js';
 import { pubMwbRouter } from './routers/pub-mwb.js';
 import { pubWRouter } from './routers/pub-w.js';
 import { pubNwtstyRouter } from './routers/pub-nwtsty.js';
+import { pubLfbRouter } from './routers/pub-lfb.js';
 
 const app = express();
 
@@ -37,6 +38,7 @@ app.get('/', (_, res) => {
 		<li><a href="/pub-w/">GET /pub-w/</a></li>
 		<li><a href="/pub-w/html">GET & POST /pub-w/html</a></li>
 		<li><a href="/pub-nwtsty/">GET & POST /pub-nwtsty/</a></li>
+		<li><a href="/pub-lfb/">GET /pub-nwtsty/</a></li>
 	</ul>
 </body>
 </html>`);
@@ -45,6 +47,7 @@ app.use('/wol', wolRouter);
 app.use('/pub-mwb', pubMwbRouter);
 app.use('/pub-w', pubWRouter);
 app.use('/pub-nwtsty', pubNwtstyRouter);
+app.use('/pub-lfb', pubLfbRouter);
 
 addPingEndpoint(app);
 startServer({ app });

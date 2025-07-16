@@ -111,7 +111,7 @@ interface ChristianLivingSectionData {
 	contents: string;
 }
 
-interface CongregationBibleStudyData {
+export interface CongregationBibleStudyData {
 	sectionNumber: number;
 	timeBox: number;
 	headline: string;
