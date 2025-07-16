@@ -100,9 +100,10 @@ function findAndBuildCitation($: CheerioAPI, foo: ReturnType<CheerioAPI>, seedTe
 }
 
 async function parseLesson($: CheerioAPI, $article: ReturnType<CheerioAPI>): Promise<LfbItem> {
-	const number = Number(cleanText($article.find(CONSTANTS.PUB_LFB_CSS_SELECTOR_SECTION_INTRO_HEADLINE).text())) || 0;
-	log.debug(`Parsing lesson number: [${number}]`);
-	const title = cleanText($article.find().text(CONSTANTS.PUB_LFB_CSS_SELECTOR_LESSON_TITLE_SELECTOR));
+	const lessonNumberText = cleanText($article.find(CONSTANTS.PUB_LFB_CSS_SELECTOR_SECTION_INTRO_HEADLINE).text());
+	log.debug(`Parsing lesson number text: [${lessonNumberText}]`);
+	const number = parseInt(lessonNumberText.replace(/\D/g, ''), 10);
+	const title = cleanText($article.find(CONSTANTS.PUB_LFB_CSS_SELECTOR_LESSON_TITLE_SELECTOR).text());
 	const contents = await markify({
 		htmlContent: $article.find(CONSTANTS.PUB_LFB_CSS_SELECTOR_BODY_SELECTOR).html() ?? '',
 	});
