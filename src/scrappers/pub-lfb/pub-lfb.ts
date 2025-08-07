@@ -106,16 +106,19 @@ async function parseLesson($: CheerioAPI, $article: ReturnType<CheerioAPI>): Pro
 	const title = cleanText($article.find(CONSTANTS.PUB_LFB_CSS_SELECTOR_LESSON_TITLE_SELECTOR).text());
 	const contents = await markify({
 		htmlContent: $article.find(CONSTANTS.PUB_LFB_CSS_SELECTOR_BODY_SELECTOR).html() ?? '',
+		ignoreSelectors: CONSTANTS.PUB_LFB_MARKIFY_CSS_SELECTORS_TO_IGNORE,
+		ignoreHiddenElements: true,
 	});
+	const lessonContentsAsMd = contents.markdown.replace(/\s\\(?=\n)/g, '');
 	const figures = $article
 		.find(CONSTANTS.PUB_LFB_CSS_SELECTOR_LESSON_FIGURE_SELECTOR)
 		// This selector matches the cover image too so we just skip it
 		.slice(1)
 		.map((_, imgEl) => {
-			const $img = $(imgEl);
+			const $figure = $(imgEl);
 			return {
-				imgURL: $img.attr('src'),
-				altText: $img.attr('alt'),
+				imgURL: $figure.attr('src'),
+				altText: $figure.attr('alt'),
 			};
 		})
 		.get();
@@ -146,7 +149,7 @@ async function parseLesson($: CheerioAPI, $article: ReturnType<CheerioAPI>): Pro
 			number,
 			title,
 			coverFigure,
-			contents: contents.markdown,
+			contents: lessonContentsAsMd,
 			figures,
 			highlightQuote: {
 				textRaw: highlightQuoteTextRaw,

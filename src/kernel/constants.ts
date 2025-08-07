@@ -18,6 +18,8 @@ function normalizePort(val: string | number): PortNumber {
 	return false;
 }
 
+const GENERAL_CSS_SELECTOR_FOR_FIGURES = 'div[id^="f"]';
+
 export const CONSTANTS = Object.freeze(
 	Object.seal({
 		LOG_LEVEL: process.env.WS_LOG_LEVEL ?? 'info',
@@ -63,7 +65,8 @@ export const CONSTANTS = Object.freeze(
 		PUB_LFB_CSS_SELECTOR_LESSON_NUMBER_SELECTOR: '#p1',
 		PUB_LFB_CSS_SELECTOR_LESSON_TITLE_SELECTOR: '#p2',
 		PUB_LFB_CSS_SELECTOR_LESSON_HIGHLIGHT_QUOTE_SELECTOR: '.blockTxt.rule',
-		PUB_LFB_CSS_SELECTOR_LESSON_FIGURE_SELECTOR: 'div[id^="f"]',
+		PUB_LFB_CSS_SELECTOR_LESSON_FIGURE_SELECTOR: GENERAL_CSS_SELECTOR_FOR_FIGURES + ' img',
+		PUB_LFB_MARKIFY_CSS_SELECTORS_TO_IGNORE: [GENERAL_CSS_SELECTOR_FOR_FIGURES],
 		PUB_LFB_CSS_SELECTOR_LESSON_QUESTIONS_SELECTOR: '.boxSupplement .boxContent p:first-child',
 		PUB_LFB_CSS_SELECTOR_LESSON_CITATIONS_SELECTOR: '.boxSupplement .boxContent p:not(:first-child)',
 	}),

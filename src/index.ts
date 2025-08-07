@@ -38,7 +38,7 @@ app.get('/', (_, res) => {
 		<li><a href="/pub-w/">GET /pub-w/</a></li>
 		<li><a href="/pub-w/html">GET & POST /pub-w/html</a></li>
 		<li><a href="/pub-nwtsty/">GET & POST /pub-nwtsty/</a></li>
-		<li><a href="/pub-lfb/">GET /pub-nwtsty/</a></li>
+		<li><a href="/pub-lfb/">GET /pub-lfb/</a></li>
 	</ul>
 </body>
 </html>`);
