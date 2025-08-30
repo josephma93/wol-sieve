@@ -6,10 +6,12 @@ interface Env {
 	IS_DEV_ENV: boolean;
 	IS_PROD_ENV: boolean;
 	IS_TEST_ENV: boolean;
-	// Add other environment variables as they are identified
 }
 
 const determinedNodeEnv = (process.env.NODE_ENV as Env['NODE_ENV']) || 'development';
+if (!['development', 'production', 'test'].includes(determinedNodeEnv)) {
+	throw new Error(`Invalid NODE_ENV: ${determinedNodeEnv}`);
+}
 
 const env: Env = {
 	NODE_ENV: determinedNodeEnv,
@@ -20,10 +22,5 @@ const env: Env = {
 	IS_PROD_ENV: determinedNodeEnv === 'production',
 	IS_TEST_ENV: determinedNodeEnv === 'test',
 };
-
-// Basic validation (can be expanded)
-if (!['development', 'production', 'test'].includes(env.NODE_ENV)) {
-	throw new Error(`Invalid NODE_ENV: ${env.NODE_ENV}`);
-}
 
 export default env;
