@@ -1,6 +1,7 @@
 import express, { Request, Response, NextFunction } from 'express';
 import { getHtmlContent } from '../data-fetching/raw.js';
 import { logger, opErrored } from '../kernel/index.js';
+import { AppError } from '../kernel/app-error.js';
 import { LfbItem, extractLfbContents, buildDefaultLinks } from '../scrappers/pub-lfb/pub-lfb.js';
 
 const log = logger.child({ ...logger.bindings(), label: 'pub-lfb-router' });
@@ -10,7 +11,7 @@ interface HtmlFetchResult {
 	html: string;
 }
 
-async function validateLinksMiddleware(req: Request, res: Response, next: NextFunction) {
+async function validateLinksMiddleware(req: Request, _res: Response, next: NextFunction) {
 	let { links } = req.query;
 	log.info('Validating links...');
 
@@ -19,7 +20,7 @@ async function validateLinksMiddleware(req: Request, res: Response, next: NextFu
 		const opRes = await buildDefaultLinks();
 		if (opErrored(opRes)) {
 			log.error({ err: opRes.err }, 'Failed to build default links.');
-			res.status(500).json({ error: opRes.err.message });
+			next(new AppError(opRes.err.message, 500, opRes.err));
 			return;
 		}
 		links = opRes.res;
@@ -38,7 +39,7 @@ async function fetchHtmlsMiddleware(req: Request, res: Response, next: NextFunct
 	for (const link of links) {
 		if (!link.includes('wol.jw.org')) {
 			log.warn({ link }, 'Invalid link provided.');
-			return res.status(400).json({ error: `Invalid link: ${link}` });
+			return next(new AppError(`Invalid link: ${link}`, 400, { link }));
 		}
 	}
 
@@ -48,9 +49,12 @@ async function fetchHtmlsMiddleware(req: Request, res: Response, next: NextFunct
 				log.debug({ link }, 'Fetching HTML content for link.');
 				const opRes = await getHtmlContent(link);
 				if (opErrored(opRes)) {
-					const err = new Error(`Error fetching ${link}: ${opRes.err.message}`);
+					const appError = new AppError(`Error fetching ${link}: ${opRes.err.message}`, 500, {
+						originalError: opRes.err,
+						link,
+					});
 					log.error({ err: opRes.err, link }, 'Error fetching content for link.');
-					throw err;
+					throw appError;
 				}
 				log.debug({ link }, 'Successfully fetched HTML for link.');
 				return { link, html: opRes.res };
@@ -62,29 +66,34 @@ async function fetchHtmlsMiddleware(req: Request, res: Response, next: NextFunct
 		next();
 	} catch (error: any) {
 		log.error({ err: error }, 'An error occurred while fetching HTMLs in parallel.');
-		res.status(500).json({ error: error.message });
+		next(new AppError(`An error occurred while fetching HTMLs: ${error.message}`, 500, error));
 	}
 }
 
 export const pubLfbRouter = express.Router();
 
-pubLfbRouter.get('/', validateLinksMiddleware, fetchHtmlsMiddleware, async (_req: Request, res: Response) => {
-	const handlerLog = log.child({ handler: 'main' });
-	handlerLog.info('Extracting content from fetched HTMLs.');
-	try {
-		const htmls: HtmlFetchResult[] = res.locals.htmls;
-		const extractedData: ({ link: string } & LfbItem)[] = await Promise.all(
-			htmls.map(async ({ link, html }) => {
-				handlerLog.debug({ link }, 'Extracting content for link.');
-				const parsed: LfbItem = await extractLfbContents({ html });
-				handlerLog.debug({ link }, 'Successfully extracted content.');
-				return { link, ...parsed };
-			}),
-		);
-		handlerLog.info({ count: extractedData.length }, 'Content extraction complete.');
-		res.json({ results: extractedData });
-	} catch (error: any) {
-		handlerLog.error({ err: error }, 'An error occurred during content extraction.');
-		res.status(500).json({ error: error.message });
-	}
-});
+pubLfbRouter.get(
+	'/',
+	validateLinksMiddleware,
+	fetchHtmlsMiddleware,
+	async (_req: Request, res: Response, next: NextFunction) => {
+		const handlerLog = log.child({ handler: 'main' });
+		handlerLog.info('Extracting content from fetched HTMLs.');
+		try {
+			const htmls: HtmlFetchResult[] = res.locals.htmls;
+			const extractedData: ({ link: string } & LfbItem)[] = await Promise.all(
+				htmls.map(async ({ link, html }) => {
+					handlerLog.debug({ link }, 'Extracting content for link.');
+					const parsed: LfbItem = await extractLfbContents({ html });
+					handlerLog.debug({ link }, 'Successfully extracted content.');
+					return { link, ...parsed };
+				}),
+			);
+			handlerLog.info({ count: extractedData.length }, 'Content extraction complete.');
+			res.json({ results: extractedData });
+		} catch (error: any) {
+			handlerLog.error({ err: error }, 'An error occurred during content extraction.');
+			next(new AppError(`An error occurred during content extraction: ${error.message}`, 500, error));
+		}
+	},
+);

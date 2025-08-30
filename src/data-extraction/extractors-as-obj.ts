@@ -47,7 +47,6 @@ export function parsePubSjj(content: BasePublicationItem['content']): PubSjjPars
 			closingContentRaw,
 			closingContentMatch,
 		});
-		closingContent = null;
 	} else {
 		closingContent = closingContentMatch[1];
 	}

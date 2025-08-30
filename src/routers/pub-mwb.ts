@@ -1,6 +1,7 @@
 import express, { NextFunction, Request, Response } from 'express';
 import { fetchThisWeekMeetingHtml } from '../data-fetching/wol-pages.js';
 import { opErrored } from '../kernel/index.js';
+import { AppError } from '../kernel/app-error.js';
 import {
 	extractBibleRead,
 	extractBibleStudy,
@@ -25,7 +26,7 @@ async function fillHtmlContent(req: Request, res: Response, next: NextFunction) 
 		const opRes = await fetchThisWeekMeetingHtml();
 
 		if (opErrored(opRes)) {
-			return res.status(500).json({ error: opRes.err.message });
+			return next(new AppError(opRes.err.message, 500, opRes.err));
 		}
 
 		html = opRes.res;
@@ -35,13 +36,13 @@ async function fillHtmlContent(req: Request, res: Response, next: NextFunction) 
 	next();
 }
 
-async function fetchHtmlFromSourceUrl(req: Request, res: Response, next: NextFunction) {
+async function fetchHtmlFromSourceUrl(req: Request, _res: Response, next: NextFunction) {
 	const sourceUrl = req.query.source_url as string;
 
 	if (sourceUrl && sourceUrl.includes('wol.jw.org')) {
 		const opRes = await getHtmlContent(sourceUrl);
 		if (opErrored(opRes)) {
-			return res.status(500).json({ error: opRes.err.message });
+			return next(new AppError(opRes.err.message, 500, opRes.err));
 		}
 		req.body.html = opRes.res;
 	}
@@ -52,14 +53,13 @@ async function fetchHtmlFromSourceUrl(req: Request, res: Response, next: NextFun
 declare type ScrapperMethod = (input: ExtractionContextOptions) => Promise<any> | any;
 
 function handleRequest(scrapperOperation: ScrapperMethod) {
-	return async function scrapperMiddleware(_: Request, res: Response) {
+	return async function scrapperMiddleware(_: Request, _res: Response, next: NextFunction) {
 		try {
-			const result = scrapperOperation({ html: res.locals.html });
+			const result = scrapperOperation({ html: _res.locals.html });
 			const data = result instanceof Promise ? await result : result;
-			res.json(data);
-		} catch (error) {
-			const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-			res.status(500).json({ error: errorMessage });
+			_res.json(data);
+		} catch (error: any) {
+			next(new AppError(`Scrapper operation failed: ${error.message}`, 500, error));
 		}
 	};
 }

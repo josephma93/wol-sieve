@@ -1,6 +1,8 @@
 import express, { Request, Response, NextFunction } from 'express';
 import { pinoHttp } from 'pino-http';
 import { logger, addPingEndpoint, startServer } from './kernel/index.js';
+import { AppError } from './kernel/app-error.js';
+import env from './kernel/env.js';
 import { wolRouter } from './routers/index.js';
 import { pubMwbRouter } from './routers/pub-mwb.js';
 import { pubWRouter } from './routers/pub-w.js';
@@ -51,9 +53,23 @@ app.use('/pub-lfb', pubLfbRouter);
 
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
 	logger.error(err);
-	res.status(500).send({
-		message: err.message,
-		...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
+
+	let statusCode = 500;
+	let message = 'Something went wrong!';
+	let details = undefined;
+	let stack = env.IS_DEV_ENV ? err.stack : undefined;
+
+	if (err instanceof AppError) {
+		statusCode = err.statusCode;
+		message = err.message;
+		details = err.details;
+	}
+
+	res.status(statusCode).send({
+		status: err instanceof AppError ? err.status : 'error',
+		message,
+		...(details && { details }),
+		...(stack && { stack }),
 	});
 });
 

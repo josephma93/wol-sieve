@@ -3,18 +3,17 @@ import { cleanText } from './generic.js';
 import { extractQuestionData } from '../scrappers/pub-w/pub-w.js';
 import { QuestionData, QuestionPartData } from '../scrappers/pub-w/pub-w.js';
 import { logger, opErrored, wrapAsyncOp } from '../kernel/index.js';
+import { AppError } from '../kernel/app-error.js';
 import { getHtmlContent } from '../data-fetching/raw.js';
 
 const log = logger.child({ ...logger.bindings(), label: 'article-extractor' });
 
 /**
- * Fetches and extracts question data from a given WOL article URL.
+ * Fetches HTML content from the given URL, loads it into Cheerio, and validates the presence of the #article element.
  * @param url The URL of the article.
- * @returns A promise resolving to an array of extracted question data or an error if the operation failed.
+ * @returns A tuple containing the CheerioAPI object and the #article element, or an Error if any step fails.
  */
-async function _extractArticleQuestionData(
-	url: string,
-): Promise<{ pnumbers: string; question: string; relatedPids: string }[] | Error> {
+async function _fetchAndValidateArticleHtml(url: string): Promise<[cheerio.CheerioAPI] | Error> {
 	const opRes = await getHtmlContent(url);
 
 	if (opErrored(opRes)) {
@@ -29,14 +28,32 @@ async function _extractArticleQuestionData(
 	if (articleElement.length !== 1) {
 		const msg = 'Could not find a single #article element on the page.';
 		log.warn(msg, { found: articleElement.length, url });
-		return new Error(msg);
+		return new AppError(msg, 500);
 	}
 
+	return [$];
+}
+
+/**
+ * Fetches and extracts question data from a given WOL article URL.
+ * @param url The URL of the article.
+ * @returns A promise resolving to an array of extracted question data or an error if the operation failed.
+ */
+async function _extractArticleQuestionData(
+	url: string,
+): Promise<{ pnumbers: string; question: string; relatedPids: string }[] | Error> {
+	const validationResult = await _fetchAndValidateArticleHtml(url);
+	if (validationResult instanceof Error) {
+		return validationResult;
+	}
+	const [$] = validationResult;
+
+	const articleElement = $('#article');
 	const questionElements = articleElement.find('.qu');
 	if (questionElements.length === 0) {
 		const msg = 'Could not find any .qu elements within the #article element.';
 		log.warn(msg, { url });
-		return new Error(msg);
+		return new AppError(msg, 500);
 	}
 
 	const extractedData: { pnumbers: string; question: string; relatedPids: string }[] = [];
@@ -86,22 +103,11 @@ async function _extractArticleRelatedParagraphData(
 	url: string,
 	relatedPids: string[],
 ): Promise<{ text: string; relatedPid: string }[] | Error> {
-	const opRes = await getHtmlContent(url);
-
-	if (opErrored(opRes)) {
-		log.error(`Failed to fetch HTML: ${opRes.err.message}`, { url });
-		return opRes.err;
+	const validationResult = await _fetchAndValidateArticleHtml(url);
+	if (validationResult instanceof Error) {
+		return validationResult;
 	}
-
-	const html = opRes.res;
-	const $ = cheerio.load(html);
-
-	const articleElement = $('#article');
-	if (articleElement.length !== 1) {
-		const msg = 'Could not find a single #article element on the page.';
-		log.warn(msg, { found: articleElement.length, url });
-		return new Error(msg);
-	}
+	const [$] = validationResult;
 
 	const specificPidSelectors = relatedPids.map((pid) => `#article [data-rel-pid="[${pid}]"]`);
 	const combinedSelector = specificPidSelectors.join(', ');
@@ -113,7 +119,7 @@ async function _extractArticleRelatedParagraphData(
 	if (relatedElements.length === 0) {
 		const msg = 'Could not find any elements with matching data-rel-pid within the #article element.';
 		log.warn(msg, { relatedPids });
-		return new Error(msg);
+		return new AppError(msg, 500);
 	}
 
 	const extractedData: { text: string; relatedPid: string }[] = [];

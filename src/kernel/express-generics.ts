@@ -3,6 +3,7 @@ import { logger } from './logger.js';
 import http, { Server } from 'http';
 import { Application, Express, NextFunction, Request, Response, Router } from 'express';
 import { AsyncOperationResult, opErrored } from './async-ops.js';
+import { AppError } from './app-error.js';
 import { ExtractionContextOptions } from '../scrappers/generics.js';
 
 const log = logger.child({ ...logger.bindings(), label: 'express-generics' });
@@ -127,7 +128,7 @@ export function addGetAndPostScrappingRoute({
 			const opRes = await defaultHtmlGenerator();
 			if (opErrored(opRes)) {
 				log.error(`Error occurred while generating default HTML content for path: [${path}].`, opRes.err);
-				return res.status(500).json({ error: opRes.err.message });
+				return next(new AppError(opRes.err.message, 500, opRes.err));
 			}
 			html = opRes.res;
 		} else {
@@ -137,17 +138,16 @@ export function addGetAndPostScrappingRoute({
 		next();
 	}
 
-	async function scrapperMiddleware(_: Request, res: Response) {
+	async function scrapperMiddleware(_: Request, res: Response, next: NextFunction) {
 		try {
 			log.debug(`Invoking scrapper operation for path: [${path}]`);
 			const result = scrapperOperation({ html: res.locals.html });
 			const data = result instanceof Promise ? await result : result;
 			log.info(`Scrapper operation completed for path: [${path}]`);
 			res.json(data);
-		} catch (error) {
-			const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+		} catch (error: any) {
 			log.error(`Error occurred while running scrapper operation for path: [${path}].`, error);
-			res.status(500).json({ error: errorMessage });
+			next(new AppError(`Scrapper operation failed for path: [${path}]: ${error.message}`, 500, error));
 		}
 	}
 

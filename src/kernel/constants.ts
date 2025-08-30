@@ -1,4 +1,4 @@
-import * as process from 'node:process';
+import env from './env.js';
 
 declare type PortNumber = number | string | false;
 
@@ -22,10 +22,10 @@ const GENERAL_CSS_SELECTOR_FOR_FIGURES = 'div[id^="f"]';
 
 export const CONSTANTS = Object.freeze(
 	Object.seal({
-		LOG_LEVEL: process.env.WS_LOG_LEVEL ?? 'info',
-		NORMALIZED_PORT_NUMBER: normalizePort(process.env.WS_PORT ?? '-1'),
+		LOG_LEVEL: env.LOG_LEVEL,
+		NORMALIZED_PORT_NUMBER: normalizePort(String(env.PORT)),
 		WOL_URL: 'https://wol.jw.org',
-		CSS_SELECTOR_FOR_LINK_TO_LANG: process.env.WS_CSS_SELECTOR_FOR_LINK_TO_LANG ?? 'link[hreflang="es"]',
+		CSS_SELECTOR_FOR_LINK_TO_LANG: env.CSS_SELECTOR_FOR_LINK_TO_LANG,
 		CSS_SELECTOR_FOR_TODAYS_NAVIGATION_LINK: '#menuToday .todayNav',
 		CSS_SELECTOR_FOR_WATCHTOWER_ARTICLE_LINK: '.todayItem.pub-w:nth-child(2) .itemData a',
 

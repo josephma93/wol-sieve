@@ -1,5 +1,6 @@
 import { logger, opErrored } from '../kernel/index.js';
 import express, { Request, Response, NextFunction } from 'express';
+import { AppError } from '../kernel/app-error.js';
 import { buildDefaultLinks, isValidWolBibleBookUrl } from '../scrappers/pub-nwtsty/extras.js';
 import { extractReferencesFromLinks } from '../scrappers/pub-nwtsty/pub-nwtsty.js';
 import { clusterBiblicalPassageEntries } from '../services/pub-nwtsty.js';
@@ -21,10 +22,10 @@ declare module 'express' {
  * Attaches validated links to req.validatedLinks or sends an error response.
  *
  * @param req - The Express request object.
- * @param res - The Express response object.
+ * @param _res - The Express response object.
  * @param next - The next middleware function.
  */
-async function validateLinksMiddleware(req: Request, res: Response, next: NextFunction): Promise<void> {
+async function validateLinksMiddleware(req: Request, _res: Response, next: NextFunction): Promise<void> {
 	let links: string[] = [];
 
 	if (
@@ -41,7 +42,7 @@ async function validateLinksMiddleware(req: Request, res: Response, next: NextFu
 	if (links.length === 0) {
 		const opRes = await buildDefaultLinks();
 		if (opErrored(opRes)) {
-			res.status(500).json({ error: opRes.err.message });
+			next(new AppError(opRes.err.message, 500, opRes.err));
 			return;
 		}
 		links = opRes.res;
@@ -49,7 +50,7 @@ async function validateLinksMiddleware(req: Request, res: Response, next: NextFu
 
 	const invalidLinks = links.filter((link) => !isValidWolBibleBookUrl(link));
 	if (invalidLinks.length > 0) {
-		res.status(400).json({ error: 'Some links are invalid', invalid_links: invalidLinks });
+		next(new AppError('Some links are invalid', 400, { invalid_links: invalidLinks }));
 		return;
 	}
 
@@ -62,16 +63,14 @@ async function validateLinksMiddleware(req: Request, res: Response, next: NextFu
  * Attaches the validated/default token limit to req.tokenLimit or sends an error response.
  *
  * @param req - The Express request object.
- * @param res - The Express response object.
+ * @param _res - The Express response object.
  * @param next - The next middleware function.
  */
-async function validateTokenLimitMiddleware(req: Request, res: Response, next: NextFunction): Promise<void> {
+async function validateTokenLimitMiddleware(req: Request, _res: Response, next: NextFunction): Promise<void> {
 	const tokenLimitQuery = req.query.tokenLimit as string | undefined;
 
 	if (tokenLimitQuery === undefined) {
-		res.status(400).json({
-			error: 'tokenLimit query parameter is required.',
-		});
+		next(new AppError('tokenLimit query parameter is required.', 400));
 		return;
 	}
 
@@ -83,9 +82,7 @@ async function validateTokenLimitMiddleware(req: Request, res: Response, next: N
 		!Number.isInteger(parsedTokenLimit) ||
 		parsedTokenLimit > 128000
 	) {
-		res.status(400).json({
-			error: 'Invalid tokenLimit. Must be a positive integer not exceeding 128000.',
-		});
+		next(new AppError('Invalid tokenLimit. Must be a positive integer not exceeding 128000.', 400));
 		return;
 	}
 
@@ -101,7 +98,7 @@ async function validateTokenLimitMiddleware(req: Request, res: Response, next: N
  * @param res - The Express response object.
  * @returns A promise resolving to the extracted references or undefined if an error response was sent.
  */
-pubNwtstyRouter.get('/', validateLinksMiddleware, async function (req: Request, res: Response) {
+pubNwtstyRouter.get('/', validateLinksMiddleware, async function (req: Request, res: Response, next: NextFunction) {
 	try {
 		const links = req.validatedLinks as string[];
 		const extractionResult = await extractReferencesFromLinks(links);
@@ -109,7 +106,7 @@ pubNwtstyRouter.get('/', validateLinksMiddleware, async function (req: Request, 
 		return res.status(200).json(extractionResult);
 	} catch (error: any) {
 		log.error(`Error extracting references, reason: [${error.message}]`);
-		return res.status(500).json({ error: error.message });
+		next(new AppError(`Error extracting references: ${error.message}`, 500, error));
 	}
 });
 
@@ -127,7 +124,7 @@ pubNwtstyRouter.get(
 	'/grouped',
 	validateLinksMiddleware,
 	validateTokenLimitMiddleware,
-	async function (req: Request, res: Response) {
+	async function (req: Request, res: Response, next: NextFunction) {
 		try {
 			const links = req.validatedLinks as string[];
 			const dynamicTokenLimit = req.tokenLimit as number;
@@ -137,7 +134,7 @@ pubNwtstyRouter.get(
 			return res.status(200).json(clusteredResults);
 		} catch (error: any) {
 			log.error(`Error extracting references, reason: [${error.message}]`);
-			return res.status(500).json({ error: error.message });
+			next(new AppError(`Error extracting references: ${error.message}`, 500, error));
 		}
 	},
 );
