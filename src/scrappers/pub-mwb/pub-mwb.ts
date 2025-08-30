@@ -311,7 +311,7 @@ export interface SectionHeadlineData {
 function parseSectionHeadlineDataFromElement($element: ReturnType<CheerioAPI>): SectionHeadlineData {
 	log.info('Extracting section number from element');
 	const elementText = cleanText($element.text());
-	if (!/^\d\./.test(elementText)) {
+	if (!/^\d+\./.test(elementText)) {
 		const msg = `Unexpected section number for element [${elementText}].`;
 		log.error(msg);
 		throw new Error(msg);
@@ -764,6 +764,7 @@ export function extractBibleStudy(input: ExtractionContextOptions): Congregation
 	log.info('Extracting Bible study section data');
 	input.selectionBuilder = ($) => buildChristianLivingSelections($).bibleStudy;
 	const { $, selection: $bibleStudySelection } = createExtractionContext(input);
+	console.log($bibleStudySelection.html());
 	const headlineData = parseSectionHeadlineDataFromElement($bibleStudySelection.eq(0));
 
 	const result: CongregationBibleStudyData = {
