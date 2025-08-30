@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import { pinoHttp } from 'pino-http';
 import { logger, addPingEndpoint, startServer } from './kernel/index.js';
 import { wolRouter } from './routers/index.js';
@@ -48,6 +48,14 @@ app.use('/pub-mwb', pubMwbRouter);
 app.use('/pub-w', pubWRouter);
 app.use('/pub-nwtsty', pubNwtstyRouter);
 app.use('/pub-lfb', pubLfbRouter);
+
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+	logger.error(err);
+	res.status(500).send({
+		message: err.message,
+		...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
+	});
+});
 
 addPingEndpoint(app);
 startServer({ app });
