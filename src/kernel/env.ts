@@ -15,7 +15,7 @@ if (!['development', 'production', 'test'].includes(determinedNodeEnv)) {
 
 const env: Env = {
 	NODE_ENV: determinedNodeEnv,
-	PORT: parseInt(process.env.PORT || '5000', 10),
+	PORT: parseInt(process.env.WS_PORT || '5000', 10),
 	LOG_LEVEL: process.env.WS_LOG_LEVEL || 'info',
 	CSS_SELECTOR_FOR_LINK_TO_LANG: process.env.WS_CSS_SELECTOR_FOR_LINK_TO_LANG || 'link[hreflang="es"]',
 	IS_DEV_ENV: determinedNodeEnv === 'development',
