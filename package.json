@@ -10,6 +10,10 @@
     "build": "tsc",
     "serve": "./run.sh serve",
     "format": "prettier . --write",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "docker:build": "docker build -t dkr-reg.home.leaflex.site/$(node -p \"require('./package.json').name\"):latest .",
     "docker:push": "docker push dkr-reg.home.leaflex.site/$(node -p \"require('./package.json').name\"):latest",
     "docker:buildnpush": "npm run docker:build && npm run docker:push"
@@ -19,7 +23,8 @@
     "@types/node": "^22.5.5",
     "nodemon": "^3.1.7",
     "prettier": "^3.3.3",
-    "typescript": "^5.6.2"
+    "typescript": "^5.6.2",
+    "vitest": "^3.2.4"
   },
   "dependencies": {
     "cheerio": "^1.0.0",
