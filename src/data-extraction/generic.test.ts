@@ -17,4 +17,3 @@ describe('data-extraction/generic utilities', () => {
 		expect(takeOutTimeBoxText(input)).toBe('Some section title and content');
 	});
 });
-

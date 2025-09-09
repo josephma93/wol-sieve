@@ -32,12 +32,7 @@ export default defineConfig({
 			reporter: ['text', 'html'],
 			reportsDirectory: './coverage',
 			include: ['src/**/*.ts'],
-			exclude: [
-				'**/*.d.ts',
-				'**/dist/**',
-				'**/node_modules/**',
-			],
+			exclude: ['**/*.d.ts', '**/dist/**', '**/node_modules/**'],
 		},
 	},
 });
-
