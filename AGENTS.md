@@ -73,15 +73,15 @@ Note: This project does not use pnpm, Turbo, or ESLint at this time. Commands ab
 
 **Testing Internals (Pattern)**
 
-- Purpose: test internal handlers/utilities without exporting them as public API.
-- Approach: attach test-only hooks using a shared Symbol so only tests know how to access them.
-- Shared key: `src/test-helpers/test-hook.ts` exports `TEST_HOOK`.
-- Attaching in code (example):
-  - `(router as any)[TEST_HOOK] = { handleFromUrl } // test-only`
-- Using in tests:
-  - `import { TEST_HOOK } from '../test-helpers/test-hook'`
-  - `const hook = (router as any)[TEST_HOOK]`
-  - `await hook.handleFromUrl(req, res, next)`
-- Notes:
-  - Keeps internals unexported and avoids implying public/stable API.
-  - No network in tests; mock fetchers (e.g., `getHtmlContent`) and heavy parsers as needed.
+-   Purpose: test internal handlers/utilities without exporting them as public API.
+-   Approach: attach test-only hooks using a shared Symbol so only tests know how to access them.
+-   Shared key: `src/test-helpers/test-hook.ts` exports `TEST_HOOK`.
+-   Attaching in code (example):
+    -   `(router as any)[TEST_HOOK] = { handleFromUrl } // test-only`
+-   Using in tests:
+    -   `import { TEST_HOOK } from '../test-helpers/test-hook'`
+    -   `const hook = (router as any)[TEST_HOOK]`
+    -   `await hook.handleFromUrl(req, res, next)`
+-   Notes:
+    -   Keeps internals unexported and avoids implying public/stable API.
+    -   No network in tests; mock fetchers (e.g., `getHtmlContent`) and heavy parsers as needed.
