@@ -14,9 +14,12 @@
     "test:run": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "docker:build": "docker build -t dkr-reg.home.leaflex.site/$(node -p \"require('./package.json').name\"):latest .",
-    "docker:push": "docker push dkr-reg.home.leaflex.site/$(node -p \"require('./package.json').name\"):latest",
-    "docker:buildnpush": "npm run docker:build && npm run docker:push"
+    "docker:image": "node -p \"'dkr-reg.home.leaflex.site/' + process.env.npm_package_name + ':latest'\"",
+    "docker:build": "docker build -t $(npm run -s docker:image) .",
+    "docker:push": "docker push $(npm run -s docker:image)",
+    "docker:buildnpush": "npm run docker:build && npm run docker:push",
+    "docker:run": "docker run --rm -p 3389:3389 $(npm run -s docker:image)",
+    "docker:buildnpush:run": "npm run docker:buildnpush && npm run docker:run"
   },
   "devDependencies": {
     "@types/express": "4.17.21",

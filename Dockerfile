@@ -1,35 +1,28 @@
-# Stage 1: Build the application
+# Stage 1: Install dependencies
 FROM node:22-alpine AS builder
 
-# Set the working directory inside the container
 WORKDIR /app
 
-# Copy package.json and package-lock.json
 COPY package*.json ./
 
-# Install production dependencies
-RUN npm ci --include=prod
+# Install only production dependencies
+RUN npm ci --omit=dev
 
-# Copy the rest of the application code to the container
+# Copy the build output
 COPY ./dist ./dist
 
-# Stage 2: Create a smaller production image
-FROM alpine:3.18
+# Stage 2: Runtime image with matching Node toolchain
+FROM node:22-alpine
 
-# Install necessary packages
-RUN apk add --no-cache libstdc++ dumb-init
-
-# Copy the Node.js binary from the builder stage
-COPY --from=builder /usr/local/bin/node /usr/local/bin/node
-COPY --from=builder /usr/local/lib/node_modules /usr/local/lib/node_modules
-COPY --from=builder /usr/local/include/node /usr/local/include/node
-COPY --from=builder /app /app
-
-# Create and set up a non-root user
-RUN addgroup -S node && adduser -S -G node node
-
-# Set the working directory inside the container
 WORKDIR /app
+
+# Add init binary for proper signal handling
+RUN apk add --no-cache dumb-init
+
+# Copy dependencies and build artifacts from builder stage
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/dist ./dist
+COPY package*.json ./
 
 # Set environment variables with defaults
 ENV NODE_ENV=production
@@ -39,8 +32,7 @@ ENV WS_LOG_LEVEL=info
 # Expose the application port
 EXPOSE $WS_PORT
 
-# Run as non-root user for security
+# Use the non-root node user provided by the base image
 USER node
 
-# Use dumb-init to handle kernel signals and start the application
 ENTRYPOINT ["dumb-init", "node", "dist/index.js"]
