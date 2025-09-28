@@ -74,12 +74,7 @@ async function _fetchLanguageSpecificLandingHtml(): Promise<string | Error> {
  */
 export const fetchLanguageSpecificLandingHtml = wrapAsyncOp(_fetchLanguageSpecificLandingHtml);
 
-/**
- * Fetches this week's meeting HTML from the WOL website.
- * @returns A promise that resolves to either the HTML content as a string or an Error object if any error occurs.
- * 		The string is the HTML content of fetching the meeting for this week. This is the same to pressing the today navigation link in the WOL website.
- */
-async function _fetchThisWeekMeetingHtml(): Promise<string | Error> {
+async function _fetchThisWeeksMaterialPageHtml(): Promise<string | Error> {
 	let opRes = await fetchLanguageSpecificLandingHtml();
 	if (opErrored(opRes)) {
 		return opRes.err;
@@ -96,15 +91,22 @@ async function _fetchThisWeekMeetingHtml(): Promise<string | Error> {
 
 	log.info(`Fetching today's HTML content from [${todayHtmlUrl}]`);
 	opRes = await getHtmlContent(todayHtmlUrl);
+	return opRes.err ?? opRes.res;
+}
 
-	if (opErrored(opRes)) {
-		const msg = `Unable to load this's week meeting program.`;
-		log.warn(msg);
-		return new Error(msg);
+/**
+ * Fetches this week's meeting HTML from the WOL website.
+ * @returns A promise that resolves to either the HTML content as a string or an Error object if any error occurs.
+ * 		The string is the HTML content of fetching the meeting for this week. This is the same to pressing the today navigation link in the WOL website.
+ */
+async function _fetchThisWeekMeetingHtml(): Promise<string | Error> {
+	let weekMaterialOp = await _fetchThisWeeksMaterialPageHtml();
+	if (weekMaterialOp instanceof Error) {
+		return weekMaterialOp;
 	}
 
-	const weeklyBookletHtmlUrl = extractHrefFromHtml(opRes.res, {
-		selector: CONSTANTS.CSS_SELECTOR_FOR_WEEKLY_BOOKLET,
+	const weeklyBookletHtmlUrl = extractHrefFromHtml(weekMaterialOp, {
+		selector: CONSTANTS.CSS_SELECTOR_FOR_WEEKLY_BOOKLET_LINK,
 		selectionDescription: "this week's navigation link",
 		missingHrefMessage: `No href found for weekly booklet's navigation link, website structure may have changed`,
 	});
@@ -113,7 +115,7 @@ async function _fetchThisWeekMeetingHtml(): Promise<string | Error> {
 	}
 
 	log.info(`Fetching this week's HTML content from [${weeklyBookletHtmlUrl}]`);
-	opRes = await getHtmlContent(weeklyBookletHtmlUrl);
+	const opRes = await getHtmlContent(weeklyBookletHtmlUrl);
 	return opRes.err ?? opRes.res;
 }
 
@@ -130,12 +132,12 @@ export const fetchThisWeekMeetingHtml = wrapAsyncOp(_fetchThisWeekMeetingHtml);
  * 		The string is the HTML content of fetching article assigned for this week. This is the same to pressing watchtower article link found in today's page.
  */
 async function _fetchThisWeekWatchtowerHtml(): Promise<string | Error> {
-	let opRes = await fetchThisWeekMeetingHtml();
-	if (opErrored(opRes)) {
-		return opRes.err;
+	let weekMaterialOp = await _fetchThisWeeksMaterialPageHtml();
+	if (weekMaterialOp instanceof Error) {
+		return weekMaterialOp;
 	}
 
-	const wArticleHtmlUrl = extractHrefFromHtml(opRes.res, {
+	const wArticleHtmlUrl = extractHrefFromHtml(weekMaterialOp, {
 		selector: CONSTANTS.CSS_SELECTOR_FOR_WATCHTOWER_ARTICLE_LINK,
 		selectionDescription: 'watchtower article link',
 		missingHrefMessage: `No href found for watchtower article link, website structure may have changed`,
@@ -145,7 +147,7 @@ async function _fetchThisWeekWatchtowerHtml(): Promise<string | Error> {
 	}
 
 	log.info(`Fetching watchtower HTML content from [${wArticleHtmlUrl}]`);
-	opRes = await getHtmlContent(wArticleHtmlUrl);
+	const opRes = await getHtmlContent(wArticleHtmlUrl);
 	return opRes.err ?? opRes.res;
 }
 
