@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { cleanText, collapseConsecutiveLineBreaks, takeOutTimeBoxText } from './generic.js';
+import { cleanText, collapseConsecutiveLineBreaks, takeOutTimeBoxText } from '../kernel/index.js';
 
 describe('data-extraction/generic utilities', () => {
 	it('cleanText removes NBSP and trims', () => {

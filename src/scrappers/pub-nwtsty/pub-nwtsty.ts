@@ -2,7 +2,7 @@ import { CONSTANTS, ErrorResult, logger, opErrored, wrapAsyncOp } from '../../ke
 import * as cheerio from 'cheerio';
 import { fetchAndParseAnchorReferenceOrThrow } from '../../data-fetching/reference-json.js';
 import { CheerioAPI } from 'cheerio';
-import { cleanText } from '../../data-extraction/generic.js';
+import { cleanText } from '../../kernel/util.js';
 import { extractPubNwtstyReferenceAsText } from '../../data-extraction/extractors-as-text.js';
 import { getHtmlContent } from '../../data-fetching/raw.js';
 import { get_encoding } from 'tiktoken';

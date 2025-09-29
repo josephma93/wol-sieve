@@ -1,5 +1,5 @@
 import * as cheerio from 'cheerio';
-import { cleanText, collapseConsecutiveLineBreaks } from './generic.js';
+import { cleanText, collapseConsecutiveLineBreaks } from '../kernel/index.js';
 import { BasePublicationItem, PublicationRefDetectionData } from './reference-json-commons.js';
 import { CheerioAPI } from 'cheerio';
 

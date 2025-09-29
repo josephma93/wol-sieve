@@ -1,4 +1,5 @@
 import env from './env.js';
+import { freshRegExp } from './util.js';
 
 declare type PortNumber = number | string | false;
 
@@ -48,12 +49,23 @@ export const CONSTANTS = Object.freeze(
 		PUB_MWB_CSS_SELECTOR_CHRISTIAN_LIVING_HEADLINE: '.dc-icon--sheep',
 		PUB_MWB_CSS_SELECTOR_BLEED_EDGE_GROUPS: '.dc-bleedToArticleEdge',
 
+		MARKIFY_GENERAL_CSS_SELECTORS_TO_IGNORE: [GENERAL_CSS_SELECTOR_FOR_FIGURES],
+
 		PUB_W_CSS_SELECTOR_ARTICLE_NUMBER: 'p.contextTtl strong',
 		PUB_W_CSS_SELECTOR_ARTICLE_TITLE: 'h1 strong:first-child',
 		PUB_W_CSS_SELECTOR_ARTICLE_THEME_SCRIP: 'p.themeScrp',
 		PUB_W_CSS_SELECTOR_ARTICLE_TOPIC: '#tt9 p:nth-of-type(2)',
 		PUB_W_CSS_SELECTOR_TEACH_BLOCK: '.dc-ttClassStyle--unset',
 		PUB_W_CSS_SELECTOR_QUESTION: 'p.qu',
+		PUB_W_CSS_SELECTOR_FOR_SUPPLEMENT_BOX: '.boxSupplement',
+		PUB_W_CSS_SELECTOR_FOR_BOX_TITLE: '.boxTtl',
+		PUB_W_CSS_SELECTOR_FOR_BOX_CONTENT: '.boxContent',
+		PUB_W_CSS_SELECTOR_FOR_PARAGRAPHS_BY_NUMBER: (pNum: string) => `[id="p${pNum}"]`,
+		PUB_W_CSS_SELECTOR_FOR_BOX_TITLES: function () {
+			return `${this.PUB_W_CSS_SELECTOR_FOR_SUPPLEMENT_BOX} ${this.PUB_W_CSS_SELECTOR_FOR_BOX_TITLE}`;
+		},
+		PUB_W_REGEX_TEST_FOR_MENTIONS_BOX: () => freshRegExp(/\brecuadro\b/i),
+		PUB_W_REGEX_TEST_FOR_HREF_TO_BOX: () => freshRegExp(/h=(\d+)-(\d+)/i),
 		PUB_W_CSS_SELECTOR_RELATED_PARAGRAPH: (dataPid: string) => `p[data-rel-pid="[${dataPid}]"]`,
 		PUB_W_CSS_SELECTOR_RELATED_PARAGRAPH_LINK: 'p[data-rel-pid] a:not([data-video])',
 		PUB_W_CSS_SELECTOR_TEACH_BLOCK_HEADLINE: '.dc-ttClassStyle--unset h2',
@@ -67,7 +79,6 @@ export const CONSTANTS = Object.freeze(
 		PUB_LFB_CSS_SELECTOR_LESSON_TITLE_SELECTOR: '#p2',
 		PUB_LFB_CSS_SELECTOR_LESSON_HIGHLIGHT_QUOTE_SELECTOR: '.blockTxt.rule',
 		PUB_LFB_CSS_SELECTOR_LESSON_FIGURE_SELECTOR: GENERAL_CSS_SELECTOR_FOR_FIGURES + ' img',
-		PUB_LFB_MARKIFY_CSS_SELECTORS_TO_IGNORE: [GENERAL_CSS_SELECTOR_FOR_FIGURES],
 		PUB_LFB_CSS_SELECTOR_LESSON_QUESTIONS_SELECTOR: '.boxSupplement .boxContent p:first-child',
 		PUB_LFB_CSS_SELECTOR_LESSON_CITATIONS_SELECTOR: '.boxSupplement .boxContent p:not(:first-child)',
 	}),

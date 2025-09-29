@@ -1,8 +1,7 @@
 import * as cheerio from 'cheerio';
-import { cleanText } from './generic.js';
 import { extractQuestionData } from '../scrappers/pub-w/pub-w.js';
 import { QuestionData, QuestionPartData } from '../scrappers/pub-w/pub-w.js';
-import { logger, opErrored, wrapAsyncOp } from '../kernel/index.js';
+import { logger, opErrored, wrapAsyncOp, cleanText } from '../kernel/index.js';
 import { AppError } from '../kernel/app-error.js';
 import { getHtmlContent } from '../data-fetching/raw.js';
 

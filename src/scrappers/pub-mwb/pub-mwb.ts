@@ -1,15 +1,10 @@
-import { logger, CONSTANTS } from '../../kernel/index.js';
+import { logger, CONSTANTS, cleanText, collapseConsecutiveLineBreaks, takeOutTimeBoxText } from '../../kernel/index.js';
 import * as cheerio from 'cheerio';
 import { CheerioAPI } from 'cheerio';
 import { ExtractionContextOptions, createExtractionContext } from '../generics.js';
 import { parsePubSjj, PubSjjParsedData } from '../../data-extraction/extractors-as-obj.js';
 import { opErrored } from '../../kernel/index.js';
-import {
-	cleanText,
-	collapseConsecutiveLineBreaks,
-	getCheerioSelectionOrThrow,
-	takeOutTimeBoxText,
-} from '../../data-extraction/generic.js';
+import { getCheerioSelectionOrThrow } from '../../data-extraction/generic.js';
 import {
 	buildChristianLivingSelections,
 	buildFieldMinistrySelections,

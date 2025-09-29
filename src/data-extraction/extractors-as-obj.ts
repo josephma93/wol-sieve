@@ -1,7 +1,6 @@
 import * as cheerio from 'cheerio';
 import { BasePublicationItem } from './reference-json-commons.js';
-import { cleanText } from './generic.js';
-import { logger as baseLogger } from '../kernel/index.js';
+import { logger as baseLogger, cleanText } from '../kernel/index.js';
 
 /**
  * Represents the parsed data for a Pub SJJ publication.
