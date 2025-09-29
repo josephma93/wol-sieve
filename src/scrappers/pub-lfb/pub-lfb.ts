@@ -1,7 +1,6 @@
 import { ExtractionContextOptions, createExtractionContext } from '../generics.js';
 import { CheerioAPI } from 'cheerio';
-import { cleanText } from '../../data-extraction/generic.js';
-import { CONSTANTS, logger, opErrored, wrapAsyncOp } from '../../kernel/index.js';
+import { CONSTANTS, logger, opErrored, wrapAsyncOp, cleanText, fixLineContinuations } from '../../kernel/index.js';
 import { markify } from 'markify-ts';
 import { fetchAndParseAnchorReferenceOrThrow } from '../../data-fetching/reference-json.js';
 import { CongregationBibleStudyData, extractBibleStudy } from '../pub-mwb/pub-mwb.js';
@@ -106,10 +105,10 @@ async function parseLesson($: CheerioAPI, $article: ReturnType<CheerioAPI>): Pro
 	const title = cleanText($article.find(CONSTANTS.PUB_LFB_CSS_SELECTOR_LESSON_TITLE_SELECTOR).text());
 	const contents = await markify({
 		htmlContent: $article.find(CONSTANTS.PUB_LFB_CSS_SELECTOR_BODY_SELECTOR).html() ?? '',
-		ignoreSelectors: CONSTANTS.PUB_LFB_MARKIFY_CSS_SELECTORS_TO_IGNORE,
+		ignoreSelectors: CONSTANTS.MARKIFY_GENERAL_CSS_SELECTORS_TO_IGNORE,
 		ignoreHiddenElements: true,
 	});
-	const lessonContentsAsMd = contents.markdown.replace(/\s\\(?=\n)/g, '');
+	const lessonContentsAsMd = fixLineContinuations(contents.markdown);
 	const figures = $article
 		.find(CONSTANTS.PUB_LFB_CSS_SELECTOR_LESSON_FIGURE_SELECTOR)
 		// This selector matches the cover image too so we just skip it

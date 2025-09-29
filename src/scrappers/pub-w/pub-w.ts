@@ -1,8 +1,9 @@
-import { CONSTANTS, logger, opErrored } from '../../kernel/index.js';
+import { CONSTANTS, logger, opErrored, cleanText, fixLineContinuations } from '../../kernel/index.js';
 import { ExtractionContextOptions, createExtractionContext } from '../generics.js';
 import { CheerioAPI } from 'cheerio';
 import { fetchAndParseAnchorReferenceOrThrow } from '../../data-fetching/reference-json.js';
-import { cleanText, getCheerioSelectionOrThrow } from '../../data-extraction/generic.js';
+import { getCheerioSelectionOrThrow } from '../../data-extraction/generic.js';
+import { markify } from 'markify-ts';
 
 const log = logger.child({ ...logger.bindings(), label: 'pub-w-scraper' });
 
@@ -27,6 +28,8 @@ export type QuestionData = {
 	pNumbers: number[];
 	rawQuestionTxt: string;
 	parts: QuestionPartData[];
+	doMentionsSupplementBox: boolean;
+	anchorsFound: ReturnType<ReturnType<CheerioAPI>['find']>;
 };
 
 interface ContentData {
@@ -72,6 +75,38 @@ function extractTeachBlock($: CheerioAPI): TeachBlock {
 			points: [],
 		};
 	}
+}
+
+/**
+ * Resolves the target Cheerio element for a box supplement based on an anchor element.
+ * It first tries to resolve by href fragment (e.g., #p123) and then falls back to a title-based match.
+ * @param $ - Cheerio API instance.
+ * @param $a - The anchor Cheerio element.
+ * @returns The Cheerio element representing the box supplement, or an empty Cheerio object if not found.
+ */
+function resolveHrefTargetForBox($: CheerioAPI, $a: ReturnType<CheerioAPI>) {
+	const href = $a.attr('href') || '';
+	let fragmentMatch = !!href ? href.match(CONSTANTS.PUB_W_REGEX_TEST_FOR_HREF_TO_BOX()) : '';
+	if (fragmentMatch) {
+		let pNum = fragmentMatch[1];
+		const boxTtl = $(CONSTANTS.PUB_W_CSS_SELECTOR_FOR_PARAGRAPHS_BY_NUMBER(pNum));
+		if (boxTtl.length) {
+			const boxSupplement = boxTtl.closest(CONSTANTS.PUB_W_CSS_SELECTOR_FOR_SUPPLEMENT_BOX);
+			if (boxSupplement.length) return boxSupplement;
+		}
+	}
+
+	// Title-based fallback: anchor text often equals the box title
+	const anchorText = cleanText($a.text());
+	// Find the box titles that does partial match. The box title has to be included in anchor's text.
+	const $boxTitleMatch = $(CONSTANTS.PUB_W_CSS_SELECTOR_FOR_BOX_TITLES()).filter(function filterCb(_, el) {
+		const $boxTitle = $(el);
+		return anchorText.includes(cleanText($boxTitle.text()));
+	});
+	if ($boxTitleMatch.length) {
+		return $boxTitleMatch.closest(CONSTANTS.PUB_W_CSS_SELECTOR_FOR_SUPPLEMENT_BOX);
+	}
+	return $();
 }
 
 /**
@@ -146,6 +181,8 @@ export function extractQuestionData(question: ReturnType<CheerioAPI>): QuestionD
 		pNumbers,
 		rawQuestionTxt,
 		parts: parsedQuestions,
+		doMentionsSupplementBox: CONSTANTS.PUB_W_REGEX_TEST_FOR_MENTIONS_BOX().test(rawQuestionTxt),
+		anchorsFound: question.find('a'),
 	};
 }
 
@@ -224,6 +261,40 @@ async function extractParagraphs(
 	return Promise.all(paragraphPromises.get());
 }
 
+interface QuestionReferencedBoxSupplementData {
+	title: string;
+	content: string;
+}
+
+async function extractQuestionReferencedData($: CheerioAPI, questionData: QuestionData) {
+	let boxSupplements: QuestionReferencedBoxSupplementData[] = [];
+	if (questionData.doMentionsSupplementBox) {
+		const $boxSupplements = questionData.anchorsFound
+			.filter('.it') // Filter for elements with class 'it'
+			.map((_, el) => resolveHrefTargetForBox($, $(el))) // Resolve href target for each filtered anchor
+			.get(); // Convert Cheerio object to a plain array of Cheerio elements
+
+		boxSupplements = await Promise.all(
+			$boxSupplements.map(async ($boxSupplement) => {
+				const title = cleanText($boxSupplement.find(CONSTANTS.PUB_W_CSS_SELECTOR_FOR_BOX_TITLE).text());
+				const markedContent = await markify({
+					htmlContent: $boxSupplement.find(CONSTANTS.PUB_W_CSS_SELECTOR_FOR_BOX_CONTENT).html() ?? '',
+					ignoreSelectors: CONSTANTS.MARKIFY_GENERAL_CSS_SELECTORS_TO_IGNORE,
+					ignoreHiddenElements: true,
+				});
+				return {
+					title: title,
+					content: fixLineContinuations(markedContent.markdown),
+				};
+			}),
+		);
+	}
+	return {
+		figures: [],
+		boxSupplements,
+	};
+}
+
 /**
  * Extracts the contents from the soup, returning an array of ContentData objects.
  * This function remains the orchestrator, but now each paragraph has two versions.
@@ -253,6 +324,7 @@ async function extractContents($: CheerioAPI): Promise<ContentData[]> {
 
 		// Extract all paragraphs associated with this question
 		const paragraphs = await extractParagraphs($, dataPid, footnoteIndexRef);
+		const questionReferencedData = await extractQuestionReferencedData($, questionData);
 
 		return {
 			pNumbers: questionData.pNumbers,
@@ -260,6 +332,7 @@ async function extractContents($: CheerioAPI): Promise<ContentData[]> {
 			questionTextIfSingle: questionData.parts.length === 1 ? questionData.parts[0].text : undefined,
 			rawQuestionTxt: questionData.rawQuestionTxt,
 			paragraphs,
+			questionReferencedData,
 		};
 	});
 
