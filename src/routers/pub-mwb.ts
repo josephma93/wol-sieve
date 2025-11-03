@@ -16,6 +16,9 @@ import {
 } from '../scrappers/pub-mwb/pub-mwb.js';
 import { ExtractionContextOptions } from '../scrappers/generics.js';
 import { getHtmlContent } from '../data-fetching/raw.js';
+import { TEST_HOOK } from '../test-helpers/test-hook.js';
+import { createFromUrlHandler } from '../data-fetching/router-helpers.js';
+import { getAndValidateWolUrl } from './validators.js';
 
 export const pubMwbRouter = express.Router();
 
@@ -49,6 +52,18 @@ async function fetchHtmlFromSourceUrl(req: Request, _res: Response, next: NextFu
 
 	next();
 }
+
+const handleFromUrl = createFromUrlHandler(extractFullWeekProgram, getAndValidateWolUrl);
+
+/**
+ * GET/POST /pub-w/from-url
+ * Accepts a WOL article URL (query or JSON body) and returns parsed Watchtower data.
+ * - GET  /pub-w/from-url?url=...
+ * - POST /pub-w/from-url { url: "..." }
+ */
+pubMwbRouter.route('/from-url').get(handleFromUrl).post(handleFromUrl);
+
+(pubMwbRouter as any)[TEST_HOOK] = { handleFromUrl };
 
 declare type ScrapperMethod = (input: ExtractionContextOptions) => Promise<any> | any;
 

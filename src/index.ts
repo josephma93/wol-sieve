@@ -28,6 +28,7 @@ app.get('/', (_, res) => {
 		<li><a href="wol/landing-html">GET wol/landing-html</a></li>
 		<li><a href="wol/mid-week-program-html">GET wol/mid-week-program-html</a></li>
 		<li><a href="/pub-mwb/">GET & POST /pub-mwb/</a></li>
+		<li><a href="/pub-mwb/from-url?url=https://wol.jw.org/es/wol/d/r4/lp-s/202025325">GET /pub-mwb/from-url?url=...</a></li>
 		<li><a href="/pub-mwb/scrappers/week-date-span">GET & POST /pub-mwb/scrappers/week-date-span</a></li>
 		<li><a href="/pub-mwb/scrappers/songs">GET & POST /pub-mwb/scrappers/songs</a></li>
 		<li><a href="/pub-mwb/scrappers/weekly-bible-read">GET & POST /pub-mwb/scrappers/weekly-bible-read</a></li>
