@@ -67,6 +67,7 @@ export const CONSTANTS = Object.freeze(
 		PUB_W_REGEX_TEST_FOR_MENTIONS_BOX: () => freshRegExp(/\brecuadro\b/i),
 		PUB_W_REGEX_TEST_FOR_HREF_TO_BOX: () => freshRegExp(/h=(\d+)-(\d+)/i),
 		PUB_W_CSS_SELECTOR_RELATED_PARAGRAPH: (dataPid: string) => `p[data-rel-pid="[${dataPid}]"]`,
+		PUB_W_CSS_SELECTOR_FIGURE: GENERAL_CSS_SELECTOR_FOR_FIGURES,
 		PUB_W_CSS_SELECTOR_RELATED_PARAGRAPH_LINK: 'p[data-rel-pid] a:not([data-video])',
 		PUB_W_CSS_SELECTOR_TEACH_BLOCK_HEADLINE: '.dc-ttClassStyle--unset h2',
 		PUB_W_CSS_SELECTOR_TEACH_BLOCK_POINTS: '.dc-ttClassStyle--unset ul li p',

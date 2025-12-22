@@ -32,12 +32,22 @@ export type QuestionData = {
 	anchorsFound: ReturnType<ReturnType<CheerioAPI>['find']>;
 };
 
+interface QuestionReferencedFigureData {
+	imgURL: string;
+	altText: string;
+	caption: string;
+}
+
 interface ContentData {
 	pNumbers: number[];
 	rawQuestionTxt: QuestionData['rawQuestionTxt'];
 	questionParts: QuestionData['parts'];
 	questionTextIfSingle?: QuestionPartData['text'];
 	paragraphs: ParagraphData[];
+	questionReferencedData: {
+		figures: QuestionReferencedFigureData[];
+		boxSupplements: QuestionReferencedBoxSupplementData[];
+	};
 }
 
 interface WatchtowerArticleData {
@@ -50,9 +60,9 @@ interface WatchtowerArticleData {
 }
 
 /**
- * Extracts the teach block information from the soup.
+ * Extracts the "teach block" information from the soup.
  * @param $ - Cheerio API instance.
- * @returns An object containing the headline and points of the teach block.
+ * @returns An object containing the headline and points of the "teach block".
  */
 function extractTeachBlock($: CheerioAPI): TeachBlock {
 	try {
@@ -107,6 +117,57 @@ function resolveHrefTargetForBox($: CheerioAPI, $a: ReturnType<CheerioAPI>) {
 		return $boxTitleMatch.closest(CONSTANTS.PUB_W_CSS_SELECTOR_FOR_SUPPLEMENT_BOX);
 	}
 	return $();
+}
+
+/**
+ * Normalizes text for consistent regex matching by removing diacritics and converting to lowercase.
+ */
+function normalizeForMatching(s: string): string {
+	return s
+		.normalize('NFD')
+		.replace(/\p{Diacritic}/gu, '')
+		.toLowerCase();
+}
+
+/**
+ * Extracts paragraph numbers from a caption string (e.g., "párrafos 4, 10-12").
+ */
+function extractPnumsFromCaptionStrict(captionText: string): string[] {
+	const t = normalizeForMatching(captionText);
+	const idx = t.indexOf('parrafo');
+	if (idx === -1) return [];
+
+	const slice = t.slice(idx);
+	const m = slice.match(/parrafos?\s*([^)。\n\r.]*)/i);
+	const windowText = m ? m[1] : slice;
+
+	const out = new Set<string>();
+
+	const rangeRe = /(\d+)\s*[-–]\s*(\d+)/g;
+	let rm;
+	while ((rm = rangeRe.exec(windowText)) !== null) {
+		const a = parseInt(rm[1], 10);
+		const b = parseInt(rm[2], 10);
+		if (!Number.isFinite(a) || !Number.isFinite(b)) continue;
+		const lo = Math.min(a, b);
+		const hi = Math.max(a, b);
+		for (let i = lo; i <= hi; i += 1) out.add(String(i));
+	}
+
+	(windowText.match(/\d+/g) || []).forEach((n) => out.add(String(parseInt(n, 10))));
+	return [...out];
+}
+
+/**
+ * Parses question PIDs from a data-rel-pid attribute (e.g., "[1][2]").
+ */
+function extractQpidsFromRelPid(rel: string | undefined): string[] {
+	if (!rel) return [];
+	const out: string[] = [];
+	const re = /\[(\d+)]/g;
+	let m;
+	while ((m = re.exec(rel)) !== null) out.push(m[1]);
+	return out;
 }
 
 /**
@@ -266,7 +327,47 @@ interface QuestionReferencedBoxSupplementData {
 	content: string;
 }
 
-async function extractQuestionReferencedData($: CheerioAPI, questionData: QuestionData) {
+function extractFigures($: CheerioAPI, questionPid: string) {
+	const figures: QuestionReferencedFigureData[] = [];
+	$(CONSTANTS.PUB_W_CSS_SELECTOR_FIGURE).each((_, fig) => {
+		const $fig = $(fig);
+		const captionText = $fig.find('figcaption').text();
+		let pnums = extractPnumsFromCaptionStrict(captionText);
+
+		// Fallback: nearest previous paragraph with a number
+		if (pnums.length === 0) {
+			const $prev = $fig.closest('div[id^="f"], figure').prevAll(`[data-pid]`).find('.parNum[data-pnum]').first();
+			const p = $prev.attr('data-pnum');
+			if (p) pnums = [p];
+		}
+
+		// Check if this figure relates to the current question
+		let isRelated = false;
+		for (const pnum of pnums) {
+			const $paras = $(`.parNum[data-pnum="${pnum}"]`).closest('[data-pid]');
+			$paras.each((_, p) => {
+				const relPids = extractQpidsFromRelPid($(p).attr('data-rel-pid'));
+				if (relPids.includes(questionPid)) {
+					isRelated = true;
+					return false; // break inner loop
+				}
+			});
+			if (isRelated) break;
+		}
+
+		if (isRelated) {
+			let $img = $fig.find('img');
+			figures.push({
+				imgURL: $img.attr('src') ?? '',
+				altText: $img.attr('alt') ?? '',
+				caption: cleanText(captionText),
+			});
+		}
+	});
+	return figures;
+}
+
+async function extractQuestionReferencedData($: CheerioAPI, questionData: QuestionData, questionPid: string) {
 	let boxSupplements: QuestionReferencedBoxSupplementData[] = [];
 	if (questionData.doMentionsSupplementBox) {
 		const $boxSupplements = questionData.anchorsFound
@@ -289,8 +390,10 @@ async function extractQuestionReferencedData($: CheerioAPI, questionData: Questi
 			}),
 		);
 	}
+
+	const figures = extractFigures($, questionPid);
 	return {
-		figures: [],
+		figures,
 		boxSupplements,
 	};
 }
@@ -324,7 +427,7 @@ async function extractContents($: CheerioAPI): Promise<ContentData[]> {
 
 		// Extract all paragraphs associated with this question
 		const paragraphs = await extractParagraphs($, dataPid, footnoteIndexRef);
-		const questionReferencedData = await extractQuestionReferencedData($, questionData);
+		const questionReferencedData = await extractQuestionReferencedData($, questionData, dataPid);
 
 		return {
 			pNumbers: questionData.pNumbers,
