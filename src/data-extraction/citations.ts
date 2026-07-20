@@ -32,11 +32,14 @@ export interface ParsedCitationReference extends ReferenceTypeSource {
 }
 
 export function deriveReferenceType({ articleClasses = '', englishSymbol = '', pubType = '' }: ReferenceTypeSource) {
-	const [pubToken] = articleClasses.split(/\s+/).filter((token) => token.toLowerCase().startsWith('pub-'));
+	const [pubToken] = articleClasses
+		.split(/\s+/)
+		.filter((token) => token.toLowerCase().startsWith('pub-') && token.toLowerCase() !== 'pub-');
 
 	if (pubToken) {
 		if (/^pub-w(?:\d.*)?$/i.test(pubToken)) return CONSTANTS.PUB_CODE_WATCHTOWER;
 		if (/^pub-g(?:\d.*)?$/i.test(pubToken)) return CONSTANTS.PUB_CODE_AWAKE;
+		if (/^pub-it(?:-\d+)?$/i.test(pubToken)) return 'pub-it';
 		if (pubToken.toLowerCase() === CONSTANTS.PUB_CODE_BIBLE) return CONSTANTS.PUB_CODE_BIBLE;
 		return pubToken;
 	}
