@@ -14,6 +14,7 @@ import { extractArticleContents, extractArticleContentsV2 } from './pub-w/pub-w.
 import { extractLfbContentsV2 } from './pub-lfb/pub-lfb.js';
 import { extractTreasuresTalkV2 } from './pub-mwb/pub-mwb.js';
 import { extractReferencesFromLinksV2 } from './pub-nwtsty/pub-nwtsty.js';
+import { clusterBiblicalPassageEntriesV2 } from '../services/pub-nwtsty.js';
 
 function referenceResponse(overrides: Record<string, unknown> = {}) {
 	return {
@@ -95,6 +96,14 @@ const nwtstyHtml = `
 			<div class="group index collapsible">
 				<div class="sx">
 					<a href="/es/wol/d/r4/lp-s/111">Ref A</a>
+				</div>
+			</div>
+		</div>
+		<div class="section" data-key="v2">
+			<h3 class="title">Psalm 70:2</h3>
+			<div id="v2"><span class="sz">Second scripture text.</span></div>
+			<div class="group index collapsible">
+				<div class="sx">
 					<a href="/es/wol/d/r4/lp-s/111">Ref A</a>
 				</div>
 			</div>
@@ -201,13 +210,22 @@ describe('v2 citation scraper contracts', () => {
 		expect(parsed).not.toHaveProperty('citations');
 	});
 
-	it('expands repeated NWTSTY references into complete per-passage citations', async () => {
+	it('deduplicates repeated NWTSTY references into shared references and occurrence citations', async () => {
 		const link = 'https://wol.jw.org/es/wol/b/r4/lp-s/nwtsty/19/70';
 		const result = await extractReferencesFromLinksV2([link]);
 
 		expect(result.errors).toEqual([]);
 		expect(result.results).toHaveLength(1);
 		expect(result.results[0]).not.toHaveProperty('sharedMnemonicReferences');
+		expect(result.results[0].sharedReferences).toEqual({
+			'ref:1': {
+				mnemonic: 'Ref A',
+				referenceType: 'pub-w',
+				issueName: 'Issue source',
+				itemTitle: 'Item title',
+				contents: 'Parsed reference contents',
+			},
+		});
 		expect(result.results[0].entries).toEqual([
 			{
 				mnemonic: 'Psalm 70:1',
@@ -216,23 +234,53 @@ describe('v2 citation scraper contracts', () => {
 				citations: [
 					{
 						id: 1,
-						mnemonic: 'Ref A',
-						referenceType: 'pub-w',
-						issueName: 'Issue source',
-						itemTitle: 'Item title',
-						contents: 'Parsed reference contents',
+						referenceId: 'ref:1',
 					},
+				],
+			},
+			{
+				mnemonic: 'Psalm 70:2',
+				scripture: 'Second scripture text.',
+				citationTokenCount: expect.any(Number),
+				citations: [
 					{
-						id: 2,
-						mnemonic: 'Ref A',
-						referenceType: 'pub-w',
-						issueName: 'Issue source',
-						itemTitle: 'Item title',
-						contents: 'Parsed reference contents',
+						id: 1,
+						referenceId: 'ref:1',
 					},
 				],
 			},
 		]);
+		expect(result.results[0].entries[0].citations[0]).not.toHaveProperty('contents');
+		expect(result.results[0].entries[0].citations[0]).not.toHaveProperty('referenceType');
+		expect(result.results[0].entries[0].citations[0]).not.toHaveProperty('issueName');
+		expect(result.results[0].entries[0].citations[0]).not.toHaveProperty('itemTitle');
 		expect(mocks.getJsonContent).toHaveBeenCalledTimes(1);
+	});
+
+	it('preserves NWTSTY sharedReferences while grouping only entries', async () => {
+		const link = 'https://wol.jw.org/es/wol/b/r4/lp-s/nwtsty/19/70';
+		const extractionResult = await extractReferencesFromLinksV2([link]);
+		const grouped = clusterBiblicalPassageEntriesV2(extractionResult.results, 1000);
+
+		expect(grouped).toEqual([
+			{
+				link,
+				sharedReferences: extractionResult.results[0].sharedReferences,
+				clusters: [
+					[
+						expect.objectContaining({
+							mnemonic: 'Psalm 70:1',
+							citations: [{ id: 1, referenceId: 'ref:1' }],
+						}),
+						expect.objectContaining({
+							mnemonic: 'Psalm 70:2',
+							citations: [{ id: 1, referenceId: 'ref:1' }],
+						}),
+					],
+				],
+			},
+		]);
+		expect(grouped[0].clusters[0][0].citations[0]).not.toHaveProperty('contents');
+		expect(grouped[0].sharedReferences['ref:1'].contents).toBe('Parsed reference contents');
 	});
 });

@@ -6,11 +6,7 @@ import { cleanText } from '../../kernel/util.js';
 import { extractPubNwtstyReferenceAsText } from '../../data-extraction/extractors-as-text.js';
 import { getHtmlContent } from '../../data-fetching/raw.js';
 import { get_encoding } from 'tiktoken';
-import {
-	Citation,
-	buildCitationFromParsedReference,
-	buildUnableToExtractCitation,
-} from '../../data-extraction/citations.js';
+import { buildCitationFromParsedReference, buildUnableToExtractCitation } from '../../data-extraction/citations.js';
 
 const log = logger.child({ ...logger.bindings(), label: 'pub-w-nwtsty' });
 
@@ -89,15 +85,29 @@ export interface BiblicalBookReferenceData {
 	sharedMnemonicReferences: Record<string, string>;
 }
 
+export interface BibleCitationOccurrence {
+	id: number;
+	referenceId: string;
+}
+
+export interface SharedReference {
+	mnemonic: string;
+	referenceType: string;
+	issueName: string;
+	itemTitle: string;
+	contents: string;
+}
+
 export interface BiblicalPassageRefEntryV2 {
 	mnemonic: string;
 	scripture: string;
-	citations: Citation[];
+	citations: BibleCitationOccurrence[];
 	citationTokenCount: number;
 }
 
 export interface BiblicalBookReferenceDataV2 {
 	entries: BiblicalPassageRefEntryV2[];
+	sharedReferences: Record<string, SharedReference>;
 }
 
 declare type SectionIndex = number;
@@ -123,6 +133,24 @@ function computeNumberOfTokensForString(text: string): number {
 	let tokenCount = encoding.encode(text).length;
 	encoding.free();
 	return tokenCount;
+}
+
+function buildSharedReferenceFromFetchedReference(
+	mnemonic: string,
+	fetchedReference: PublicationRefData | Error,
+): SharedReference {
+	const citation =
+		fetchedReference instanceof Error
+			? buildUnableToExtractCitation({ id: 0, mnemonic })
+			: buildCitationFromParsedReference({ id: 0, mnemonic, parsedReference: fetchedReference });
+
+	return {
+		mnemonic: citation.mnemonic,
+		referenceType: citation.referenceType,
+		issueName: citation.issueName,
+		itemTitle: citation.itemTitle,
+		contents: citation.contents,
+	};
 }
 
 /**
@@ -270,8 +298,28 @@ async function _extractBibleReferencesV2(html: string): Promise<BiblicalBookRefe
 		}),
 	);
 
+	const referenceIdsByMnemonic: Map<string, string> = new Map();
+	const sharedReferences: Record<string, SharedReference> = {};
+	for (const { referenceDataInAnchors } of dataInSectionsToProcess) {
+		for (const { mnemonic } of referenceDataInAnchors) {
+			if (referenceIdsByMnemonic.has(mnemonic)) {
+				continue;
+			}
+
+			const referenceId = `ref:${referenceIdsByMnemonic.size + 1}`;
+			referenceIdsByMnemonic.set(mnemonic, referenceId);
+			sharedReferences[referenceId] = buildSharedReferenceFromFetchedReference(
+				mnemonic,
+				referencesByMnemonic.get(mnemonic) ?? new Error(`Missing fetched reference for mnemonic [${mnemonic}]`),
+			);
+		}
+	}
+
 	return dataInSectionsToProcess.reduce(
-		({ entries }, { sectionKey, sectionTitle, referenceDataInAnchors }: SectionDataForProcess) => {
+		(
+			{ entries, sharedReferences },
+			{ sectionKey, sectionTitle, referenceDataInAnchors }: SectionDataForProcess,
+		) => {
 			const matchingElements = $(`#article [id*="${sectionKey}"]`).filter((_, el) => {
 				return new RegExp(`^[^\\d-]*${sectionKey}(?!\\d)`).test($(el).attr('id') ?? '');
 			});
@@ -279,15 +327,14 @@ async function _extractBibleReferencesV2(html: string): Promise<BiblicalBookRefe
 			let citationTokenCount = 0;
 
 			const citations = referenceDataInAnchors.map(({ mnemonic }, index) => {
-				const id = index + 1;
-				const fetchedReference = referencesByMnemonic.get(mnemonic);
-				const citation =
-					fetchedReference instanceof Error || fetchedReference === undefined
-						? buildUnableToExtractCitation({ id, mnemonic })
-						: buildCitationFromParsedReference({ id, mnemonic, parsedReference: fetchedReference });
+				const referenceId = referenceIdsByMnemonic.get(mnemonic)!;
+				const sharedReference = sharedReferences[referenceId];
 
-				citationTokenCount += computeNumberOfTokensForString(citation.contents);
-				return citation;
+				citationTokenCount += computeNumberOfTokensForString(sharedReference.contents);
+				return {
+					id: index + 1,
+					referenceId,
+				};
 			});
 
 			entries.push({
@@ -297,10 +344,11 @@ async function _extractBibleReferencesV2(html: string): Promise<BiblicalBookRefe
 				citationTokenCount,
 			});
 
-			return { entries };
+			return { entries, sharedReferences };
 		},
 		{
 			entries: [],
+			sharedReferences,
 		} as BiblicalBookReferenceDataV2,
 	);
 }
@@ -429,6 +477,7 @@ export async function extractReferencesFromLinksV2(links: string[]): Promise<Nwt
 		result.results.push({
 			link,
 			entries: extracted.entries,
+			sharedReferences: extracted.sharedReferences,
 		});
 	}
 

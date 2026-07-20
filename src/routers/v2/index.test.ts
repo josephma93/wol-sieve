@@ -145,12 +145,23 @@ beforeEach(() => {
 		errors: [],
 		results: links.map((link) => ({
 			link,
+			sharedReferences: {
+				'ref:1': {
+					mnemonic: 'Ref A',
+					referenceType: 'pub-w',
+					issueName: 'Issue source',
+					itemTitle: 'Item title',
+					contents: 'Parsed reference contents',
+				},
+			},
 			entries: [{ mnemonic: link, scripture: 'scripture', citations: [], citationTokenCount: 10 }],
 		})),
 	}));
-	mocks.clusterBiblicalPassageEntriesV2.mockImplementation((results: { link: string }[], tokenLimit: number) => {
-		return results.map(({ link }) => ({ link, tokenLimit, clusters: [] }));
-	});
+	mocks.clusterBiblicalPassageEntriesV2.mockImplementation(
+		(results: { link: string; sharedReferences: Record<string, unknown> }[], tokenLimit: number) => {
+			return results.map(({ link, sharedReferences }) => ({ link, sharedReferences, tokenLimit, clusters: [] }));
+		},
+	);
 
 	mocks.buildDefaultLfbLinks.mockResolvedValue({ err: null, res: [lfbUrl1] });
 	mocks.extractLfbContentsV2.mockImplementation(async ({ html }: { html: string }) => ({
@@ -277,8 +288,34 @@ describe('/v2/pub-nwtsty', () => {
 		expect(response.status).toBe(200);
 		expect(mocks.clusterBiblicalPassageEntriesV2).toHaveBeenCalledWith(expect.any(Array), 1000);
 		expect(response.body).toEqual([
-			{ link: nwtstyUrl1, tokenLimit: 1000, clusters: [] },
-			{ link: nwtstyUrl2, tokenLimit: 1000, clusters: [] },
+			{
+				link: nwtstyUrl1,
+				sharedReferences: {
+					'ref:1': {
+						mnemonic: 'Ref A',
+						referenceType: 'pub-w',
+						issueName: 'Issue source',
+						itemTitle: 'Item title',
+						contents: 'Parsed reference contents',
+					},
+				},
+				tokenLimit: 1000,
+				clusters: [],
+			},
+			{
+				link: nwtstyUrl2,
+				sharedReferences: {
+					'ref:1': {
+						mnemonic: 'Ref A',
+						referenceType: 'pub-w',
+						issueName: 'Issue source',
+						itemTitle: 'Item title',
+						contents: 'Parsed reference contents',
+					},
+				},
+				tokenLimit: 1000,
+				clusters: [],
+			},
 		]);
 	});
 });

@@ -92,7 +92,7 @@ export function clusterBiblicalPassageEntriesV2(
 	linkExtractionResult: NwtstyReferenceDataResultV2[],
 	tokenCountLimit: number,
 ) {
-	return linkExtractionResult.map(({ link, entries }) => {
+	return linkExtractionResult.map(({ link, entries, sharedReferences }) => {
 		const clustersFound: BiblicalPassageRefEntryV2[][] = [];
 		let nextClusterItems: BiblicalPassageRefEntryV2[] = [];
 		let currentClusterTokenCount = 0;
@@ -129,6 +129,7 @@ export function clusterBiblicalPassageEntriesV2(
 
 		return {
 			link,
+			sharedReferences,
 			clusters: clustersFound,
 		};
 	});
