@@ -119,6 +119,22 @@ function encodeQueryUrl(url: string): string {
 	return encodeURIComponent(url);
 }
 
+function expectedNwtstyResult(link: string) {
+	return {
+		link,
+		sharedReferences: {
+			'ref:1': {
+				mnemonic: 'Ref A',
+				referenceType: 'pub-w',
+				issueName: 'Issue source',
+				itemTitle: 'Item title',
+				contents: 'Parsed reference contents',
+			},
+		},
+		entries: [{ mnemonic: link, scripture: 'scripture', citations: [], citationTokenCount: 10 }],
+	};
+}
+
 beforeEach(() => {
 	vi.clearAllMocks();
 
@@ -145,19 +161,7 @@ beforeEach(() => {
 	});
 	mocks.extractReferencesFromLinksV2.mockImplementation(async (links: string[]) => ({
 		errors: [],
-		results: links.map((link) => ({
-			link,
-			sharedReferences: {
-				'ref:1': {
-					mnemonic: 'Ref A',
-					referenceType: 'pub-w',
-					issueName: 'Issue source',
-					itemTitle: 'Item title',
-					contents: 'Parsed reference contents',
-				},
-			},
-			entries: [{ mnemonic: link, scripture: 'scripture', citations: [], citationTokenCount: 10 }],
-		})),
+		results: links.map(expectedNwtstyResult),
 	}));
 	mocks.clusterBiblicalPassageEntriesV2.mockImplementation(
 		(results: { link: string; sharedReferences: Record<string, unknown> }[], tokenLimit: number) => {
@@ -325,6 +329,7 @@ describe('/v2/pub-nwtsty', () => {
 		expect(response.status).toBe(200);
 		expect(mocks.extractReferencesFromLinksV2).toHaveBeenCalledWith([nwtstyUrl1, nwtstyUrl2]);
 		expect(mocks.buildDefaultNwtstyLinks).not.toHaveBeenCalled();
+		expect(response.body).toEqual([expectedNwtstyResult(nwtstyUrl1), expectedNwtstyResult(nwtstyUrl2)]);
 	});
 
 	it('treats links as absent rather than as an alias for urls', async () => {
@@ -333,6 +338,58 @@ describe('/v2/pub-nwtsty', () => {
 		expect(response.status).toBe(200);
 		expect(mocks.buildDefaultNwtstyLinks).toHaveBeenCalledTimes(1);
 		expect(mocks.extractReferencesFromLinksV2).toHaveBeenCalledWith([nwtstyUrl1]);
+		expect(response.body).toEqual([expectedNwtstyResult(nwtstyUrl1)]);
+	});
+
+	it('rejects user-provided invalid urls as request failures', async () => {
+		const invalidUrl = 'https://wol.jw.org/es/wol/d/r4/lp-s/not-nwtsty';
+		const response = await request(`/v2/pub-nwtsty/?urls=${encodeQueryUrl(invalidUrl)}`);
+
+		expect(response.status).toBe(400);
+		expect(response.body).toMatchObject({
+			status: 'fail',
+			message: 'Some urls are invalid',
+			details: { invalid_urls: [invalidUrl] },
+		});
+		expect(mocks.extractReferencesFromLinksV2).not.toHaveBeenCalled();
+	});
+
+	it('treats invalid default links as upstream failures', async () => {
+		const invalidDefaultUrl = 'https://wol.jw.org/es/wol/d/r4/lp-s/not-nwtsty';
+		mocks.buildDefaultNwtstyLinks.mockResolvedValueOnce({ err: null, res: [invalidDefaultUrl] });
+
+		const response = await request('/v2/pub-nwtsty/');
+
+		expect(response.status).toBe(502);
+		expect(response.body).toMatchObject({
+			status: 'error',
+			message: 'Default Bible links are invalid.',
+			details: { invalid_urls: [invalidDefaultUrl] },
+		});
+		expect(mocks.extractReferencesFromLinksV2).not.toHaveBeenCalled();
+	});
+
+	it('fails the whole references request when any link extraction fails', async () => {
+		const errors = [{ link: nwtstyUrl2, error: 'failed to extract references' }];
+		mocks.extractReferencesFromLinksV2.mockResolvedValueOnce({
+			errors,
+			results: [expectedNwtstyResult(nwtstyUrl1)],
+		});
+
+		const response = await request(
+			`/v2/pub-nwtsty/?urls=${encodeQueryUrl(nwtstyUrl1)}&urls=${encodeQueryUrl(nwtstyUrl2)}`,
+		);
+
+		expect(response.status).toBe(502);
+		expect(response.body).toMatchObject({
+			status: 'error',
+			message: 'Failed to extract references for all urls.',
+			details: {
+				errors,
+				requested_urls: 2,
+				completed_urls: 1,
+			},
+		});
 	});
 
 	it('groups references with the requested tokenLimit', async () => {
@@ -374,6 +431,30 @@ describe('/v2/pub-nwtsty', () => {
 				clusters: [],
 			},
 		]);
+	});
+
+	it('does not group partial reference extraction results', async () => {
+		const errors = [{ link: nwtstyUrl2, error: 'failed to extract references' }];
+		mocks.extractReferencesFromLinksV2.mockResolvedValueOnce({
+			errors,
+			results: [expectedNwtstyResult(nwtstyUrl1)],
+		});
+
+		const response = await request(
+			`/v2/pub-nwtsty/grouped?urls=${encodeQueryUrl(nwtstyUrl1)}&urls=${encodeQueryUrl(nwtstyUrl2)}`,
+		);
+
+		expect(response.status).toBe(502);
+		expect(response.body).toMatchObject({
+			status: 'error',
+			message: 'Failed to extract references for all urls.',
+			details: {
+				errors,
+				requested_urls: 2,
+				completed_urls: 1,
+			},
+		});
+		expect(mocks.clusterBiblicalPassageEntriesV2).not.toHaveBeenCalled();
 	});
 });
 

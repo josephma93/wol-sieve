@@ -6,7 +6,7 @@ import { cleanText } from '../../kernel/util.js';
 import { extractPubNwtstyReferenceAsText } from '../../data-extraction/extractors-as-text.js';
 import { getHtmlContent } from '../../data-fetching/raw.js';
 import { get_encoding } from 'tiktoken';
-import { buildCitationFromParsedReference, buildUnableToExtractCitation } from '../../data-extraction/citations.js';
+import { buildCitationFromParsedReference } from '../../data-extraction/citations.js';
 
 const log = logger.child({ ...logger.bindings(), label: 'pub-w-nwtsty' });
 
@@ -137,12 +137,9 @@ function computeNumberOfTokensForString(text: string): number {
 
 function buildSharedReferenceFromFetchedReference(
 	mnemonic: string,
-	fetchedReference: PublicationRefData | Error,
+	fetchedReference: PublicationRefData,
 ): SharedReference {
-	const citation =
-		fetchedReference instanceof Error
-			? buildUnableToExtractCitation({ id: 0, mnemonic })
-			: buildCitationFromParsedReference({ id: 0, mnemonic, parsedReference: fetchedReference });
+	const citation = buildCitationFromParsedReference({ id: 0, mnemonic, parsedReference: fetchedReference });
 
 	return {
 		mnemonic: citation.mnemonic,
@@ -266,7 +263,7 @@ async function _extractBibleReferencesV2(html: string): Promise<BiblicalBookRefe
 	const $ = cheerio.load(html);
 	normalizeMnemonics($);
 	const dataInSectionsToProcess = pickRelevantDOMData($);
-	const referenceFetchesByMnemonic: Map<string, Promise<PublicationRefData | Error>> = new Map();
+	const referenceFetchesByMnemonic: Map<string, Promise<PublicationRefData>> = new Map();
 
 	for (const { referenceDataInAnchors } of dataInSectionsToProcess) {
 		for (const { $anchor, mnemonic } of referenceDataInAnchors) {
@@ -278,10 +275,9 @@ async function _extractBibleReferencesV2(html: string): Promise<BiblicalBookRefe
 				mnemonic,
 				fetchAndParseAnchorReferenceOrThrow($anchor).then((opRes) => {
 					if (opErrored(opRes)) {
-						log.warn(
-							`Unable to load reference data for mnemonic: [${mnemonic}] due to: [${opRes.err.message}]`,
-						);
-						return opRes.err;
+						const errorMessage = `Unable to load reference data for mnemonic: [${mnemonic}] due to: [${opRes.err.message}]`;
+						log.warn(errorMessage);
+						throw new Error(errorMessage);
 					}
 
 					log.debug(`Finished extracting v2 data for mnemonic: [${mnemonic}]`);
@@ -291,7 +287,7 @@ async function _extractBibleReferencesV2(html: string): Promise<BiblicalBookRefe
 		}
 	}
 
-	const referencesByMnemonic: Map<string, PublicationRefData | Error> = new Map();
+	const referencesByMnemonic: Map<string, PublicationRefData> = new Map();
 	await Promise.all(
 		[...referenceFetchesByMnemonic.entries()].map(async ([mnemonic, referenceFetch]) => {
 			referencesByMnemonic.set(mnemonic, await referenceFetch);
@@ -308,10 +304,12 @@ async function _extractBibleReferencesV2(html: string): Promise<BiblicalBookRefe
 
 			const referenceId = `ref:${referenceIdsByMnemonic.size + 1}`;
 			referenceIdsByMnemonic.set(mnemonic, referenceId);
-			sharedReferences[referenceId] = buildSharedReferenceFromFetchedReference(
-				mnemonic,
-				referencesByMnemonic.get(mnemonic) ?? new Error(`Missing fetched reference for mnemonic [${mnemonic}]`),
-			);
+			const fetchedReference = referencesByMnemonic.get(mnemonic);
+			if (fetchedReference === undefined) {
+				throw new Error(`Missing fetched reference for mnemonic [${mnemonic}]`);
+			}
+
+			sharedReferences[referenceId] = buildSharedReferenceFromFetchedReference(mnemonic, fetchedReference);
 		}
 	}
 

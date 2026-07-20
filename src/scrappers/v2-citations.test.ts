@@ -257,6 +257,19 @@ describe('v2 citation scraper contracts', () => {
 		expect(mocks.getJsonContent).toHaveBeenCalledTimes(1);
 	});
 
+	it('fails NWTSTY v2 extraction when a shared reference cannot be loaded', async () => {
+		const link = 'https://wol.jw.org/es/wol/b/r4/lp-s/nwtsty/19/70';
+		mocks.getJsonContent.mockResolvedValueOnce({ err: new Error('reference upstream failed'), res: null });
+
+		const result = await extractReferencesFromLinksV2([link]);
+
+		expect(result.results).toEqual([]);
+		expect(result.errors).toHaveLength(1);
+		expect(result.errors[0]).toMatchObject({ link });
+		expect(result.errors[0].error).toContain('Unable to load reference data for mnemonic: [Ref A]');
+		expect(result.errors[0].error).toContain('reference upstream failed');
+	});
+
 	it('preserves NWTSTY sharedReferences while grouping only entries', async () => {
 		const link = 'https://wol.jw.org/es/wol/b/r4/lp-s/nwtsty/19/70';
 		const extractionResult = await extractReferencesFromLinksV2([link]);
