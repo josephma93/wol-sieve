@@ -31,10 +31,60 @@ Main source areas:
 -   `src/data-extraction/`: lower-level extraction utilities for article-related data.
 -   `src/scrappers/`: Cheerio-based scrapers for supported publication types.
 -   `src/routers/`: Express routers that validate request inputs and expose scraper/fetcher behavior as HTTP endpoints.
+    Versioned v2 routers live under `src/routers/v2/`.
 -   `src/services/`: service-level processing, including token-count clustering for extracted Bible references.
 -   `src/test-helpers/`: shared test-only helpers.
 
 The app uses ESM (`"type": "module"`), TypeScript strict mode, and Node's `NodeNext` module resolution.
+
+## API Versions
+
+The API has two supported route families with distinct contracts:
+
+-   **v1, unversioned compatibility routes**: mounted at paths such as `/pub-w`, `/pub-mwb`, `/pub-nwtsty`, `/pub-lfb`,
+    and `/wol`. These routes preserve the original public surface, including mixed GET/POST support on some endpoints,
+    public HTML helper endpoints, `/from-url` routes, MWB `/scrappers/*` routes, and the `links` query parameter
+    convention.
+-   **v2, versioned GET-only routes**: mounted under `/v2`. This is the preferred contract for new integrations. These
+    routes expose selected JSON-producing endpoints, reject POST by omission, do not expose public HTML fetch endpoints,
+    do not expose `/from-url`, and use canonical query parameters to select WOL source URLs.
+
+`GET /v2/` returns a browser-friendly HTML index with clickable sample links for the available v2 endpoints.
+
+### v2 Endpoints
+
+Single-source v2 endpoints accept an optional `url` query parameter. If `url` is omitted, the endpoint uses the current
+default WOL source for that scraper. If `url` is provided, it must be a single `wol.jw.org` URL.
+
+```text
+GET /v2/pub-w/
+GET /v2/pub-w/?url=...
+
+GET /v2/pub-mwb/
+GET /v2/pub-mwb/?url=...
+
+GET /v2/pub-mwb/treasures-talk
+GET /v2/pub-mwb/treasures-talk?url=...
+```
+
+Multi-source v2 endpoints accept repeated `urls` query parameters. A single `urls` value is also accepted and normalized
+internally. If `urls` is omitted, the endpoint uses its existing default link builder. The v2 API does not treat `links`
+as an alias for `urls`.
+
+```text
+GET /v2/pub-nwtsty/
+GET /v2/pub-nwtsty/?urls=url1&urls=url2
+
+GET /v2/pub-nwtsty/grouped
+GET /v2/pub-nwtsty/grouped?urls=url1&urls=url2
+GET /v2/pub-nwtsty/grouped?urls=url1&urls=url2&tokenLimit=1000
+
+GET /v2/pub-lfb/
+GET /v2/pub-lfb/?urls=url1&urls=url2
+```
+
+Preserve v1 behavior when changing v2 routes. The two route families are intentionally different; do not treat v1-only
+patterns as aliases in v2 unless the v2 contract explicitly defines them.
 
 ## Error Handling
 

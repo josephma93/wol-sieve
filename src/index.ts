@@ -8,6 +8,7 @@ import { pubMwbRouter } from './routers/pub-mwb.js';
 import { pubWRouter } from './routers/pub-w.js';
 import { pubNwtstyRouter } from './routers/pub-nwtsty.js';
 import { pubLfbRouter } from './routers/pub-lfb.js';
+import { v2Router } from './routers/v2/index.js';
 
 const app = express();
 
@@ -52,6 +53,7 @@ app.use('/pub-mwb', pubMwbRouter);
 app.use('/pub-w', pubWRouter);
 app.use('/pub-nwtsty', pubNwtstyRouter);
 app.use('/pub-lfb', pubLfbRouter);
+app.use('/v2', v2Router);
 
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
 	logger.error(err);
