@@ -3,6 +3,7 @@ import { pubLfbV2Router } from './pub-lfb.js';
 import { pubMwbV2Router } from './pub-mwb.js';
 import { pubNwtstyV2Router } from './pub-nwtsty.js';
 import { pubWV2Router } from './pub-w.js';
+import { prettyJsonResponseMiddleware } from './pretty-json.js';
 
 export const v2Router = express.Router();
 
@@ -90,6 +91,8 @@ v2Router.get('/', (_req, res) => {
 </body>
 </html>`);
 });
+
+v2Router.use(prettyJsonResponseMiddleware);
 
 v2Router.use('/pub-w', pubWV2Router);
 v2Router.use('/pub-mwb', pubMwbV2Router);

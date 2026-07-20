@@ -66,6 +66,7 @@ interface TestResponse {
 	status: number;
 	body: unknown;
 	contentType: string;
+	text: string;
 }
 
 function createTestApp() {
@@ -106,8 +107,9 @@ async function request(path: string, init?: RequestInit): Promise<TestResponse> 
 		const { port } = server.address() as AddressInfo;
 		const response = await fetch(`http://127.0.0.1:${port}${path}`, init);
 		const contentType = response.headers.get('content-type') ?? '';
-		const body = contentType.includes('application/json') ? await response.json() : await response.text();
-		return { status: response.status, body, contentType };
+		const text = await response.text();
+		const body = contentType.includes('application/json') ? JSON.parse(text) : text;
+		return { status: response.status, body, contentType, text };
 	} finally {
 		await closeServer(server);
 	}
@@ -188,6 +190,61 @@ describe('/v2', () => {
 		expect(body).toContain('href="/v2/pub-lfb/');
 		expect(mocks.fetchThisWeekWatchtowerHtml).not.toHaveBeenCalled();
 		expect(mocks.fetchThisWeekMeetingHtml).not.toHaveBeenCalled();
+	});
+
+	it('does not apply pretty JSON validation to the HTML endpoint index', async () => {
+		const response = await request('/v2/?pretty=false');
+		const body = String(response.body);
+
+		expect(response.status).toBe(200);
+		expect(response.contentType).toContain('text/html');
+		expect(body).toContain('<h1>wol-sieve v2</h1>');
+		expect(mocks.fetchThisWeekWatchtowerHtml).not.toHaveBeenCalled();
+		expect(mocks.fetchThisWeekMeetingHtml).not.toHaveBeenCalled();
+	});
+});
+
+describe('/v2 pretty JSON', () => {
+	it('formats JSON endpoint responses with FracturedJson when pretty is present', async () => {
+		const response = await request(
+			`/v2/pub-lfb/?urls=${encodeQueryUrl(lfbUrl1)}&urls=${encodeQueryUrl(lfbUrl2)}&pretty`,
+		);
+
+		expect(response.status).toBe(200);
+		expect(response.contentType).toContain('application/json');
+		expect(response.body).toEqual({
+			results: [
+				{ link: lfbUrl1, type: 'LESSON', contents: { html: `html:${lfbUrl1}` } },
+				{ link: lfbUrl2, type: 'LESSON', contents: { html: `html:${lfbUrl2}` } },
+			],
+		});
+		expect(response.text).toContain('\n');
+		expect(response.text).toContain('"results"');
+		expect(response.text).not.toBe(JSON.stringify(response.body));
+	});
+
+	it('accepts explicit pretty enable values', async () => {
+		const trueResponse = await request('/v2/pub-w/?pretty=true');
+		const oneResponse = await request('/v2/pub-w/?pretty=1');
+
+		expect(trueResponse.status).toBe(200);
+		expect(trueResponse.body).toEqual({ kind: 'watchtower', html: 'default-watchtower-html' });
+		expect(oneResponse.status).toBe(200);
+		expect(oneResponse.body).toEqual({ kind: 'watchtower', html: 'default-watchtower-html' });
+		expect(mocks.fetchThisWeekWatchtowerHtml).toHaveBeenCalledTimes(2);
+	});
+
+	it('rejects unsupported pretty values before endpoint work starts', async () => {
+		const response = await request('/v2/pub-w/?pretty=false');
+
+		expect(response.status).toBe(400);
+		expect(response.body).toMatchObject({
+			status: 'fail',
+			message: 'Invalid pretty parameter.',
+			details: { allowed_values: ['?pretty', '?pretty=true', '?pretty=1'] },
+		});
+		expect(mocks.fetchThisWeekWatchtowerHtml).not.toHaveBeenCalled();
+		expect(mocks.getHtmlContent).not.toHaveBeenCalled();
 	});
 });
 

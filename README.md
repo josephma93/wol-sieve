@@ -71,6 +71,9 @@ Multi-source v2 endpoints accept repeated `urls` query parameters. A single `url
 internally. If `urls` is omitted, the endpoint uses its existing default link builder. The v2 API does not treat `links`
 as an alias for `urls`.
 
+JSON-producing v2 endpoints accept an optional `pretty` query parameter that formats the response with FracturedJsonJs.
+Valid enabling forms are `?pretty`, `?pretty=true`, and `?pretty=1`; other values are rejected.
+
 ```text
 GET /v2/pub-nwtsty/
 GET /v2/pub-nwtsty/?urls=url1&urls=url2
