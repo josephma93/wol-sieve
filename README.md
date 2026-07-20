@@ -1,183 +1,190 @@
 # wol-sieve
 
-`wol-sieve` is a versatile set of tools designed to handle and process various HTML content from the WOL site. The
-primary functions include parsing HTML content from different types of articles into a structured JSON format and
-retrieving the HTML of different relevant places.
+`wol-sieve` is a TypeScript and Node.js service that fetches selected pages from WOL, extracts useful content from their
+HTML, and returns structured JSON through Express routes.
+
+The service focuses on:
+
+-   WOL page HTML retrieval.
+-   Watchtower article extraction.
+-   Midweek meeting program extraction.
+-   New World Translation study Bible reference extraction and token-based grouping.
+-   Lessons From the Bible extraction.
 
 ## Disclaimer
 
-This tool is intended for personal use only. The use of this tool must comply with the terms and conditions of the WOL.
-Users are prohibited from redistributing, using the content for commercial purposes, or posting the content on any other
-site. Please review the WOL's Terms and Conditions of Use before using this tool to ensure compliance.
+This tool is intended for personal use only. Use of this tool must comply with WOL terms and conditions. Do not
+redistribute WOL content, use it commercially, or post it to other sites unless the applicable terms allow it.
 
-## Environment Variables
+## Architecture
 
-You can configure `wol-sieve` using the following environment variables:
+The application entry point is `src/index.ts`. It creates the Express app, installs request logging and body parsing,
+mounts feature routers, registers central error handling, adds `/ping`, and starts the HTTP server through the kernel
+helpers.
 
--   `NODE_ENV`: Sets the environment mode. Should be set to `production` in a production environment (default:
-    `production`).
--   `WS_PORT`: Specifies the port the web server listens on (default: `3389`).
--   `WS_LOG_LEVEL`: Defines the log level. Accepted values are `info`, `warn`, `error`, `debug`, etc. (default: `info`).
+Main source areas:
 
-These variables can be passed when running the Docker container directly with the `-e` option or through the
-`docker-compose.yml` file, as shown in the example.
+-   `src/kernel/`: shared infrastructure for environment parsing, constants, logging, async operation results, app
+    errors, and Express server helpers.
+-   `src/data-fetching/`: WOL HTML and JSON fetchers. Fetch operations are wrapped with `wrapAsyncOp` so callers receive
+    `{ err, res }` results instead of handling thrown errors directly.
+-   `src/data-extraction/`: lower-level extraction utilities for article-related data.
+-   `src/scrappers/`: Cheerio-based scrapers for supported publication types.
+-   `src/routers/`: Express routers that validate request inputs and expose scraper/fetcher behavior as HTTP endpoints.
+-   `src/services/`: service-level processing, including token-count clustering for extracted Bible references.
+-   `src/test-helpers/`: shared test-only helpers.
 
-## Docker Installation
+The app uses ESM (`"type": "module"`), TypeScript strict mode, and Node's `NodeNext` module resolution.
 
-You can also run `wol-sieve` as a Docker container, which simplifies the setup and ensures consistent behavior across
-different environments. Follow the steps below to install and run `wol-sieve` using Docker:
+## Error Handling
 
-### Pulling the Docker Image
+Central error handling is registered in `src/index.ts`. Error responses use this shape:
 
-To get the latest version of the `wol-sieve` Docker image, pull it from Docker Hub:
+```json
+{
+	"status": "error",
+	"message": "Something went wrong!",
+	"details": {},
+	"stack": "..."
+}
+```
+
+`details` is included when an `AppError` provides it. `stack` is included only in development mode.
+
+## Environment
+
+Runtime configuration is read in `src/kernel/env.ts`.
+
+| Variable                           | Local default         | Docker default        | Notes                                                     |
+| ---------------------------------- | --------------------- | --------------------- | --------------------------------------------------------- |
+| `NODE_ENV`                         | `development`         | `production`          | Must be `development`, `production`, or `test`.           |
+| `WS_PORT`                          | `5000`                | `3389`                | HTTP server port.                                         |
+| `WS_LOG_LEVEL`                     | `info`                | `info`                | Pino log level.                                           |
+| `WS_CSS_SELECTOR_FOR_LINK_TO_LANG` | `link[hreflang="es"]` | `link[hreflang="es"]` | Selector used when resolving language-specific WOL links. |
+
+Local commands run through `run.sh` load `.env` with `node --env-file=.env`.
+
+## Local Development
+
+Use Node.js `v22.8.0` from `.nvmrc`.
 
 ```bash
-docker pull joesofteng/wol-sieve:latest
+nvm use
+npm install
 ```
 
-### Running the Docker Container
-
-Once you have the image, you can run it using the following command:
+Common commands:
 
 ```bash
-docker run -d --name wol-sieve -p 3389:3389 joesofteng/wol-sieve
+npm start
+npm run start:inspect
+npm run start:debug
+npm run build
+npm run serve
+npm run format
+npm run test
+npm run test:run
 ```
 
-This command will start the `wol-sieve` container in detached mode (`-d`), exposing port `3389` as defined in the
-`Dockerfile`.
+`npm start` runs `./run.sh start`. The script uses `nodemon` to watch `src/**/*.ts` and `src/**/*.json`; on change it
+formats the project, compiles TypeScript, and runs `dist/index.js` with `.env`.
 
-### Running with Specific Environment Variables
+There is no `nodemon.json`; watch behavior is defined in `run.sh`.
 
-You can also configure the behavior of `wol-sieve` using the following environment variables:
+## TypeScript and Formatting
 
--   `NODE_ENV`: Defines the environment mode (`production` by default).
--   `WS_PORT`: Specifies the port the application listens on (default: `3389`).
--   `WS_LOG_LEVEL`: Sets the logging level (`info`, `warn`, `error`, etc.; default: `info`).
+TypeScript configuration:
 
-Here’s how you can run the Docker container while overriding some of these environment variables:
+-   Target: `ES2023`.
+-   Module and resolution: `NodeNext`.
+-   Output directory: `dist/`.
+-   Strict checks: enabled, including `noImplicitAny`, `noUnusedLocals`, and `noUnusedParameters`.
+-   Source maps and incremental builds: enabled.
+
+Prettier configuration:
+
+-   Tabs with width `4`.
+-   Print width `120`.
+-   Single quotes.
+-   Semicolons.
+-   Trailing commas.
+-   JSON and YAML use spaces with width `2`.
+-   Dockerfiles use width `2` and double quotes.
+
+## Testing and Quality
+
+Run the local quality checks before submitting changes:
 
 ```bash
-docker run -d --name wol-sieve -e NODE_ENV=development -e WS_PORT=8080 -e WS_LOG_LEVEL=debug -p 8080:8080 joesofteng/wol-sieve
+npm run format
+npm run build
+npm run test:run
 ```
 
-In this example:
+Testing practices:
 
--   The app is run in `development` mode.
--   The port `8080` is exposed instead of the default `3389`.
--   The log level is set to `debug`.
+-   Place focused tests next to the code under test, for example `src/**/feature.test.ts`.
+-   Avoid network calls in unit tests. Mock `fetch` and use small HTML fixtures.
+-   Keep logs deterministic in tests by stubbing where needed.
+-   Keep production code free of `console` statements and `debugger`; use the shared logger.
 
-### Stopping and Removing the Container
+Internal route handlers and utilities can be tested without exporting them as public API by attaching test-only hooks with
+`TEST_HOOK` from `src/test-helpers/test-hook.ts`.
 
-To stop the running container:
+Example:
+
+```ts
+(router as any)[TEST_HOOK] = { handleFromUrl };
+```
+
+Tests can then read the hook through the same symbol and invoke the internal function directly.
+
+## Docker and Deployment
+
+The Docker image expects compiled output to already exist in `dist/`. Build the TypeScript project before a local Docker
+build:
 
 ```bash
-docker stop wol-sieve
+npm run build
+npm run docker:build
 ```
 
-To remove the container:
+Docker-related package scripts build and push an image named from:
+
+```text
+dkr-reg.home.leaflex.site/<package-name>:latest
+```
+
+The GitHub Actions workflow at `.github/workflows/docker-image.yml` runs on pushes to `main`. It installs dependencies,
+builds the project, and publishes Docker images to Docker Hub using:
+
+```text
+${DOCKER_USERNAME}/wol-sieve
+```
+
+with `latest`, SHA, and branch tags.
+
+To run a built image locally:
 
 ```bash
-docker rm wol-sieve
+npm run docker:run
 ```
 
-## Docker Compose Example
-
-You can also use `docker-compose` to manage `wol-sieve`. Below is a sample `docker-compose.yml` file that starts the
-service:
-
-```yaml
-version: '3.8'
-services:
-    wol-sieve:
-        image: joesofteng/wol-sieve:latest
-        container_name: wol-sieve
-        environment:
-            - NODE_ENV=production
-            - WS_PORT=3389
-            - WS_LOG_LEVEL=info
-        ports:
-            - '3389:3389'
-        restart: unless-stopped
-```
-
-### Starting the Service with Docker Compose
-
-Once you have the `docker-compose.yml` file, you can start the service by running:
+or:
 
 ```bash
-docker-compose up -d
+docker run --rm -p 3389:3389 <image-name>
 ```
 
-This command will start the `wol-sieve` service in detached mode.
+## Contribution Notes
 
-### Stopping the Service
-
-To stop the service, run:
-
-```bash
-docker-compose down
-```
-
-This command will stop and remove the `wol-sieve` container.
-
-## Running the Project Locally for Development
-
-To run the `wol-sieve` project locally for development, follow these steps:
-
-### Prerequisites
-
-Ensure you have the following installed on your machine:
-
--   **Node.js**: Version specified in the `.nvmrc` file. You can use [nvm](https://github.com/nvm-sh/nvm) to manage Node.js versions.
--   **npm**: Comes with Node.js, used for managing packages.
-
-### Setup
-
-1. **Clone the repository**:
-
-    ```bash
-    git clone https://github.com/yourusername/wol-sieve.git
-    cd wol-sieve
-    ```
-
-2. **Install dependencies**:
-
-    ```bash
-    npm install
-    ```
-
-3. **Set up environment variables**:
-   Create a `.env` file in the root directory and configure the necessary environment variables as described in the "Environment Variables" section.
-
-### Development Workflow
-
--   **Compile TypeScript**:
-    The project uses TypeScript, and you need to compile it before running. Use the following command to compile the TypeScript files:
-
-    ```bash
-    npm run build
-    ```
-
--   **Run the development server**:
-    Use `nodemon` to automatically restart the server on file changes:
-
-    ```bash
-    npm start
-    ```
-
--   **Code Formatting**:
-    The project uses Prettier for code formatting. Ensure your code is formatted correctly by running:
-    ```bash
-    npm run format
-    ```
-
-### Additional Notes
-
--   The `tsconfig.json` file is configured to target `ES2023` and uses `NodeNext` for module resolution.
--   The `nodemon.json` file is set up to watch for changes in `.ts` and `.json` files within the `src` directory.
--   Ensure your code adheres to the style guidelines specified in the `.prettierrc` file.
-
-By following these steps, you can set up the project for local development and ensure a smooth workflow with TypeScript and Prettier.
+-   Keep changes focused and covered by relevant tests.
+-   Prefer existing helpers and patterns over new abstractions.
+-   Use `wrapAsyncOp` and `opErrored` for fetcher-style operations that return explicit async result objects.
+-   Use `AppError` for HTTP errors that need status codes or response details.
+-   Create child loggers with useful labels for module-specific logs.
+-   Avoid committing `dist/`, local environment files, caches, or secrets.
+-   Keep long-form project documentation in this README.
 
 ## License
 
