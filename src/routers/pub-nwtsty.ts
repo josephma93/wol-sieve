@@ -6,6 +6,8 @@ import { extractReferencesFromLinks } from '../scrappers/pub-nwtsty/pub-nwtsty.j
 import { clusterBiblicalPassageEntries } from '../services/pub-nwtsty.js';
 
 const log = logger.child({ ...logger.bindings(), label: 'pub-w-nwtsty' });
+const MAX_TOKEN_LIMIT = 128000;
+const DEFAULT_TOKEN_LIMIT = MAX_TOKEN_LIMIT;
 
 export const pubNwtstyRouter = express();
 
@@ -70,7 +72,8 @@ async function validateTokenLimitMiddleware(req: Request, _res: Response, next: 
 	const tokenLimitQuery = req.query.tokenLimit as string | undefined;
 
 	if (tokenLimitQuery === undefined) {
-		next(new AppError('tokenLimit query parameter is required.', 400));
+		req.tokenLimit = DEFAULT_TOKEN_LIMIT;
+		next();
 		return;
 	}
 
@@ -80,9 +83,9 @@ async function validateTokenLimitMiddleware(req: Request, _res: Response, next: 
 		isNaN(parsedTokenLimit) ||
 		parsedTokenLimit <= 0 ||
 		!Number.isInteger(parsedTokenLimit) ||
-		parsedTokenLimit > 128000
+		parsedTokenLimit > MAX_TOKEN_LIMIT
 	) {
-		next(new AppError('Invalid tokenLimit. Must be a positive integer not exceeding 128000.', 400));
+		next(new AppError(`Invalid tokenLimit. Must be a positive integer not exceeding ${MAX_TOKEN_LIMIT}.`, 400));
 		return;
 	}
 
