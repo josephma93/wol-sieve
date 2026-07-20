@@ -108,6 +108,13 @@ const nwtstyHtml = `
 				</div>
 			</div>
 		</div>
+		<div class="section" data-key="v3">
+			<h3 class="title">Psalm 70:3</h3>
+			<div id="v3"><span class="sz">Scripture text without references.</span></div>
+			<div class="group index collapsible">
+				<div class="sx"></div>
+			</div>
+		</div>
 	</div>
 `;
 
@@ -257,6 +264,14 @@ describe('v2 citation scraper contracts', () => {
 		expect(mocks.getJsonContent).toHaveBeenCalledTimes(1);
 	});
 
+	it('omits NWTSTY v2 entries without extracted references', async () => {
+		const link = 'https://wol.jw.org/es/wol/b/r4/lp-s/nwtsty/19/70';
+		const result = await extractReferencesFromLinksV2([link]);
+
+		expect(result.errors).toEqual([]);
+		expect(result.results[0].entries.map(({ mnemonic }) => mnemonic)).toEqual(['Psalm 70:1', 'Psalm 70:2']);
+	});
+
 	it('fails NWTSTY v2 extraction when a shared reference cannot be loaded', async () => {
 		const link = 'https://wol.jw.org/es/wol/b/r4/lp-s/nwtsty/19/70';
 		mocks.getJsonContent.mockResolvedValueOnce({ err: new Error('reference upstream failed'), res: null });
@@ -295,5 +310,59 @@ describe('v2 citation scraper contracts', () => {
 		]);
 		expect(grouped[0].clusters[0][0].citations[0]).not.toHaveProperty('contents');
 		expect(grouped[0].sharedReferences['ref:1'].contents).toBe('Parsed reference contents');
+	});
+
+	it('omits NWTSTY v2 entries without citations before grouped token clustering', () => {
+		const link = 'https://wol.jw.org/es/wol/b/r4/lp-s/nwtsty/19/70';
+		const sharedReferences = {
+			'ref:1': {
+				mnemonic: 'Ref A',
+				referenceType: 'pub-w',
+				issueName: 'Issue source',
+				itemTitle: 'Item title',
+				contents: 'Parsed reference contents',
+			},
+		};
+
+		const grouped = clusterBiblicalPassageEntriesV2(
+			[
+				{
+					link,
+					sharedReferences,
+					entries: [
+						{
+							mnemonic: 'Psalm 70:3',
+							scripture: 'Scripture text without references.',
+							citations: [],
+							citationTokenCount: 9999,
+						},
+						{
+							mnemonic: 'Psalm 70:1',
+							scripture: 'Scripture text.',
+							citations: [{ id: 1, referenceId: 'ref:1' }],
+							citationTokenCount: 1,
+						},
+					],
+				},
+			],
+			10,
+		);
+
+		expect(grouped).toEqual([
+			{
+				link,
+				sharedReferences,
+				clusters: [
+					[
+						{
+							mnemonic: 'Psalm 70:1',
+							scripture: 'Scripture text.',
+							citations: [{ id: 1, referenceId: 'ref:1' }],
+							citationTokenCount: 1,
+						},
+					],
+				],
+			},
+		]);
 	});
 });

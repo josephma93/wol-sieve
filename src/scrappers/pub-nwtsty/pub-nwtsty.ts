@@ -318,6 +318,11 @@ async function _extractBibleReferencesV2(html: string): Promise<BiblicalBookRefe
 			{ entries, sharedReferences },
 			{ sectionKey, sectionTitle, referenceDataInAnchors }: SectionDataForProcess,
 		) => {
+			if (referenceDataInAnchors.length === 0) {
+				log.debug(`Skipping section with key [${sectionKey}] because it has no extracted references.`);
+				return { entries, sharedReferences };
+			}
+
 			const matchingElements = $(`#article [id*="${sectionKey}"]`).filter((_, el) => {
 				return new RegExp(`^[^\\d-]*${sectionKey}(?!\\d)`).test($(el).attr('id') ?? '');
 			});

@@ -93,6 +93,7 @@ export function clusterBiblicalPassageEntriesV2(
 	tokenCountLimit: number,
 ) {
 	return linkExtractionResult.map(({ link, entries, sharedReferences }) => {
+		const entriesWithCitations = entries.filter((entry) => entry.citations.length > 0);
 		const clustersFound: BiblicalPassageRefEntryV2[][] = [];
 		let nextClusterItems: BiblicalPassageRefEntryV2[] = [];
 		let currentClusterTokenCount = 0;
@@ -102,7 +103,7 @@ export function clusterBiblicalPassageEntriesV2(
 			currentClusterTokenCount = 0;
 		}
 
-		for (const entry of entries) {
+		for (const entry of entriesWithCitations) {
 			const tokenCount = entry.citationTokenCount;
 			const doEntryExceedsTokenLimit = tokenCount > tokenCountLimit;
 			const doEntryTokenCountAddsBeyondLimit = currentClusterTokenCount + tokenCount > tokenCountLimit;
