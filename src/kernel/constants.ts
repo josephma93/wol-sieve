@@ -26,7 +26,7 @@ export const CONSTANTS = Object.freeze(
 		LOG_LEVEL: env.LOG_LEVEL,
 		NORMALIZED_PORT_NUMBER: normalizePort(String(env.PORT)),
 		WOL_URL: 'https://wol.jw.org',
-		CSS_SELECTOR_FOR_LINK_TO_LANG: env.CSS_SELECTOR_FOR_LINK_TO_LANG,
+		CSS_SELECTOR_FOR_LINK_TO_LANG: 'link[hreflang="es"]',
 		CSS_SELECTOR_FOR_TODAYS_NAVIGATION_LINK: '#menuToday .todayNav',
 		CSS_SELECTOR_FOR_WEEKLY_BOOKLET_LINK: 'a.pub-mwb.cardLine1Prominent',
 		CSS_SELECTOR_FOR_WATCHTOWER_ARTICLE_LINK: 'a.pub-w.cardLine1Prominent',

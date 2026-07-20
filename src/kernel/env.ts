@@ -2,7 +2,6 @@ interface Env {
 	NODE_ENV: 'development' | 'production' | 'test';
 	PORT: number;
 	LOG_LEVEL: string;
-	CSS_SELECTOR_FOR_LINK_TO_LANG: string;
 	IS_DEV_ENV: boolean;
 	IS_PROD_ENV: boolean;
 	IS_TEST_ENV: boolean;
@@ -17,7 +16,6 @@ const env: Env = {
 	NODE_ENV: determinedNodeEnv,
 	PORT: parseInt(process.env.WS_PORT || '5000', 10),
 	LOG_LEVEL: process.env.WS_LOG_LEVEL || 'info',
-	CSS_SELECTOR_FOR_LINK_TO_LANG: process.env.WS_CSS_SELECTOR_FOR_LINK_TO_LANG || 'link[hreflang="es"]',
 	IS_DEV_ENV: determinedNodeEnv === 'development',
 	IS_PROD_ENV: determinedNodeEnv === 'production',
 	IS_TEST_ENV: determinedNodeEnv === 'test',

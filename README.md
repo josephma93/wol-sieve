@@ -55,12 +55,11 @@ Central error handling is registered in `src/index.ts`. Error responses use this
 
 Runtime configuration is read in `src/kernel/env.ts`.
 
-| Variable                           | Local default         | Docker default        | Notes                                                     |
-| ---------------------------------- | --------------------- | --------------------- | --------------------------------------------------------- |
-| `NODE_ENV`                         | `development`         | `production`          | Must be `development`, `production`, or `test`.           |
-| `WS_PORT`                          | `5000`                | `3389`                | HTTP server port.                                         |
-| `WS_LOG_LEVEL`                     | `info`                | `info`                | Pino log level.                                           |
-| `WS_CSS_SELECTOR_FOR_LINK_TO_LANG` | `link[hreflang="es"]` | `link[hreflang="es"]` | Selector used when resolving language-specific WOL links. |
+| Variable       | Local default | Docker default | Notes                                           |
+| -------------- | ------------- | -------------- | ----------------------------------------------- |
+| `NODE_ENV`     | `development` | `production`   | Must be `development`, `production`, or `test`. |
+| `WS_PORT`      | `5000`        | `3389`         | HTTP server port.                               |
+| `WS_LOG_LEVEL` | `info`        | `info`         | Pino log level.                                 |
 
 Local commands run through `run.sh` load `.env` with `node --env-file=.env`.
 
