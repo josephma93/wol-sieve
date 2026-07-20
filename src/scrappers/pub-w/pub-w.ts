@@ -4,6 +4,13 @@ import { CheerioAPI } from 'cheerio';
 import { fetchAndParseAnchorReferenceOrThrow } from '../../data-fetching/reference-json.js';
 import { getCheerioSelectionOrThrow } from '../../data-extraction/generic.js';
 import { markify } from 'markify-ts';
+import {
+	CitationTextBlock,
+	addParsedReferenceToCitationBlock,
+	addUnableToExtractReferenceToCitationBlock,
+	buildCitationMarker,
+	createCitationTextBlock,
+} from '../../data-extraction/citations.js';
 
 const log = logger.child({ ...logger.bindings(), label: 'pub-w-scraper' });
 
@@ -17,6 +24,10 @@ interface ParagraphData {
 	originalContent: string;
 	content: string;
 	references: Record<number, string>;
+}
+
+interface ParagraphDataV2 extends CitationTextBlock {
+	number: number;
 }
 
 export interface QuestionPartData {
@@ -50,12 +61,30 @@ interface ContentData {
 	};
 }
 
+interface ContentDataV2 {
+	pNumbers: number[];
+	rawQuestionTxt: QuestionData['rawQuestionTxt'];
+	questionParts: QuestionData['parts'];
+	questionTextIfSingle?: QuestionPartData['text'];
+	paragraphs: ParagraphDataV2[];
+	questionReferencedData: ContentData['questionReferencedData'];
+}
+
 interface WatchtowerArticleData {
 	articleNumber: string;
 	articleTitle: string;
 	articleThemeScrip: string;
 	articleTopic: string;
 	contents: ContentData[];
+	teachBlock: TeachBlock;
+}
+
+interface WatchtowerArticleDataV2 {
+	articleNumber: string;
+	articleTitle: string;
+	articleThemeScrip: string;
+	articleTopic: string;
+	contents: ContentDataV2[];
 	teachBlock: TeachBlock;
 }
 
@@ -322,6 +351,53 @@ async function extractParagraphs(
 	return Promise.all(paragraphPromises.get());
 }
 
+async function extractReferencesV2(para: ReturnType<CheerioAPI>): Promise<CitationTextBlock> {
+	const anchorElems = para.find(CONSTANTS.PUB_W_CSS_SELECTOR_RELATED_PARAGRAPH_LINK);
+	const textWithCitationsPara = para.clone();
+	const textWithCitationsAnchors = textWithCitationsPara.find(CONSTANTS.PUB_W_CSS_SELECTOR_RELATED_PARAGRAPH_LINK);
+	for (let i = 0; i < textWithCitationsAnchors.length; i++) {
+		textWithCitationsAnchors.eq(i).replaceWith(buildCitationMarker(i + 1));
+	}
+
+	let block = createCitationTextBlock(cleanText(para.text()), cleanText(textWithCitationsPara.text()));
+
+	for (let i = 0; i < anchorElems.length; i++) {
+		const anchorRef = anchorElems.eq(i);
+		const mnemonic = cleanText(anchorRef.text());
+		log.debug(`Extracting v2 reference: [${mnemonic}]`);
+
+		const opRes = await fetchAndParseAnchorReferenceOrThrow(anchorRef);
+		if (opErrored(opRes)) {
+			log.warn(`Unable to load reference data for mnemonic: [${mnemonic}] due to: [${opRes.err.message}]`);
+			block = addUnableToExtractReferenceToCitationBlock(block, mnemonic);
+			continue;
+		}
+
+		block = addParsedReferenceToCitationBlock(block, mnemonic, opRes.res);
+	}
+
+	return block;
+}
+
+async function extractParagraphsV2($: CheerioAPI, questionPid: string): Promise<ParagraphDataV2[]> {
+	const relatedParagraphs = $(CONSTANTS.PUB_W_CSS_SELECTOR_RELATED_PARAGRAPH(questionPid));
+
+	const paragraphPromises = relatedParagraphs.map(async (_, paraElem) => {
+		const para = $(paraElem);
+		log.debug(`Extracting v2 paragraph related to question [${questionPid}]`);
+
+		const paragraphNumber = parseFloat(para.find('.parNum').attr('data-pnum') || 'NaN');
+		const block = await extractReferencesV2(para);
+
+		return {
+			number: paragraphNumber,
+			...block,
+		};
+	});
+
+	return Promise.all(paragraphPromises.get());
+}
+
 interface QuestionReferencedBoxSupplementData {
 	title: string;
 	content: string;
@@ -442,6 +518,39 @@ async function extractContents($: CheerioAPI): Promise<ContentData[]> {
 	return Promise.all(contentPromises.get());
 }
 
+async function extractContentsV2($: CheerioAPI): Promise<ContentDataV2[]> {
+	const questionElems = $(CONSTANTS.PUB_W_CSS_SELECTOR_QUESTION);
+
+	const contentPromises = questionElems.map(async (_, elem) => {
+		const question = $(elem);
+		const qText = cleanText(question.text());
+		const questionData = extractQuestionData(question);
+
+		const dataPid = question.attr('data-pid');
+		if (!dataPid) {
+			const msg = `Missing data-pid for question ${qText}`;
+			log.error(msg);
+			throw new Error(msg);
+		}
+
+		log.debug(`Processing v2 question [${dataPid}]`);
+
+		const paragraphs = await extractParagraphsV2($, dataPid);
+		const questionReferencedData = await extractQuestionReferencedData($, questionData, dataPid);
+
+		return {
+			pNumbers: questionData.pNumbers,
+			questionParts: questionData.parts,
+			questionTextIfSingle: questionData.parts.length === 1 ? questionData.parts[0].text : undefined,
+			rawQuestionTxt: questionData.rawQuestionTxt,
+			paragraphs,
+			questionReferencedData,
+		};
+	});
+
+	return Promise.all(contentPromises.get());
+}
+
 /**
  * Extracts article contents
  * @param input The input object necessary values for correct extraction.
@@ -457,6 +566,27 @@ export async function extractArticleContents(input: ExtractionContextOptions): P
 	const articleTopic = cleanText($(CONSTANTS.PUB_W_CSS_SELECTOR_ARTICLE_TOPIC).text());
 
 	const contents = await extractContents($);
+	const teachBlock = extractTeachBlock($);
+
+	return {
+		articleNumber,
+		articleTitle,
+		articleThemeScrip,
+		articleTopic,
+		contents,
+		teachBlock,
+	};
+}
+
+export async function extractArticleContentsV2(input: ExtractionContextOptions): Promise<WatchtowerArticleDataV2> {
+	const { $ } = createExtractionContext(input);
+
+	const articleNumber = cleanText($(CONSTANTS.PUB_W_CSS_SELECTOR_ARTICLE_NUMBER).text());
+	const articleTitle = cleanText($(CONSTANTS.PUB_W_CSS_SELECTOR_ARTICLE_TITLE).text());
+	const articleThemeScrip = cleanText($(CONSTANTS.PUB_W_CSS_SELECTOR_ARTICLE_THEME_SCRIP).text());
+	const articleTopic = cleanText($(CONSTANTS.PUB_W_CSS_SELECTOR_ARTICLE_TOPIC).text());
+
+	const contents = await extractContentsV2($);
 	const teachBlock = extractTeachBlock($);
 
 	return {

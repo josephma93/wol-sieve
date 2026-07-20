@@ -2,7 +2,7 @@ import express, { NextFunction, Request, Response } from 'express';
 import { getHtmlContent } from '../../data-fetching/raw.js';
 import { opErrored } from '../../kernel/index.js';
 import { AppError } from '../../kernel/app-error.js';
-import { LfbItem, buildDefaultLinks, extractLfbContents } from '../../scrappers/pub-lfb/pub-lfb.js';
+import { LfbItemV2, buildDefaultLinks, extractLfbContentsV2 } from '../../scrappers/pub-lfb/pub-lfb.js';
 import { TEST_HOOK } from '../../test-helpers/test-hook.js';
 import { normalizeUrlsQueryParam, validateWolUrls } from './helpers.js';
 
@@ -47,9 +47,9 @@ async function handleLfbContents(req: Request, res: Response, next: NextFunction
 	try {
 		const urls = await resolveLfbUrls(req);
 		const htmls = await fetchHtmls(urls);
-		const extractedData: ({ link: string } & LfbItem)[] = await Promise.all(
+		const extractedData: ({ link: string } & LfbItemV2)[] = await Promise.all(
 			htmls.map(async ({ link, html }) => {
-				const parsed = await extractLfbContents({ html });
+				const parsed = await extractLfbContentsV2({ html });
 				return { link, ...parsed };
 			}),
 		);

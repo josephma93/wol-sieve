@@ -7,12 +7,12 @@ import { AppError } from '../../kernel/app-error.js';
 const mocks = vi.hoisted(() => ({
 	buildDefaultLfbLinks: vi.fn(),
 	buildDefaultNwtstyLinks: vi.fn(),
-	clusterBiblicalPassageEntries: vi.fn(),
-	extractArticleContents: vi.fn(),
-	extractFullWeekProgram: vi.fn(),
-	extractLfbContents: vi.fn(),
-	extractReferencesFromLinks: vi.fn(),
-	extractTreasuresTalk: vi.fn(),
+	clusterBiblicalPassageEntriesV2: vi.fn(),
+	extractArticleContentsV2: vi.fn(),
+	extractFullWeekProgramV2: vi.fn(),
+	extractLfbContentsV2: vi.fn(),
+	extractReferencesFromLinksV2: vi.fn(),
+	extractTreasuresTalkV2: vi.fn(),
 	fetchThisWeekMeetingHtml: vi.fn(),
 	fetchThisWeekWatchtowerHtml: vi.fn(),
 	getHtmlContent: vi.fn(),
@@ -29,12 +29,12 @@ vi.mock('../../data-fetching/wol-pages.js', () => ({
 }));
 
 vi.mock('../../scrappers/pub-w/pub-w.js', () => ({
-	extractArticleContents: mocks.extractArticleContents,
+	extractArticleContentsV2: mocks.extractArticleContentsV2,
 }));
 
 vi.mock('../../scrappers/pub-mwb/pub-mwb.js', () => ({
-	extractFullWeekProgram: mocks.extractFullWeekProgram,
-	extractTreasuresTalk: mocks.extractTreasuresTalk,
+	extractFullWeekProgramV2: mocks.extractFullWeekProgramV2,
+	extractTreasuresTalkV2: mocks.extractTreasuresTalkV2,
 }));
 
 vi.mock('../../scrappers/pub-nwtsty/extras.js', () => ({
@@ -43,16 +43,16 @@ vi.mock('../../scrappers/pub-nwtsty/extras.js', () => ({
 }));
 
 vi.mock('../../scrappers/pub-nwtsty/pub-nwtsty.js', () => ({
-	extractReferencesFromLinks: mocks.extractReferencesFromLinks,
+	extractReferencesFromLinksV2: mocks.extractReferencesFromLinksV2,
 }));
 
 vi.mock('../../services/pub-nwtsty.js', () => ({
-	clusterBiblicalPassageEntries: mocks.clusterBiblicalPassageEntries,
+	clusterBiblicalPassageEntriesV2: mocks.clusterBiblicalPassageEntriesV2,
 }));
 
 vi.mock('../../scrappers/pub-lfb/pub-lfb.js', () => ({
 	buildDefaultLinks: mocks.buildDefaultLfbLinks,
-	extractLfbContents: mocks.extractLfbContents,
+	extractLfbContentsV2: mocks.extractLfbContentsV2,
 }));
 
 import { v2Router } from './index.js';
@@ -124,15 +124,15 @@ beforeEach(() => {
 	mocks.fetchThisWeekMeetingHtml.mockResolvedValue({ err: null, res: 'default-meeting-html' });
 	mocks.getHtmlContent.mockImplementation(async (url: string) => ({ err: null, res: `html:${url}` }));
 
-	mocks.extractArticleContents.mockImplementation(async ({ html }: { html: string }) => ({
+	mocks.extractArticleContentsV2.mockImplementation(async ({ html }: { html: string }) => ({
 		kind: 'watchtower',
 		html,
 	}));
-	mocks.extractFullWeekProgram.mockImplementation(async ({ html }: { html: string }) => ({
+	mocks.extractFullWeekProgramV2.mockImplementation(async ({ html }: { html: string }) => ({
 		kind: 'meeting',
 		html,
 	}));
-	mocks.extractTreasuresTalk.mockImplementation(async ({ html }: { html: string }) => ({
+	mocks.extractTreasuresTalkV2.mockImplementation(async ({ html }: { html: string }) => ({
 		kind: 'treasures-talk',
 		html,
 	}));
@@ -141,20 +141,19 @@ beforeEach(() => {
 	mocks.isValidWolBibleBookUrl.mockImplementation((url: string) => {
 		return url.startsWith('https://wol.jw.org/') && url.includes('/nwtsty/');
 	});
-	mocks.extractReferencesFromLinks.mockImplementation(async (links: string[]) => ({
+	mocks.extractReferencesFromLinksV2.mockImplementation(async (links: string[]) => ({
 		errors: [],
 		results: links.map((link) => ({
 			link,
-			entries: [{ citation: link, scripture: 'scripture', references: [], referenceTokenCount: 10 }],
-			sharedMnemonicReferences: {},
+			entries: [{ mnemonic: link, scripture: 'scripture', citations: [], citationTokenCount: 10 }],
 		})),
 	}));
-	mocks.clusterBiblicalPassageEntries.mockImplementation((results: { link: string }[], tokenLimit: number) => {
+	mocks.clusterBiblicalPassageEntriesV2.mockImplementation((results: { link: string }[], tokenLimit: number) => {
 		return results.map(({ link }) => ({ link, tokenLimit, clusters: [] }));
 	});
 
 	mocks.buildDefaultLfbLinks.mockResolvedValue({ err: null, res: [lfbUrl1] });
-	mocks.extractLfbContents.mockImplementation(async ({ html }: { html: string }) => ({
+	mocks.extractLfbContentsV2.mockImplementation(async ({ html }: { html: string }) => ({
 		type: 'LESSON',
 		contents: { html },
 	}));
@@ -256,7 +255,7 @@ describe('/v2/pub-nwtsty', () => {
 		);
 
 		expect(response.status).toBe(200);
-		expect(mocks.extractReferencesFromLinks).toHaveBeenCalledWith([nwtstyUrl1, nwtstyUrl2]);
+		expect(mocks.extractReferencesFromLinksV2).toHaveBeenCalledWith([nwtstyUrl1, nwtstyUrl2]);
 		expect(mocks.buildDefaultNwtstyLinks).not.toHaveBeenCalled();
 	});
 
@@ -265,7 +264,7 @@ describe('/v2/pub-nwtsty', () => {
 
 		expect(response.status).toBe(200);
 		expect(mocks.buildDefaultNwtstyLinks).toHaveBeenCalledTimes(1);
-		expect(mocks.extractReferencesFromLinks).toHaveBeenCalledWith([nwtstyUrl1]);
+		expect(mocks.extractReferencesFromLinksV2).toHaveBeenCalledWith([nwtstyUrl1]);
 	});
 
 	it('groups references with the requested tokenLimit', async () => {
@@ -276,7 +275,7 @@ describe('/v2/pub-nwtsty', () => {
 		);
 
 		expect(response.status).toBe(200);
-		expect(mocks.clusterBiblicalPassageEntries).toHaveBeenCalledWith(expect.any(Array), 1000);
+		expect(mocks.clusterBiblicalPassageEntriesV2).toHaveBeenCalledWith(expect.any(Array), 1000);
 		expect(response.body).toEqual([
 			{ link: nwtstyUrl1, tokenLimit: 1000, clusters: [] },
 			{ link: nwtstyUrl2, tokenLimit: 1000, clusters: [] },

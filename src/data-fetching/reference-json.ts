@@ -9,6 +9,7 @@ import {
 	isJsonContentAcceptableForReferenceExtraction,
 	PublicationRefDetectionData,
 } from '../data-extraction/reference-json-commons.js';
+import { deriveReferenceType } from '../data-extraction/citations.js';
 import { pickAndApplyTextExtractor } from '../data-extraction/extractors-as-text.js';
 import type { CheerioAPI } from 'cheerio';
 import { wrapAsyncOp } from '../kernel/index.js';
@@ -23,6 +24,13 @@ const log = logger.child({ ...logger.bindings(), label: 'tooltip-data-retriever'
  */
 export interface PublicationRefData extends PublicationRefDetectionData {
 	parsedContent: string;
+	referenceType: string;
+	articleClasses: string;
+	englishSymbol: string;
+	pubType: string;
+	publicationTitle: string;
+	source: string;
+	title: string;
 }
 
 /**
@@ -36,6 +44,13 @@ export function buildPublicationRefData(rawReferenceData: BasePublicationItem): 
 	return {
 		...contentDetectionData,
 		parsedContent,
+		referenceType: deriveReferenceType(rawReferenceData),
+		articleClasses: rawReferenceData.articleClasses,
+		englishSymbol: rawReferenceData.englishSymbol || '',
+		pubType: rawReferenceData.pubType,
+		publicationTitle: rawReferenceData.publicationTitle,
+		source: rawReferenceData.source,
+		title: rawReferenceData.title,
 	};
 }
 

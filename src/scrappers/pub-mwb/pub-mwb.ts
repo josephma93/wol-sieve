@@ -21,6 +21,12 @@ import {
 	isJsonContentAcceptableForReferenceExtraction,
 	PublicationRefDetectionData,
 } from '../../data-extraction/reference-json-commons.js';
+import {
+	CitationTextBlock,
+	addParsedReferenceToCitationBlock,
+	buildCitationMarker,
+	createCitationTextBlock,
+} from '../../data-extraction/citations.js';
 
 const log = logger.child({ ...logger.bindings(), label: 'pub-mwb-scraper' });
 
@@ -57,6 +63,13 @@ interface TreasuresTalkData {
 	citations: CitationData[];
 }
 
+interface TreasuresTalkDataV2 {
+	sectionNumber: number;
+	timeBox: number;
+	heading: string;
+	points: CitationTextBlock[];
+}
+
 interface AnswerSource {
 	contents: string;
 	mnemonic: string;
@@ -69,11 +82,23 @@ interface PrintedQuestion {
 	scriptureMnemonic: string;
 }
 
+interface PrintedQuestionV2 extends CitationTextBlock {
+	question: string;
+}
+
 interface SpiritualGemsData {
 	sectionNumber: number;
 	timeBox: number;
 	headline: string;
 	printedQuestionData: PrintedQuestion;
+	openEndedQuestion: string;
+}
+
+interface SpiritualGemsDataV2 {
+	sectionNumber: number;
+	timeBox: number;
+	headline: string;
+	printedQuestionData: PrintedQuestionV2;
 	openEndedQuestion: string;
 }
 
@@ -91,6 +116,13 @@ interface BibleReadData {
 	studyPoint: StudyPoint;
 }
 
+interface BibleReadDataV2 {
+	sectionNumber: number;
+	timeBox: number;
+	headline: string;
+	contents: CitationTextBlock;
+}
+
 interface FieldMinistryAssignmentData {
 	sectionNumber: number;
 	timeBox: number;
@@ -98,6 +130,14 @@ interface FieldMinistryAssignmentData {
 	headline: string;
 	contents: string;
 	studyPoint: StudyPoint | null;
+}
+
+interface FieldMinistryAssignmentDataV2 {
+	sectionNumber: number;
+	timeBox: number;
+	isStudentTask: boolean;
+	headline: string;
+	contents: CitationTextBlock;
 }
 
 interface ChristianLivingSectionData {
@@ -122,6 +162,20 @@ interface FullWeekProgramData {
 	spiritualGems: SpiritualGemsData;
 	bibleRead: BibleReadData;
 	fieldMinistry: FieldMinistryAssignmentData[];
+	middleSong: SongData;
+	christianLiving: ChristianLivingSectionData[];
+	bibleStudy: CongregationBibleStudyData;
+	closingSong: SongData;
+}
+
+interface FullWeekProgramDataV2 {
+	weekDateSpan: string;
+	startingSong: SongData;
+	weeklyBibleReadData: WeeklyBibleReadData;
+	treasuresTalk: TreasuresTalkDataV2;
+	spiritualGems: SpiritualGemsDataV2;
+	bibleRead: BibleReadDataV2;
+	fieldMinistry: FieldMinistryAssignmentDataV2[];
 	middleSong: SongData;
 	christianLiving: ChristianLivingSectionData[];
 	bibleStudy: CongregationBibleStudyData;
@@ -353,6 +407,41 @@ function getTimeBoxFromElement($selection: ReturnType<CheerioAPI>): number {
 	throw new Error(msg);
 }
 
+async function buildRequiredCitationBlockFromAnchors(
+	anchors: ReturnType<CheerioAPI>,
+	seedText: string,
+	textWithCitations = seedText,
+): Promise<CitationTextBlock> {
+	let block = createCitationTextBlock(seedText, textWithCitations);
+
+	for (let i = 0; i < anchors.length; i++) {
+		const $anchor = anchors.eq(i);
+		const mnemonic = cleanText($anchor.text());
+		const opRes = await fetchAndParseAnchorReferenceOrThrow($anchor);
+		if (opRes.err) {
+			throw opRes.err;
+		}
+
+		block = addParsedReferenceToCitationBlock(block, mnemonic, opRes.res);
+	}
+
+	return block;
+}
+
+function buildTextWithCitationMarkers(
+	selection: ReturnType<CheerioAPI>,
+	selectAnchors: (selection: ReturnType<CheerioAPI>) => ReturnType<CheerioAPI>,
+	textFormatter: (text: string) => string = (text) => text,
+): string {
+	const textWithCitationsSelection = selection.clone();
+	const anchors = selectAnchors(textWithCitationsSelection);
+	for (let i = 0; i < anchors.length; i++) {
+		anchors.eq(i).replaceWith(buildCitationMarker(i + 1));
+	}
+
+	return textFormatter(cleanText(textWithCitationsSelection.text()));
+}
+
 /**
  * Extracts the treasures talk data from the given input.
  * @param input The input object necessary values for correct extraction.
@@ -423,6 +512,40 @@ export async function extractTreasuresTalk(input: ExtractionContextOptions): Pro
 	}
 
 	log.info(`Extracted ten-minute talk data`);
+	return result;
+}
+
+export async function extractTreasuresTalkV2(input: ExtractionContextOptions): Promise<TreasuresTalkDataV2> {
+	log.info('Extracting v2 treasures talk data');
+
+	input.selectionBuilder = ($) => buildGodsTreasuresSelections($).treasuresTalk;
+	const { selection: $treasuresTalkSelection } = createExtractionContext(input);
+	const headlineData = parseSectionHeadlineDataFromElement(
+		$treasuresTalkSelection.find(CONSTANTS.PUB_MWB_CSS_SELECTOR_LINE_WITH_SECTION_NUMBER),
+	);
+
+	const result: TreasuresTalkDataV2 = {
+		sectionNumber: headlineData.number,
+		timeBox: getTimeBoxFromElement($treasuresTalkSelection),
+		heading: headlineData.headline,
+		points: [],
+	};
+
+	const $points = $treasuresTalkSelection.find(`> div > p`);
+	log.debug(`Found [${$points.length}] v2 points in the talk`);
+
+	for (let i = 0; i < $points.length; i++) {
+		const $point = $points.eq(i);
+		const pointText = cleanText($point.text());
+		const selectReferences = (selection: ReturnType<CheerioAPI>) => selection.find(`a:not([data-video])`);
+		const $references = selectReferences($point);
+		const textWithCitations = buildTextWithCitationMarkers($point, selectReferences);
+
+		result.points.push(await buildRequiredCitationBlockFromAnchors($references, pointText, textWithCitations));
+		log.debug(`Added v2 talk point [${i + 1}]`);
+	}
+
+	log.info(`Extracted v2 ten-minute talk data`);
 	return result;
 }
 
@@ -572,6 +695,45 @@ export async function extractSpiritualGems(input: ExtractionContextOptions): Pro
 	return result;
 }
 
+export async function extractSpiritualGemsV2(input: ExtractionContextOptions): Promise<SpiritualGemsDataV2> {
+	log.info('Extracting v2 spiritual gems data');
+
+	input.selectionBuilder = ($) => buildGodsTreasuresSelections($).spiritualGems;
+	const { selection: $spiritualGemsSelection } = createExtractionContext(input);
+	const $content = $spiritualGemsSelection.eq(1);
+
+	const $scriptureAnchorSelection = $content.find(`a.b:first-child`);
+	if ($scriptureAnchorSelection.length !== 1) {
+		const msg = `Unexpected number of elements for scripture anchor.`;
+		log.error(msg);
+		throw new Error(msg);
+	}
+
+	const $pElement = $scriptureAnchorSelection.parent();
+	const question = extractSpiritualGemQuestion($pElement);
+	const selectReferences = (selection: ReturnType<CheerioAPI>) => selection.find('a');
+	const printedQuestionBlock = await buildRequiredCitationBlockFromAnchors(
+		selectReferences($pElement),
+		cleanText($pElement.text()),
+		buildTextWithCitationMarkers($pElement, selectReferences),
+	);
+	const headlineData = parseSectionHeadlineDataFromElement($spiritualGemsSelection.eq(0));
+
+	const result: SpiritualGemsDataV2 = {
+		sectionNumber: headlineData.number,
+		timeBox: getTimeBoxFromElement($content),
+		headline: headlineData.headline,
+		printedQuestionData: {
+			...printedQuestionBlock,
+			question,
+		},
+		openEndedQuestion: cleanText($content.find(`li.du-margin-top--8 p`).text()),
+	};
+
+	log.info(`Extracted v2 spiritual gems data`);
+	return result;
+}
+
 /**
  * Extracts the bible reading data from the given input.
  * @param input The input object necessary values for correct extraction.
@@ -620,6 +782,41 @@ export async function extractBibleRead(input: ExtractionContextOptions): Promise
 	result.studyPoint.contents = opRes.res.parsedContent;
 
 	log.info(`Extracted Bible reading data`);
+	return result;
+}
+
+export async function extractBibleReadV2(input: ExtractionContextOptions): Promise<BibleReadDataV2> {
+	log.info('Extracting v2 Bible reading data');
+
+	input.selectionBuilder = ($) => buildGodsTreasuresSelections($).bibleRead;
+	const { selection: $bibleReadSelection } = createExtractionContext(input);
+	const $content = $bibleReadSelection.eq(1);
+	const headlineData = parseSectionHeadlineDataFromElement($bibleReadSelection.eq(0));
+	const $anchorSelection = $content.find(`a`);
+	if ($anchorSelection.length !== 2) {
+		const msg = `Unexpected number of elements for bible reading anchor.`;
+		log.error(msg);
+		throw new Error(msg);
+	}
+
+	const contents = await buildRequiredCitationBlockFromAnchors(
+		$anchorSelection,
+		cleanText(takeOutTimeBoxText($content.text())),
+		buildTextWithCitationMarkers(
+			$content,
+			(selection) => selection.find('a'),
+			(text) => takeOutTimeBoxText(text),
+		),
+	);
+
+	const result: BibleReadDataV2 = {
+		sectionNumber: headlineData.number,
+		timeBox: getTimeBoxFromElement($content),
+		headline: headlineData.headline,
+		contents,
+	};
+
+	log.info(`Extracted v2 Bible reading data`);
 	return result;
 }
 
@@ -711,6 +908,53 @@ export async function extractFieldMinistry(input: ExtractionContextOptions): Pro
 		log.debug(`Added study point`);
 
 		log.info(`Extracted field ministry assignment`);
+		return result;
+	});
+
+	return Promise.all(promises);
+}
+
+export async function extractFieldMinistryV2(
+	input: ExtractionContextOptions,
+): Promise<FieldMinistryAssignmentDataV2[]> {
+	log.info('Extracting v2 field ministry data');
+	input.selectionBuilder = ($) => buildFieldMinistrySelections($).fieldMinistry;
+	const { $, selection: $fieldMinistrySelection } = createExtractionContext(input);
+	const assignmentGroups = buildHeadlineToContentGroups($fieldMinistrySelection, $);
+
+	const promises = assignmentGroups.map(async ({ heading, contents: [assignmentContents] }) => {
+		const contentsText = cleanText(assignmentContents.text());
+		const headlineData = parseSectionHeadlineDataFromElement(heading);
+		const contentsWithoutTimeBox = takeOutTimeBoxText(contentsText);
+		const result: FieldMinistryAssignmentDataV2 = {
+			sectionNumber: headlineData.number,
+			timeBox: getTimeBoxFromElement(assignmentContents),
+			isStudentTask: /\(.*?\).*?\(.*?\)/.test(contentsText),
+			headline: headlineData.headline,
+			contents: createCitationTextBlock(contentsWithoutTimeBox),
+		};
+
+		log.debug(`Processing v2 assignment: [${result.headline}], isStudentTask=[${result.isStudentTask}]`);
+
+		if (!result.isStudentTask) {
+			log.info(`Extracted v2 field ministry assignment`);
+			return result;
+		}
+
+		const $studyPointAnchor = assignmentContents.find(`a`).slice(-1);
+		if ($studyPointAnchor.length !== 1) {
+			const msg = `Unable to find study point anchor.`;
+			log.error(msg);
+			throw new Error(msg);
+		}
+
+		const selectStudyPointAnchor = (selection: ReturnType<CheerioAPI>) => selection.find('a').slice(-1);
+		result.contents = await buildRequiredCitationBlockFromAnchors(
+			$studyPointAnchor,
+			contentsWithoutTimeBox,
+			buildTextWithCitationMarkers(assignmentContents, selectStudyPointAnchor, takeOutTimeBoxText),
+		);
+		log.info(`Extracted v2 field ministry assignment`);
 		return result;
 	});
 
@@ -828,5 +1072,49 @@ export async function extractFullWeekProgram(input: ExtractionContextOptions): P
 	};
 
 	log.info('Successfully extracted full week program');
+	return result;
+}
+
+export async function extractFullWeekProgramV2(input: ExtractionContextOptions): Promise<FullWeekProgramDataV2> {
+	log.info('Starting v2 full week program extraction');
+	const inputObj = createExtractionContext(input);
+	const { $ } = inputObj;
+	const programGroups = buildRelevantProgramGroupSelections($);
+
+	const weekDateSpan = extractWeekDateSpan(inputObj);
+	const christianLiving = extractChristianLiving({ $, selection: programGroups.christianLiving });
+	const bibleStudy = extractBibleStudy({ $, selection: programGroups.bibleStudy });
+
+	const [
+		[startingSong, middleSong, closingSong],
+		weeklyBibleReadData,
+		treasuresTalk,
+		spiritualGems,
+		bibleRead,
+		fieldMinistry,
+	] = await Promise.all([
+		extractSongData({ $, selection: programGroups.songs }),
+		extractWeeklyBibleRead({ $, selection: programGroups.bibleRead }),
+		extractTreasuresTalkV2({ $, selection: programGroups.treasuresTalk }),
+		extractSpiritualGemsV2({ $, selection: programGroups.spiritualGems }),
+		extractBibleReadV2({ $, selection: programGroups.bibleRead }),
+		extractFieldMinistryV2({ $, selection: programGroups.fieldMinistry }),
+	]);
+
+	const result: FullWeekProgramDataV2 = {
+		weekDateSpan,
+		startingSong: startingSong,
+		weeklyBibleReadData,
+		treasuresTalk,
+		spiritualGems,
+		bibleRead,
+		fieldMinistry,
+		middleSong: middleSong,
+		christianLiving,
+		bibleStudy,
+		closingSong: closingSong,
+	};
+
+	log.info('Successfully extracted v2 full week program');
 	return result;
 }

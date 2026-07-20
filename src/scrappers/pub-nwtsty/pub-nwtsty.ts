@@ -1,11 +1,16 @@
 import { CONSTANTS, ErrorResult, logger, opErrored, wrapAsyncOp } from '../../kernel/index.js';
 import * as cheerio from 'cheerio';
-import { fetchAndParseAnchorReferenceOrThrow } from '../../data-fetching/reference-json.js';
+import { PublicationRefData, fetchAndParseAnchorReferenceOrThrow } from '../../data-fetching/reference-json.js';
 import { CheerioAPI } from 'cheerio';
 import { cleanText } from '../../kernel/util.js';
 import { extractPubNwtstyReferenceAsText } from '../../data-extraction/extractors-as-text.js';
 import { getHtmlContent } from '../../data-fetching/raw.js';
 import { get_encoding } from 'tiktoken';
+import {
+	Citation,
+	buildCitationFromParsedReference,
+	buildUnableToExtractCitation,
+} from '../../data-extraction/citations.js';
 
 const log = logger.child({ ...logger.bindings(), label: 'pub-w-nwtsty' });
 
@@ -82,6 +87,17 @@ export interface BiblicalPassageRefEntry {
 export interface BiblicalBookReferenceData {
 	entries: BiblicalPassageRefEntry[];
 	sharedMnemonicReferences: Record<string, string>;
+}
+
+export interface BiblicalPassageRefEntryV2 {
+	mnemonic: string;
+	scripture: string;
+	citations: Citation[];
+	citationTokenCount: number;
+}
+
+export interface BiblicalBookReferenceDataV2 {
+	entries: BiblicalPassageRefEntryV2[];
 }
 
 declare type SectionIndex = number;
@@ -217,7 +233,85 @@ async function _extractBibleReferences(html: string): Promise<BiblicalBookRefere
 
 const extractBibleReferences = wrapAsyncOp(_extractBibleReferences);
 
+async function _extractBibleReferencesV2(html: string): Promise<BiblicalBookReferenceDataV2> {
+	log.info('Starting to parse v2 Bible reference');
+	const $ = cheerio.load(html);
+	normalizeMnemonics($);
+	const dataInSectionsToProcess = pickRelevantDOMData($);
+	const referenceFetchesByMnemonic: Map<string, Promise<PublicationRefData | Error>> = new Map();
+
+	for (const { referenceDataInAnchors } of dataInSectionsToProcess) {
+		for (const { $anchor, mnemonic } of referenceDataInAnchors) {
+			if (referenceFetchesByMnemonic.has(mnemonic)) {
+				continue;
+			}
+
+			referenceFetchesByMnemonic.set(
+				mnemonic,
+				fetchAndParseAnchorReferenceOrThrow($anchor).then((opRes) => {
+					if (opErrored(opRes)) {
+						log.warn(
+							`Unable to load reference data for mnemonic: [${mnemonic}] due to: [${opRes.err.message}]`,
+						);
+						return opRes.err;
+					}
+
+					log.debug(`Finished extracting v2 data for mnemonic: [${mnemonic}]`);
+					return opRes.res;
+				}),
+			);
+		}
+	}
+
+	const referencesByMnemonic: Map<string, PublicationRefData | Error> = new Map();
+	await Promise.all(
+		[...referenceFetchesByMnemonic.entries()].map(async ([mnemonic, referenceFetch]) => {
+			referencesByMnemonic.set(mnemonic, await referenceFetch);
+		}),
+	);
+
+	return dataInSectionsToProcess.reduce(
+		({ entries }, { sectionKey, sectionTitle, referenceDataInAnchors }: SectionDataForProcess) => {
+			const matchingElements = $(`#article [id*="${sectionKey}"]`).filter((_, el) => {
+				return new RegExp(`^[^\\d-]*${sectionKey}(?!\\d)`).test($(el).attr('id') ?? '');
+			});
+			const scripture = extractPubNwtstyReferenceAsText(matchingElements, $);
+			let citationTokenCount = 0;
+
+			const citations = referenceDataInAnchors.map(({ mnemonic }, index) => {
+				const id = index + 1;
+				const fetchedReference = referencesByMnemonic.get(mnemonic);
+				const citation =
+					fetchedReference instanceof Error || fetchedReference === undefined
+						? buildUnableToExtractCitation({ id, mnemonic })
+						: buildCitationFromParsedReference({ id, mnemonic, parsedReference: fetchedReference });
+
+				citationTokenCount += computeNumberOfTokensForString(citation.contents);
+				return citation;
+			});
+
+			entries.push({
+				mnemonic: sectionTitle,
+				scripture,
+				citations,
+				citationTokenCount,
+			});
+
+			return { entries };
+		},
+		{
+			entries: [],
+		} as BiblicalBookReferenceDataV2,
+	);
+}
+
+const extractBibleReferencesV2 = wrapAsyncOp(_extractBibleReferencesV2);
+
 export interface NwtstyReferenceDataResult extends BiblicalBookReferenceData {
+	link: string;
+}
+
+export interface NwtstyReferenceDataResultV2 extends BiblicalBookReferenceDataV2 {
 	link: string;
 }
 
@@ -228,6 +322,11 @@ interface NwtstyReferenceDataError {
 
 interface NwtstyReferenceData {
 	results: NwtstyReferenceDataResult[];
+	errors: NwtstyReferenceDataError[];
+}
+
+interface NwtstyReferenceDataV2 {
+	results: NwtstyReferenceDataResultV2[];
 	errors: NwtstyReferenceDataError[];
 }
 
@@ -284,5 +383,55 @@ export async function extractReferencesFromLinks(links: string[]): Promise<Nwtst
 	}
 
 	log.info('Finished processing all reference links.');
+	return result;
+}
+
+export async function extractReferencesFromLinksV2(links: string[]): Promise<NwtstyReferenceDataV2> {
+	log.info('Starting to extract v2 references from links');
+
+	const opResults = await Promise.all(
+		links.map(async (link) => {
+			const opRes = await getHtmlContent(link);
+			return {
+				link,
+				opRes,
+			};
+		}),
+	);
+
+	const result: NwtstyReferenceDataV2 = {
+		errors: [],
+		results: [],
+	};
+
+	function registerOpWithErr({ link, opRes }: { link: string; opRes: ErrorResult }) {
+		const errorMsg = `Error processing link [${link}] due to: [${opRes.err.message}]`;
+		log.warn(errorMsg);
+		result.errors.push({
+			link: link,
+			error: errorMsg,
+		});
+	}
+
+	for (const { link, opRes } of opResults) {
+		if (opErrored(opRes)) {
+			registerOpWithErr({ link, opRes });
+			continue;
+		}
+		const extractRes = await extractBibleReferencesV2(opRes.res);
+		if (opErrored(extractRes)) {
+			registerOpWithErr({ link, opRes: extractRes });
+			continue;
+		}
+		log.debug(`V2 reference extraction for link [${link}] was successful.`);
+		const extracted = extractRes.res;
+
+		result.results.push({
+			link,
+			entries: extracted.entries,
+		});
+	}
+
+	log.info('Finished processing all v2 reference links.');
 	return result;
 }

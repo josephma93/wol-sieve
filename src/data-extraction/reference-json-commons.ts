@@ -38,6 +38,7 @@ export interface BasePublicationItem {
 	caption: string;
 	content: string;
 	articleClasses: string;
+	englishSymbol?: string;
 	reference: string;
 	categories: string[];
 	pubType: string;
