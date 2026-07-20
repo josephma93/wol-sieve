@@ -135,6 +135,10 @@ function expectedNwtstyResult(link: string) {
 	};
 }
 
+function expectedLfbResult(link: string) {
+	return { link, type: 'LESSON', contents: { html: `html:${link}` } };
+}
+
 beforeEach(() => {
 	vi.clearAllMocks();
 
@@ -216,14 +220,9 @@ describe('/v2 pretty JSON', () => {
 
 		expect(response.status).toBe(200);
 		expect(response.contentType).toContain('application/json');
-		expect(response.body).toEqual({
-			results: [
-				{ link: lfbUrl1, type: 'LESSON', contents: { html: `html:${lfbUrl1}` } },
-				{ link: lfbUrl2, type: 'LESSON', contents: { html: `html:${lfbUrl2}` } },
-			],
-		});
+		expect(response.body).toEqual([expectedLfbResult(lfbUrl1), expectedLfbResult(lfbUrl2)]);
 		expect(response.text).toContain('\n');
-		expect(response.text).toContain('"results"');
+		expect(response.text).toContain('"link"');
 		expect(response.text).not.toBe(JSON.stringify(response.body));
 	});
 
@@ -463,15 +462,18 @@ describe('/v2/pub-lfb', () => {
 		const response = await request(`/v2/pub-lfb/?urls=${encodeQueryUrl(lfbUrl1)}&urls=${encodeQueryUrl(lfbUrl2)}`);
 
 		expect(response.status).toBe(200);
-		expect(response.body).toEqual({
-			results: [
-				{ link: lfbUrl1, type: 'LESSON', contents: { html: `html:${lfbUrl1}` } },
-				{ link: lfbUrl2, type: 'LESSON', contents: { html: `html:${lfbUrl2}` } },
-			],
-		});
+		expect(response.body).toEqual([expectedLfbResult(lfbUrl1), expectedLfbResult(lfbUrl2)]);
 		expect(mocks.buildDefaultLfbLinks).not.toHaveBeenCalled();
 		expect(mocks.getHtmlContent).toHaveBeenCalledWith(lfbUrl1);
 		expect(mocks.getHtmlContent).toHaveBeenCalledWith(lfbUrl2);
+	});
+
+	it('uses default LFB links when urls is absent', async () => {
+		const response = await request('/v2/pub-lfb/');
+
+		expect(response.status).toBe(200);
+		expect(mocks.buildDefaultLfbLinks).toHaveBeenCalledTimes(1);
+		expect(response.body).toEqual([expectedLfbResult(lfbUrl1)]);
 	});
 
 	it('rejects urls outside wol.jw.org', async () => {
@@ -484,5 +486,47 @@ describe('/v2/pub-lfb', () => {
 			details: { invalid_urls: ['https://example.com/lesson'] },
 		});
 		expect(mocks.getHtmlContent).not.toHaveBeenCalled();
+	});
+
+	it('treats invalid default LFB links as upstream failures', async () => {
+		const invalidDefaultUrl = 'https://example.com/lesson';
+		mocks.buildDefaultLfbLinks.mockResolvedValueOnce({ err: null, res: [invalidDefaultUrl] });
+
+		const response = await request('/v2/pub-lfb/');
+
+		expect(response.status).toBe(502);
+		expect(response.body).toMatchObject({
+			status: 'error',
+			message: 'Default LFB links are invalid.',
+			details: { invalid_urls: [invalidDefaultUrl] },
+		});
+		expect(mocks.getHtmlContent).not.toHaveBeenCalled();
+	});
+
+	it('fails the whole LFB request when any link fetch fails', async () => {
+		mocks.getHtmlContent.mockResolvedValueOnce({ err: new Error('fetch failed'), res: null });
+
+		const response = await request(`/v2/pub-lfb/?urls=${encodeQueryUrl(lfbUrl1)}`);
+
+		expect(response.status).toBe(502);
+		expect(response.body).toMatchObject({
+			status: 'error',
+			message: `Error fetching ${lfbUrl1}: fetch failed`,
+			details: { link: lfbUrl1 },
+		});
+		expect(mocks.extractLfbContentsV2).not.toHaveBeenCalled();
+	});
+
+	it('fails the whole LFB request when any link extraction fails', async () => {
+		mocks.extractLfbContentsV2.mockRejectedValueOnce(new Error('parse failed'));
+
+		const response = await request(`/v2/pub-lfb/?urls=${encodeQueryUrl(lfbUrl1)}`);
+
+		expect(response.status).toBe(502);
+		expect(response.body).toMatchObject({
+			status: 'error',
+			message: `Error extracting ${lfbUrl1}: parse failed`,
+			details: { link: lfbUrl1 },
+		});
 	});
 });
