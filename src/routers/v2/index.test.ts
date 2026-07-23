@@ -7,12 +7,14 @@ import { AppError } from '../../kernel/app-error.js';
 const mocks = vi.hoisted(() => ({
 	buildDefaultLfbLinks: vi.fn(),
 	buildDefaultNwtstyLinks: vi.fn(),
+	buildDefaultWcgLinks: vi.fn(),
 	clusterBiblicalPassageEntriesV2: vi.fn(),
 	extractArticleContentsV2: vi.fn(),
 	extractFullWeekProgramV2: vi.fn(),
 	extractLfbContentsV2: vi.fn(),
 	extractReferencesFromLinksV2: vi.fn(),
 	extractTreasuresTalkV2: vi.fn(),
+	extractWcgContents: vi.fn(),
 	fetchThisWeekMeetingHtml: vi.fn(),
 	fetchThisWeekWatchtowerHtml: vi.fn(),
 	getHtmlContent: vi.fn(),
@@ -55,12 +57,19 @@ vi.mock('../../scrappers/pub-lfb/pub-lfb.js', () => ({
 	extractLfbContentsV2: mocks.extractLfbContentsV2,
 }));
 
+vi.mock('../../scrappers/pub-wcg/pub-wcg.js', () => ({
+	buildDefaultLinks: mocks.buildDefaultWcgLinks,
+	extractWcgContents: mocks.extractWcgContents,
+}));
+
 import { v2Router } from './index.js';
 
 const nwtstyUrl1 = 'https://wol.jw.org/es/wol/b/r4/lp-s/nwtsty/19/70';
 const nwtstyUrl2 = 'https://wol.jw.org/es/wol/b/r4/lp-s/nwtsty/19/71';
 const lfbUrl1 = 'https://wol.jw.org/es/wol/d/r4/lp-s/1102016021';
 const lfbUrl2 = 'https://wol.jw.org/es/wol/d/r4/lp-s/1102016022';
+const wcgUrl1 = 'https://wol.jw.org/es/wol/d/r4/lp-s/1102025910';
+const wcgUrl2 = 'https://wol.jw.org/es/wol/d/r4/lp-s/1102025911';
 
 interface TestResponse {
 	status: number;
@@ -139,6 +148,10 @@ function expectedLfbResult(link: string) {
 	return { link, type: 'LESSON', contents: { html: `html:${link}` } };
 }
 
+function expectedWcgResult(link: string) {
+	return { link, type: 'LESSON', contents: { html: `html:${link}` } };
+}
+
 beforeEach(() => {
 	vi.clearAllMocks();
 
@@ -178,6 +191,12 @@ beforeEach(() => {
 		type: 'LESSON',
 		contents: { html },
 	}));
+
+	mocks.buildDefaultWcgLinks.mockResolvedValue({ err: null, res: [wcgUrl1] });
+	mocks.extractWcgContents.mockImplementation(async ({ html }: { html: string }) => ({
+		type: 'LESSON',
+		contents: { html },
+	}));
 });
 
 afterEach(() => {
@@ -196,6 +215,7 @@ describe('/v2', () => {
 		expect(body).toContain('href="/v2/pub-mwb/treasures-talk"');
 		expect(body).toContain('href="/v2/pub-nwtsty/grouped');
 		expect(body).toContain('href="/v2/pub-lfb/');
+		expect(body).toContain('href="/v2/pub-wcg/');
 		expect(mocks.fetchThisWeekWatchtowerHtml).not.toHaveBeenCalled();
 		expect(mocks.fetchThisWeekMeetingHtml).not.toHaveBeenCalled();
 	});
@@ -527,6 +547,80 @@ describe('/v2/pub-lfb', () => {
 			status: 'error',
 			message: `Error extracting ${lfbUrl1}: parse failed`,
 			details: { link: lfbUrl1 },
+		});
+	});
+});
+
+describe('/v2/pub-wcg', () => {
+	it('uses urls query params to fetch and extract WCG contents', async () => {
+		const response = await request(`/v2/pub-wcg/?urls=${encodeQueryUrl(wcgUrl1)}&urls=${encodeQueryUrl(wcgUrl2)}`);
+
+		expect(response.status).toBe(200);
+		expect(response.body).toEqual([expectedWcgResult(wcgUrl1), expectedWcgResult(wcgUrl2)]);
+		expect(mocks.buildDefaultWcgLinks).not.toHaveBeenCalled();
+		expect(mocks.getHtmlContent).toHaveBeenCalledWith(wcgUrl1);
+		expect(mocks.getHtmlContent).toHaveBeenCalledWith(wcgUrl2);
+	});
+
+	it('uses default WCG links when urls is absent', async () => {
+		const response = await request('/v2/pub-wcg/');
+
+		expect(response.status).toBe(200);
+		expect(mocks.buildDefaultWcgLinks).toHaveBeenCalledTimes(1);
+		expect(response.body).toEqual([expectedWcgResult(wcgUrl1)]);
+	});
+
+	it('rejects urls outside wol.jw.org', async () => {
+		const response = await request('/v2/pub-wcg/?urls=https%3A%2F%2Fexample.com%2Flesson');
+
+		expect(response.status).toBe(400);
+		expect(response.body).toMatchObject({
+			status: 'fail',
+			message: 'Some urls are invalid',
+			details: { invalid_urls: ['https://example.com/lesson'] },
+		});
+		expect(mocks.getHtmlContent).not.toHaveBeenCalled();
+	});
+
+	it('treats invalid default WCG links as upstream failures', async () => {
+		const invalidDefaultUrl = 'https://example.com/lesson';
+		mocks.buildDefaultWcgLinks.mockResolvedValueOnce({ err: null, res: [invalidDefaultUrl] });
+
+		const response = await request('/v2/pub-wcg/');
+
+		expect(response.status).toBe(502);
+		expect(response.body).toMatchObject({
+			status: 'error',
+			message: 'Default WCG links are invalid.',
+			details: { invalid_urls: [invalidDefaultUrl] },
+		});
+		expect(mocks.getHtmlContent).not.toHaveBeenCalled();
+	});
+
+	it('fails the whole WCG request when any link fetch fails', async () => {
+		mocks.getHtmlContent.mockResolvedValueOnce({ err: new Error('fetch failed'), res: null });
+
+		const response = await request(`/v2/pub-wcg/?urls=${encodeQueryUrl(wcgUrl1)}`);
+
+		expect(response.status).toBe(502);
+		expect(response.body).toMatchObject({
+			status: 'error',
+			message: `Error fetching ${wcgUrl1}: fetch failed`,
+			details: { link: wcgUrl1 },
+		});
+		expect(mocks.extractWcgContents).not.toHaveBeenCalled();
+	});
+
+	it('fails the whole WCG request when any link extraction fails', async () => {
+		mocks.extractWcgContents.mockRejectedValueOnce(new Error('parse failed'));
+
+		const response = await request(`/v2/pub-wcg/?urls=${encodeQueryUrl(wcgUrl1)}`);
+
+		expect(response.status).toBe(502);
+		expect(response.body).toMatchObject({
+			status: 'error',
+			message: `Error extracting ${wcgUrl1}: parse failed`,
+			details: { link: wcgUrl1 },
 		});
 	});
 });

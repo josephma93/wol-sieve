@@ -3,6 +3,7 @@ import { pubLfbV2Router } from './pub-lfb.js';
 import { pubMwbV2Router } from './pub-mwb.js';
 import { pubNwtstyV2Router } from './pub-nwtsty.js';
 import { pubWV2Router } from './pub-w.js';
+import { pubWcgV2Router } from './pub-wcg.js';
 import { prettyJsonResponseMiddleware } from './pretty-json.js';
 
 export const v2Router = express.Router();
@@ -88,6 +89,14 @@ v2Router.get('/', (_req, res) => {
 			<li><a href="/v2/pub-lfb/?urls=https://wol.jw.org/es/wol/d/r4/lp-s/1102016021&amp;urls=https://wol.jw.org/es/wol/d/r4/lp-s/1102016022">GET /v2/pub-lfb/?urls=...&amp;urls=...</a></li>
 		</ul>
 	</section>
+
+	<section>
+		<h2>Courage Book</h2>
+		<ul>
+			<li><a href="/v2/pub-wcg/">GET /v2/pub-wcg/</a></li>
+			<li><a href="/v2/pub-wcg/?urls=https://wol.jw.org/es/wol/d/r4/lp-s/1102025910">GET /v2/pub-wcg/?urls=...</a></li>
+		</ul>
+	</section>
 </body>
 </html>`);
 });
@@ -98,3 +107,4 @@ v2Router.use('/pub-w', pubWV2Router);
 v2Router.use('/pub-mwb', pubMwbV2Router);
 v2Router.use('/pub-nwtsty', pubNwtstyV2Router);
 v2Router.use('/pub-lfb', pubLfbV2Router);
+v2Router.use('/pub-wcg', pubWcgV2Router);
