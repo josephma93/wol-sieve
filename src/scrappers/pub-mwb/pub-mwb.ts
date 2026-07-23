@@ -1003,7 +1003,6 @@ export function extractBibleStudy(input: ExtractionContextOptions): Congregation
 	log.info('Extracting Bible study section data');
 	input.selectionBuilder = ($) => buildChristianLivingSelections($).bibleStudy;
 	const { $, selection: $bibleStudySelection } = createExtractionContext(input);
-	console.log($bibleStudySelection.html());
 	const headlineData = parseSectionHeadlineDataFromElement($bibleStudySelection.eq(0));
 
 	const result: CongregationBibleStudyData = {

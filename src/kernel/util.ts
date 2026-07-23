@@ -17,6 +17,15 @@ export function cleanText(txt: any): string {
 }
 
 /**
+ * Cleans text intended for inline display by trimming, replacing NBSP characters, and collapsing all whitespace runs.
+ * @param txt - The text to clean.
+ * @returns Cleaned single-line text or empty string if the given value is not a string.
+ */
+export function cleanInlineText(txt: any): string {
+	return cleanText(txt).replace(/\s+/g, ' ');
+}
+
+/**
  * Collapses consecutive line breaks with a single line break in the given text.
  * @param txt - The text to collapse line breaks in.
  * @returns Collapsed text or empty string if the given value is not a string.

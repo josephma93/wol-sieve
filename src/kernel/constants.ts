@@ -30,11 +30,13 @@ export const CONSTANTS = Object.freeze(
 		CSS_SELECTOR_FOR_TODAYS_NAVIGATION_LINK: '#menuToday .todayNav',
 		CSS_SELECTOR_FOR_WEEKLY_BOOKLET_LINK: 'a.pub-mwb.cardLine1Prominent',
 		CSS_SELECTOR_FOR_WATCHTOWER_ARTICLE_LINK: 'a.pub-w.cardLine1Prominent',
+		GENERAL_CSS_SELECTOR_FOR_FIGURES,
 
 		UNABLE_TO_EXTRACT_REFERENCE: 'UNEXPECTED_ERROR_UNABLE_TO_EXTRACT_REFERENCE',
 		PUB_CODE_WATCHTOWER: 'pub-w',
 		PUB_CODE_BIBLE: 'pub-nwtsty',
 		PUB_CODE_AWAKE: 'pub-g',
+		PUB_CODE_WCG: 'pub-wcg',
 
 		PUB_MWB_CSS_SELECTOR_ARTICLE: '#article',
 		PUB_MWB_CSS_SELECTOR_INTRODUCTION: '#p3',
@@ -67,7 +69,6 @@ export const CONSTANTS = Object.freeze(
 		PUB_W_REGEX_TEST_FOR_MENTIONS_BOX: () => freshRegExp(/\brecuadro\b/i),
 		PUB_W_REGEX_TEST_FOR_HREF_TO_BOX: () => freshRegExp(/h=(\d+)-(\d+)/i),
 		PUB_W_CSS_SELECTOR_RELATED_PARAGRAPH: (dataPid: string) => `p[data-rel-pid="[${dataPid}]"]`,
-		PUB_W_CSS_SELECTOR_FIGURE: GENERAL_CSS_SELECTOR_FOR_FIGURES,
 		PUB_W_CSS_SELECTOR_RELATED_PARAGRAPH_LINK: 'p[data-rel-pid] a:not([data-video])',
 		PUB_W_CSS_SELECTOR_TEACH_BLOCK_HEADLINE: '.dc-ttClassStyle--unset h2',
 		PUB_W_CSS_SELECTOR_TEACH_BLOCK_POINTS: '.dc-ttClassStyle--unset ul li p',

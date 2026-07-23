@@ -405,14 +405,18 @@ interface QuestionReferencedBoxSupplementData {
 
 function extractFigures($: CheerioAPI, questionPid: string) {
 	const figures: QuestionReferencedFigureData[] = [];
-	$(CONSTANTS.PUB_W_CSS_SELECTOR_FIGURE).each((_, fig) => {
+	$(CONSTANTS.GENERAL_CSS_SELECTOR_FOR_FIGURES).each((_, fig) => {
 		const $fig = $(fig);
 		const captionText = $fig.find('figcaption').text();
 		let pnums = extractPnumsFromCaptionStrict(captionText);
 
 		// Fallback: nearest previous paragraph with a number
 		if (pnums.length === 0) {
-			const $prev = $fig.closest('div[id^="f"], figure').prevAll(`[data-pid]`).find('.parNum[data-pnum]').first();
+			const $prev = $fig
+				.closest(`${CONSTANTS.GENERAL_CSS_SELECTOR_FOR_FIGURES}, figure`)
+				.prevAll(`[data-pid]`)
+				.find('.parNum[data-pnum]')
+				.first();
 			const p = $prev.attr('data-pnum');
 			if (p) pnums = [p];
 		}

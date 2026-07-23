@@ -1,10 +1,15 @@
 import { describe, it, expect } from 'vitest';
-import { cleanText, collapseConsecutiveLineBreaks, takeOutTimeBoxText } from '../kernel/index.js';
+import { cleanInlineText, cleanText, collapseConsecutiveLineBreaks, takeOutTimeBoxText } from '../kernel/index.js';
 
 describe('data-extraction/generic utilities', () => {
 	it('cleanText removes NBSP and trims', () => {
 		const input = '\u00A0 Hello\u00A0World \u00A0 ';
 		expect(cleanText(input)).toBe('Hello World');
+	});
+
+	it('cleanInlineText collapses whitespace runs into single spaces', () => {
+		const input = '\u00A0 Hello\n\tWorld   again \u00A0 ';
+		expect(cleanInlineText(input)).toBe('Hello World again');
 	});
 
 	it('collapseConsecutiveLineBreaks reduces multiple newlines', () => {
