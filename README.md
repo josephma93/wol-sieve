@@ -10,6 +10,7 @@ The service focuses on:
 -   Midweek meeting program extraction.
 -   New World Translation study Bible reference extraction and token-based grouping.
 -   Lessons From the Bible extraction.
+-   Courage book extraction.
 
 ## Disclaimer
 
@@ -36,6 +37,85 @@ Main source areas:
 -   `src/test-helpers/`: shared test-only helpers.
 
 The app uses ESM (`"type": "module"`), TypeScript strict mode, and Node's `NodeNext` module resolution.
+
+## WOL HTML Stencils
+
+WOL pages are generated from repeatable HTML stencils. A stencil is the structural frame used to render a publication
+page: document classes, article layout, header structure, heading levels, section containers, figures, tables, pull
+quotes, links, and other stable markup.
+
+The localized text changes by language. The stencil usually does not.
+
+The term stencil is intentional: WOL appears to render pages from fixed structural molds. The mold defines where titles,
+figures, tables, pull quotes, lists, questions, and content blocks live. Each language fills those same slots with
+localized text, but the surrounding HTML shape remains stable.
+
+This matters because scraper logic can often be made multilingual by detecting the stencil instead of reading visible
+labels. A page should be classified by the structure WOL used to render it, not by words such as "Introduction",
+"Conclusión", "Section", or "Timeline".
+
+### Scraping Rule
+
+Prefer structural signals over visible text.
+
+Good signals:
+
+-   `#article` classes, especially publication classes and `docClass-*`.
+-   Stable semantic or layout classes.
+-   Presence or absence of stencil-specific elements.
+-   Heading levels and heading counts.
+-   Figure placement inside a known container.
+-   Direct child structure inside `.bodyTxt`.
+-   Tables, lists, pull quotes, and repeated content blocks.
+-   Stable IDs when the ID belongs to the stencil.
+
+Weak signals:
+
+-   Localized visible text.
+-   Titles, subtitles, and context labels.
+-   Punctuation or casing in rendered text.
+-   Language-specific section names.
+-   Text position when the same stencil exposes a better structural marker.
+
+Visible text can still be extracted as content. It should not be the first choice for deciding what kind of page is being
+scraped.
+
+### Practical Workflow
+
+When adding support for a new publication:
+
+1. Collect representative pages for every apparent page type.
+2. Compare their HTML structure across the set.
+3. Identify which pages share the same `docClass-*`.
+4. For shared document classes, find the smallest structural selector that separates the stencils.
+5. Validate the selector against all known pages of that type.
+6. If possible, validate the same selector in another language.
+7. Implement the detector using structural checks first and visible text only as a fallback.
+
+The goal is not to match one sample page. The goal is to identify the stencil.
+
+### Example
+
+In WCG, `docClass-13` is used by lessons, the introduction, and the conclusion. The page title is language-dependent, so
+it is a poor discriminator.
+
+A better discriminator is the stencil:
+
+| Structural signal                           | Page shape   |
+| ------------------------------------------- | ------------ |
+| `.bodyTxt .stdPullQuote` exists             | lesson       |
+| no `.stdPullQuote` and `.bodyTxt h3` exists | conclusion   |
+| no `.stdPullQuote` and no `.bodyTxt h3`     | introduction |
+
+The same idea applies to `docClass-15`:
+
+| Structural signal         | Page shape           |
+| ------------------------- | -------------------- |
+| `header #f2 img` exists   | section introduction |
+| `.bodyTxt > table` exists | timeline             |
+
+These selectors describe the rendering stencil. They are not tied to Spanish labels, so the same detector can work across
+languages when WOL keeps the same stencil.
 
 ## API Versions
 
@@ -84,6 +164,9 @@ GET /v2/pub-nwtsty/grouped?urls=url1&urls=url2&tokenLimit=1000
 
 GET /v2/pub-lfb/
 GET /v2/pub-lfb/?urls=url1&urls=url2
+
+GET /v2/pub-wcg/
+GET /v2/pub-wcg/?urls=url1&urls=url2
 ```
 
 Preserve v1 behavior when changing v2 routes. The two route families are intentionally different; do not treat v1-only
