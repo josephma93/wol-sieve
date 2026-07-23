@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { extractPubWReferenceAsText } from './extractors-as-text.js';
+import { detectReferenceDataType } from './reference-json-commons.js';
+import { extractPubWReferenceAsText, pickAndApplyTextExtractor } from './extractors-as-text.js';
 
 describe('extractPubWReferenceAsText', () => {
 	it('extracts Watchtower citation paragraphs without p.sb classes', () => {
@@ -21,6 +22,39 @@ describe('extractPubWReferenceAsText', () => {
 
 		expect(extractPubWReferenceAsText(content)).toBe(
 			'A veces, la imperfección puede ser como una voz dentro de nuestra cabeza.',
+		);
+	});
+});
+
+describe('pickAndApplyTextExtractor', () => {
+	it('uses the Watchtower extractor for dated Watchtower publication classes', () => {
+		const content = `
+			<div class="bodyTxt">
+				<p id="p39" data-pid="39" class="qu">
+					4. ¿Por qué permitió Jehová que José se hiciera prominente en el gobierno de Egipto?
+				</p>
+				<p id="p7" data-pid="7" data-rel-pid="[39]" class="sb">
+					<span class="parNum" data-pnum="4"><strong><sup>4</sup></strong></span>
+					Jehová consintió que algunos de sus siervos ocuparan importantes cargos públicos.
+				</p>
+			</div>
+		`;
+		const detection = detectReferenceDataType({
+			articleClasses: 'publicationCitation html5 pub- docId-1996331 pub-w96 pub- pub-w96 docClass-40',
+			caption: '',
+			categories: [],
+			content,
+			publicationTitle: 'La Atalaya 1996 | 1 de mayo',
+			pubType: '',
+			reference: '',
+			source: '',
+			title: 'Dios y el César',
+			url: '',
+		});
+
+		expect(detection.isPubW).toBe(true);
+		expect(pickAndApplyTextExtractor(detection, content)).toBe(
+			'Jehová consintió que algunos de sus siervos ocuparan importantes cargos públicos.',
 		);
 	});
 });

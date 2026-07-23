@@ -137,7 +137,7 @@ export function isJsonContentAcceptableForReferenceExtraction(
  */
 export function detectReferenceDataType(itemData: BasePublicationItem): PublicationRefDetectionData {
 	const articleClasses = itemData.articleClasses;
-	const isPubW = new RegExp(`\\b${CONSTANTS.PUB_CODE_WATCHTOWER}\\b`, 'i').test(articleClasses);
+	const isPubW = new RegExp(`\\b${CONSTANTS.PUB_CODE_WATCHTOWER}(?:\\d.*)?\\b`, 'i').test(articleClasses);
 	const isPubNwtsty = new RegExp(`\\b${CONSTANTS.PUB_CODE_BIBLE}\\b`, 'i').test(articleClasses);
 	const isPubG = new RegExp(`\\b${CONSTANTS.PUB_CODE_AWAKE}\\b`, 'i').test(articleClasses);
 	return {
