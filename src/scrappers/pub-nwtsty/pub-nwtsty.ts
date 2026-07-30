@@ -4,6 +4,7 @@ import { PublicationRefData, fetchAndParseAnchorReferenceOrThrow } from '../../d
 import { CheerioAPI } from 'cheerio';
 import { cleanText } from '../../kernel/util.js';
 import { extractPubNwtstyReferenceAsText } from '../../data-extraction/extractors-as-text.js';
+import type { CheerioSelection } from '../../data-extraction/generic.js';
 import { getHtmlContent } from '../../data-fetching/raw.js';
 import { get_encoding } from 'tiktoken';
 import { buildCitationFromParsedReference } from '../../data-extraction/citations.js';
@@ -32,7 +33,7 @@ function normalizeMnemonics($: CheerioAPI) {
 }
 
 interface AnchorDataForProcess {
-	$anchor: ReturnType<CheerioAPI>;
+	$anchor: CheerioSelection;
 	mnemonic: string;
 }
 

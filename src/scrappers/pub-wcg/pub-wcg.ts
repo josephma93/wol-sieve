@@ -1,6 +1,7 @@
 import { CheerioAPI } from 'cheerio';
 import { markify } from 'markify-ts';
 import { fetchAndParseAnchorReferenceOrThrow } from '../../data-fetching/reference-json.js';
+import type { CheerioSelection } from '../../data-extraction/generic.js';
 import {
 	CitationTextBlock,
 	addParsedReferenceToCitationBlock,
@@ -39,7 +40,6 @@ export const WCG_PAGE_TYPES = Object.freeze({
 } as const);
 
 export type WcgPageType = (typeof WCG_PAGE_TYPES)[keyof typeof WCG_PAGE_TYPES];
-type CheerioSelection = ReturnType<CheerioAPI>;
 
 export interface WcgImage {
 	src: string;

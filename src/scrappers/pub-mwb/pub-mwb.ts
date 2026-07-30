@@ -12,6 +12,7 @@ import { ExtractionContextOptions, createExtractionContext } from '../generics.j
 import { parsePubSjj, PubSjjParsedData } from '../../data-extraction/extractors-as-obj.js';
 import { opErrored } from '../../kernel/index.js';
 import { getCheerioSelectionOrThrow } from '../../data-extraction/generic.js';
+import type { CheerioSelection } from '../../data-extraction/generic.js';
 import {
 	buildChristianLivingSelections,
 	buildFieldMinistrySelections,
@@ -413,7 +414,7 @@ export interface SectionHeadlineData {
  * @returns The number and the headline of the section.
  * @throws {Error} If the element's text doesn't match the expected format.
  */
-function parseSectionHeadlineDataFromElement($element: ReturnType<CheerioAPI>): SectionHeadlineData {
+function parseSectionHeadlineDataFromElement($element: CheerioSelection): SectionHeadlineData {
 	log.info('Extracting section number from element');
 	const elementText = cleanText($element.text());
 	if (!/^\d+\./.test(elementText)) {
@@ -436,7 +437,7 @@ function parseSectionHeadlineDataFromElement($element: ReturnType<CheerioAPI>): 
  * @returns The time box number.
  * @throws {Error} If time box is not found.
  */
-function getTimeBoxFromElement($selection: ReturnType<CheerioAPI>): number {
+function getTimeBoxFromElement($selection: CheerioSelection): number {
 	log.info('Extracting time box from element');
 	const msg = `No selection found for element with time box information.`;
 	let $lineWithTimeBox = cheerio.load($selection.toString())(CONSTANTS.PUB_MWB_CSS_SELECTOR_LINE_WITH_TIME_BOX);
@@ -464,7 +465,7 @@ function getTimeBoxFromElement($selection: ReturnType<CheerioAPI>): number {
 }
 
 async function buildRequiredCitationBlockFromAnchors(
-	anchors: ReturnType<CheerioAPI>,
+	anchors: CheerioSelection,
 	seedText: string,
 	textWithCitations = seedText,
 ): Promise<CitationTextBlock> {
@@ -478,7 +479,7 @@ async function buildRequiredCitationBlockFromAnchors(
 	return block;
 }
 
-async function resolveAnchorReferencesInOrder(anchors: ReturnType<CheerioAPI>): Promise<ResolvedAnchorReference[]> {
+async function resolveAnchorReferencesInOrder(anchors: CheerioSelection): Promise<ResolvedAnchorReference[]> {
 	const referencePromises: Promise<ResolvedAnchorReference>[] = [];
 
 	for (let i = 0; i < anchors.length; i++) {
@@ -504,8 +505,8 @@ async function resolveAnchorReferencesInOrder(anchors: ReturnType<CheerioAPI>): 
 }
 
 function buildTextWithCitationMarkers(
-	selection: ReturnType<CheerioAPI>,
-	selectAnchors: (selection: ReturnType<CheerioAPI>) => ReturnType<CheerioAPI>,
+	selection: CheerioSelection,
+	selectAnchors: (selection: CheerioSelection) => CheerioSelection,
 	textFormatter: (text: string) => string = (text) => text,
 ): string {
 	const textWithCitationsSelection = selection.clone();
@@ -517,7 +518,7 @@ function buildTextWithCitationMarkers(
 	return textFormatter(cleanText(textWithCitationsSelection.text()));
 }
 
-function buildDirectChildSelection($selection: ReturnType<CheerioAPI>, selector = '> *') {
+function buildDirectChildSelection($selection: CheerioSelection, selector = '> *') {
 	if (selector === '> *') {
 		return $selection.children();
 	}
@@ -525,7 +526,7 @@ function buildDirectChildSelection($selection: ReturnType<CheerioAPI>, selector 
 	return $selection.children(selector.replace(/^>\s*/, ''));
 }
 
-function extractIllustrationData($figureContainer: ReturnType<CheerioAPI>): TreasuresTalkIllustration | null {
+function extractIllustrationData($figureContainer: CheerioSelection): TreasuresTalkIllustration | null {
 	const $image = $figureContainer.find('img').first();
 	if (!$image.length) {
 		return null;
@@ -540,7 +541,7 @@ function extractIllustrationData($figureContainer: ReturnType<CheerioAPI>): Trea
 	};
 }
 
-function extractSpecialItemBase($specialParagraph: ReturnType<CheerioAPI>): TreasuresTalkSpecialItem {
+function extractSpecialItemBase($specialParagraph: CheerioSelection): TreasuresTalkSpecialItem {
 	const label = cleanText($specialParagraph.find('strong').first().text()).replace(/:$/, '');
 	return {
 		label,
@@ -548,7 +549,7 @@ function extractSpecialItemBase($specialParagraph: ReturnType<CheerioAPI>): Trea
 	};
 }
 
-function extractVideoMediaItem($paragraph: ReturnType<CheerioAPI>): TreasuresTalkMediaItem | null {
+function extractVideoMediaItem($paragraph: CheerioSelection): TreasuresTalkMediaItem | null {
 	const $videoAnchor = $paragraph.find('a[data-video]').first();
 	if (!$videoAnchor.length) {
 		return null;
@@ -567,7 +568,7 @@ function extractVideoMediaItem($paragraph: ReturnType<CheerioAPI>): TreasuresTal
 	};
 }
 
-function isSpecialItemParagraph($paragraph: ReturnType<CheerioAPI>): boolean {
+function isSpecialItemParagraph($paragraph: CheerioSelection): boolean {
 	if (!$paragraph.is('p')) {
 		return false;
 	}
@@ -580,13 +581,13 @@ function isSpecialItemParagraph($paragraph: ReturnType<CheerioAPI>): boolean {
 	return $paragraph.find('span > strong').length > 0;
 }
 
-function isVideoPromptParagraph($paragraph: ReturnType<CheerioAPI>): boolean {
+function isVideoPromptParagraph($paragraph: CheerioSelection): boolean {
 	return $paragraph.is('p') && $paragraph.find('a[data-video]').length > 0;
 }
 
-function extractMainPointParagraphs($pointContainer: ReturnType<CheerioAPI>): ReturnType<CheerioAPI>[] {
+function extractMainPointParagraphs($pointContainer: CheerioSelection): CheerioSelection[] {
 	const $children = buildDirectChildSelection($pointContainer);
-	const paragraphs: ReturnType<CheerioAPI>[] = [];
+	const paragraphs: CheerioSelection[] = [];
 
 	for (let i = 0; i < $children.length; i++) {
 		const $child = $children.eq(i);
@@ -602,9 +603,9 @@ function extractMainPointParagraphs($pointContainer: ReturnType<CheerioAPI>): Re
 	return paragraphs;
 }
 
-function extractSpecialItemParagraphsFromPointContainer($pointContainer: ReturnType<CheerioAPI>) {
+function extractSpecialItemParagraphsFromPointContainer($pointContainer: CheerioSelection) {
 	const $children = buildDirectChildSelection($pointContainer);
-	const paragraphs: ReturnType<CheerioAPI>[] = [];
+	const paragraphs: CheerioSelection[] = [];
 
 	for (let i = 0; i < $children.length; i++) {
 		const $child = $children.eq(i);
@@ -616,7 +617,7 @@ function extractSpecialItemParagraphsFromPointContainer($pointContainer: ReturnT
 	return paragraphs;
 }
 
-function extractMediaItemsFromPointContainer($pointContainer: ReturnType<CheerioAPI>) {
+function extractMediaItemsFromPointContainer($pointContainer: CheerioSelection) {
 	const $children = buildDirectChildSelection($pointContainer);
 	const items: TreasuresTalkMediaItem[] = [];
 
@@ -645,7 +646,7 @@ function assignSingleOptionalValue<T>(currentValue: T | undefined, nextValues: T
 	return nextValues[0];
 }
 
-async function buildTreasuresTalkV1ReferenceData($paragraph: ReturnType<CheerioAPI>, startFootnoteNumber: number) {
+async function buildTreasuresTalkV1ReferenceData($paragraph: CheerioSelection, startFootnoteNumber: number) {
 	let text = cleanText($paragraph.text());
 	const footnotes: number[] = [];
 	const $references = $paragraph.find(`a:not([data-video])`);
@@ -682,9 +683,9 @@ async function buildTreasuresTalkV1ReferenceData($paragraph: ReturnType<CheerioA
 	};
 }
 
-async function buildSpecialItemCitationBlock($paragraph: ReturnType<CheerioAPI>) {
+async function buildSpecialItemCitationBlock($paragraph: CheerioSelection) {
 	const text = cleanText($paragraph.text());
-	const selectReferences = (selection: ReturnType<CheerioAPI>) => selection.find(`a:not([data-video])`);
+	const selectReferences = (selection: CheerioSelection) => selection.find(`a:not([data-video])`);
 	const $references = selectReferences($paragraph);
 	const textWithCitations = buildTextWithCitationMarkers($paragraph, selectReferences);
 	const base = extractSpecialItemBase($paragraph);
@@ -696,7 +697,7 @@ async function buildSpecialItemCitationBlock($paragraph: ReturnType<CheerioAPI>)
 	};
 }
 
-async function buildTreasuresTalkV2ContentItem($blockChild: ReturnType<CheerioAPI>): Promise<TreasuresTalkContentItem> {
+async function buildTreasuresTalkV2ContentItem($blockChild: CheerioSelection): Promise<TreasuresTalkContentItem> {
 	if (isSpecialItemParagraph($blockChild)) {
 		return {
 			kind: 'callout',
@@ -719,7 +720,7 @@ async function buildTreasuresTalkV2ContentItem($blockChild: ReturnType<CheerioAP
 	}
 
 	const pointText = cleanText($blockChild.text());
-	const selectReferences = (selection: ReturnType<CheerioAPI>) => selection.find(`a:not([data-video])`);
+	const selectReferences = (selection: CheerioSelection) => selection.find(`a:not([data-video])`);
 	const $references = selectReferences($blockChild);
 	const textWithCitations = buildTextWithCitationMarkers($blockChild, selectReferences);
 
@@ -730,7 +731,7 @@ async function buildTreasuresTalkV2ContentItem($blockChild: ReturnType<CheerioAP
 }
 
 async function extractTreasuresTalkV2ContentItemsFromContainer(
-	$container: ReturnType<CheerioAPI>,
+	$container: CheerioSelection,
 ): Promise<TreasuresTalkContentItem[]> {
 	const $blockChildren = buildDirectChildSelection($container);
 	const blockItemPromises: Promise<TreasuresTalkContentItem>[] = [];
@@ -903,7 +904,7 @@ export async function extractTreasuresTalkV2(input: ExtractionContextOptions): P
  * @param $pElem - The Cheerio element containing the paragraph with the spiritual gem question.
  * @returns The extracted spiritual gem question as a string.
  */
-function extractSpiritualGemQuestion($pElem: ReturnType<CheerioAPI>): string {
+function extractSpiritualGemQuestion($pElem: CheerioSelection): string {
 	if ($pElem.filter('a').length === 2) {
 		return $pElem
 			.contents()
@@ -925,13 +926,13 @@ function extractSpiritualGemQuestion($pElem: ReturnType<CheerioAPI>): string {
  *
  * Assumptions:
  * - All links are placed one after the other without interruptions.
- * - The input element is a single Cheerio element (ReturnType<CheerioAPI>).
+ * - The input element is a single Cheerio element (`CheerioSelection`).
  *
  * @param element - The parent Cheerio element to search within
  * @param $ The cheerio instance.
  * @returns An array of Cheerio <a> elements that match the criteria
  */
-function getSurroundedLinksAtFarRight(element: ReturnType<CheerioAPI>, $: CheerioAPI) {
+function getSurroundedLinksAtFarRight(element: CheerioSelection, $: CheerioAPI) {
 	const links = [];
 	const children = element.contents().toArray();
 
@@ -1052,7 +1053,7 @@ export async function extractSpiritualGemsV2(input: ExtractionContextOptions): P
 
 	const $pElement = $scriptureAnchorSelection.parent();
 	const question = extractSpiritualGemQuestion($pElement);
-	const selectReferences = (selection: ReturnType<CheerioAPI>) => selection.find('a');
+	const selectReferences = (selection: CheerioSelection) => selection.find('a');
 	const printedQuestionBlock = await buildRequiredCitationBlockFromAnchors(
 		selectReferences($pElement),
 		cleanText($pElement.text()),
@@ -1162,11 +1163,11 @@ export async function extractBibleReadV2(input: ExtractionContextOptions): Promi
 }
 
 interface HeadlineContentGroup {
-	heading: ReturnType<CheerioAPI>;
-	contents: ReturnType<CheerioAPI>[];
+	heading: CheerioSelection;
+	contents: CheerioSelection[];
 }
 
-function buildHeadlineToContentGroups(contentSelection: ReturnType<CheerioAPI>, $: CheerioAPI): HeadlineContentGroup[] {
+function buildHeadlineToContentGroups(contentSelection: CheerioSelection, $: CheerioAPI): HeadlineContentGroup[] {
 	return contentSelection.toArray().reduce((acc, el) => {
 		const $el = $(el);
 
@@ -1289,7 +1290,7 @@ export async function extractFieldMinistryV2(
 			throw new Error(msg);
 		}
 
-		const selectStudyPointAnchor = (selection: ReturnType<CheerioAPI>) => selection.find('a').slice(-1);
+		const selectStudyPointAnchor = (selection: CheerioSelection) => selection.find('a').slice(-1);
 		result.contents = await buildRequiredCitationBlockFromAnchors(
 			$studyPointAnchor,
 			contentsWithoutTimeBox,
@@ -1309,7 +1310,7 @@ export async function extractFieldMinistryV2(
  * @throws {Error} If the extraction fails.
  */
 export function extractChristianLiving(input: ExtractionContextOptions): ChristianLivingSectionData[] {
-	function polishElementText($el: ReturnType<CheerioAPI>) {
+	function polishElementText($el: CheerioSelection) {
 		let result = $el.text();
 		result = cleanText(result);
 		result = collapseConsecutiveLineBreaks(result);

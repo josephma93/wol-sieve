@@ -2,6 +2,7 @@ import * as cheerio from 'cheerio';
 import { cleanText, collapseConsecutiveLineBreaks } from '../kernel/index.js';
 import { BasePublicationItem, PublicationRefDetectionData } from './reference-json-commons.js';
 import { CheerioAPI } from 'cheerio';
+import type { CheerioSelection } from './generic.js';
 
 /**
  * A function that parses HTML content and returns the extracted text.
@@ -31,13 +32,10 @@ export function extractPubWReferenceAsText(content: string): string {
  * @param [$document] - The document loaded initially
  * @returns The text parsed.
  */
-export function extractPubNwtstyReferenceAsText(content: ReturnType<CheerioAPI>, $document: CheerioAPI): string;
+export function extractPubNwtstyReferenceAsText(content: CheerioSelection, $document: CheerioAPI): string;
 export function extractPubNwtstyReferenceAsText(content: string, $document?: CheerioAPI): string;
-export function extractPubNwtstyReferenceAsText(
-	content: string | ReturnType<CheerioAPI>,
-	$document?: CheerioAPI,
-): string {
-	let context: ReturnType<CheerioAPI>;
+export function extractPubNwtstyReferenceAsText(content: string | CheerioSelection, $document?: CheerioAPI): string {
+	let context: CheerioSelection;
 	let $: CheerioAPI;
 
 	if (typeof content === 'string') {

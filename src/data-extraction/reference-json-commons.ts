@@ -1,6 +1,6 @@
 import { logger, CONSTANTS, wrapAsyncOp } from '../kernel/index.js';
-import { CheerioAPI } from 'cheerio';
 import { getJsonContent } from '../data-fetching/raw.js';
+import type { CheerioSelection } from './generic.js';
 
 /**
  * Logger instance for this module.
@@ -20,7 +20,7 @@ export interface AnchorRefExtractionData {
  * @param $el - The cheerio element from which to extract the data.
  * @returns An object containing the source href and the URL to fetch.
  */
-export function buildAnchorRefExtractionData($el: ReturnType<CheerioAPI>): AnchorRefExtractionData {
+export function buildAnchorRefExtractionData($el: CheerioSelection): AnchorRefExtractionData {
 	const sourceHref = $el.attr('href') || '';
 	const fetchUrl = `${CONSTANTS.WOL_URL}${sourceHref.slice(3)}`;
 	return {

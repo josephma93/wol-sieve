@@ -1,5 +1,5 @@
 import { logger } from '../kernel/index.js';
-import { CheerioAPI } from 'cheerio';
+import type { CheerioSelection } from './generic.js';
 
 const log = logger.child({ ...logger.bindings(), label: 'dom-validation' });
 
@@ -9,7 +9,7 @@ const log = logger.child({ ...logger.bindings(), label: 'dom-validation' });
  * @param selector The selector to assert against.
  * @throws {Error} If the selection does not match the selector.
  */
-export function assertSelectionIs(selection: ReturnType<CheerioAPI>, selector: string) {
+export function assertSelectionIs(selection: CheerioSelection, selector: string) {
 	if (!selection.is(selector)) {
 		const msg = `Unexpected element detected. Expected [${selector}], got something else. Document structure might have changed.`;
 		log.error(msg);

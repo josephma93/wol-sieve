@@ -11,7 +11,7 @@ import {
 } from '../data-extraction/reference-json-commons.js';
 import { deriveReferenceType } from '../data-extraction/citations.js';
 import { pickAndApplyTextExtractor } from '../data-extraction/extractors-as-text.js';
-import type { CheerioAPI } from 'cheerio';
+import type { CheerioSelection } from '../data-extraction/generic.js';
 import { wrapAsyncOp } from '../kernel/index.js';
 
 /**
@@ -79,7 +79,7 @@ function parseAnchorRefDataOrThrow(
  * @returns A promise that resolves to either the JSON content or an Error object.
  */
 async function _fetchAnchorData(
-	$anchor: ReturnType<CheerioAPI>,
+	$anchor: CheerioSelection,
 ): Promise<any | DefaultPublicationRefResponse | BiblicalPassageRefResponse | Error> {
 	const anchorRefExtractionData = buildAnchorRefExtractionData($anchor);
 	const opRes = await fetchAnchorReferenceData(anchorRefExtractionData);
@@ -100,9 +100,7 @@ export const fetchAnchorData = wrapAsyncOp(_fetchAnchorData);
  * @returns A promise that resolves to either the JSON content or an Error object.
  * @throws {Error} If the JSON content doesn't match the expected format.
  */
-async function _fetchAndParseAnchorReferenceOrThrow(
-	$anchor: ReturnType<CheerioAPI>,
-): Promise<PublicationRefData | Error> {
+async function _fetchAndParseAnchorReferenceOrThrow($anchor: CheerioSelection): Promise<PublicationRefData | Error> {
 	const opRes = await fetchAnchorData($anchor);
 	if (opRes.err) {
 		return opRes.err;

@@ -1,41 +1,42 @@
 import { logger, CONSTANTS } from '../../kernel/index.js';
 import { Cheerio, CheerioAPI } from 'cheerio';
 import { assertSelectionIs } from '../../data-extraction/dom-validation.js';
+import type { CheerioSelection } from '../../data-extraction/generic.js';
 
 const log = logger.child({ ...logger.bindings(), label: 'program-selection-groups' });
 
 interface GodsTreasuresSelections {
-	treasuresTalk: ReturnType<CheerioAPI>;
-	spiritualGems: ReturnType<CheerioAPI>;
-	bibleRead: ReturnType<CheerioAPI>;
+	treasuresTalk: CheerioSelection;
+	spiritualGems: CheerioSelection;
+	bibleRead: CheerioSelection;
 }
 
 interface ChristianLivingSelections {
-	christianLiving: ReturnType<CheerioAPI>;
-	bibleStudy: ReturnType<CheerioAPI>;
+	christianLiving: CheerioSelection;
+	bibleStudy: CheerioSelection;
 }
 
 interface FieldMinistrySelection {
-	fieldMinistry: ReturnType<CheerioAPI>;
+	fieldMinistry: CheerioSelection;
 }
 
 interface RelevantProgramGroupSelections {
-	introduction: ReturnType<CheerioAPI>;
-	songs: ReturnType<CheerioAPI>;
-	startingSong: ReturnType<CheerioAPI>;
-	treasuresTalk: ReturnType<CheerioAPI>;
-	spiritualGems: ReturnType<CheerioAPI>;
-	bibleRead: ReturnType<CheerioAPI>;
-	fieldMinistry: ReturnType<CheerioAPI>;
-	middleSong: ReturnType<CheerioAPI>;
-	christianLiving: ReturnType<CheerioAPI>;
-	bibleStudy: ReturnType<CheerioAPI>;
-	closingSong: ReturnType<CheerioAPI>;
+	introduction: CheerioSelection;
+	songs: CheerioSelection;
+	startingSong: CheerioSelection;
+	treasuresTalk: CheerioSelection;
+	spiritualGems: CheerioSelection;
+	bibleRead: CheerioSelection;
+	fieldMinistry: CheerioSelection;
+	middleSong: CheerioSelection;
+	christianLiving: CheerioSelection;
+	bibleStudy: CheerioSelection;
+	closingSong: CheerioSelection;
 }
 
 interface FieldMinistryHeadlineSelections {
-	fieldMinistryHeadline: ReturnType<CheerioAPI>;
-	christianLivingHeadline: ReturnType<CheerioAPI>;
+	fieldMinistryHeadline: CheerioSelection;
+	christianLivingHeadline: CheerioSelection;
 }
 
 /**
@@ -45,8 +46,8 @@ interface FieldMinistryHeadlineSelections {
  * @throws {Error} If the number of headline elements is not as expected.
  */
 function assertHeadlineDOMStructure(
-	fieldMinistryHeadline: ReturnType<CheerioAPI>,
-	christianLivingHeadline: ReturnType<CheerioAPI>,
+	fieldMinistryHeadline: CheerioSelection,
+	christianLivingHeadline: CheerioSelection,
 ) {
 	if (fieldMinistryHeadline.find('> h2').length !== 1 || christianLivingHeadline.find('> h2').length !== 1) {
 		const msg = 'Unexpected number of elements for field ministry and christian living.';
@@ -55,7 +56,7 @@ function assertHeadlineDOMStructure(
 	}
 }
 
-function assertIsH3(selection: ReturnType<CheerioAPI>) {
+function assertIsH3(selection: CheerioSelection) {
 	return assertSelectionIs(selection, 'h3');
 }
 
@@ -66,10 +67,10 @@ function assertIsH3(selection: ReturnType<CheerioAPI>) {
  * @throws {Error} If the DOM structure is not as expected.
  */
 export function getAndValidateSongSelections($: CheerioAPI): {
-	songs: ReturnType<CheerioAPI>;
-	startingSong: ReturnType<CheerioAPI>;
-	middleSong: ReturnType<CheerioAPI>;
-	closingSong: ReturnType<CheerioAPI>;
+	songs: CheerioSelection;
+	startingSong: CheerioSelection;
+	middleSong: CheerioSelection;
+	closingSong: CheerioSelection;
 } {
 	const startingSong = $(CONSTANTS.PUB_MWB_CSS_SELECTOR_STARTING_SONG);
 	const middleSong = $(CONSTANTS.PUB_MWB_CSS_SELECTOR_MIDDLE_SONG);
@@ -122,8 +123,8 @@ export function buildGodsTreasuresSelections($: CheerioAPI): GodsTreasuresSelect
  * @throws {Error} If the DOM structure is not as expected.
  */
 function getAndValidateChristianLivingSelections(
-	middleSong: ReturnType<CheerioAPI>,
-	closingSong: ReturnType<CheerioAPI>,
+	middleSong: CheerioSelection,
+	closingSong: CheerioSelection,
 ): ChristianLivingSelections {
 	const bibleStudyHeadline = closingSong.prevAll('h3').first();
 	assertIsH3(bibleStudyHeadline);
@@ -150,7 +151,7 @@ export function buildChristianLivingSelections($: CheerioAPI): ChristianLivingSe
  * @returns The field ministry selection.
  */
 function getAndValidateFieldMinistrySelection(
-	fieldMinistryHeadline: ReturnType<CheerioAPI>,
+	fieldMinistryHeadline: CheerioSelection,
 	christianLivingHeadline: Cheerio<any>,
 ): FieldMinistrySelection {
 	return {

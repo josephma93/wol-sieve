@@ -3,6 +3,7 @@ import { CheerioAPI } from 'cheerio';
 import { CONSTANTS, logger, opErrored, wrapAsyncOp, cleanText, fixLineContinuations } from '../../kernel/index.js';
 import { markify } from 'markify-ts';
 import { fetchAndParseAnchorReferenceOrThrow } from '../../data-fetching/reference-json.js';
+import type { CheerioSelection } from '../../data-extraction/generic.js';
 import { CongregationBibleStudyData, extractBibleStudy } from '../pub-mwb/pub-mwb.js';
 import { fetchThisWeekMeetingHtml } from '../../data-fetching/wol-pages.js';
 import {
@@ -42,24 +43,24 @@ export interface LfbItemV2 {
 	contents: unknown;
 }
 
-function detectHasGbLetter($article: ReturnType<CheerioAPI>): boolean {
+function detectHasGbLetter($article: CheerioSelection): boolean {
 	return $article.is('.docClass-24');
 }
 
-function detectHasSectionIntro($article: ReturnType<CheerioAPI>): boolean {
+function detectHasSectionIntro($article: CheerioSelection): boolean {
 	return $article.is('.docClass-15');
 }
 
-function detectHasLessons($article: ReturnType<CheerioAPI>): boolean {
+function detectHasLessons($article: CheerioSelection): boolean {
 	return $article.is('.docClass-13');
 }
 
-function parseGbLetter($article: ReturnType<CheerioAPI>): LfbItem {
+function parseGbLetter($article: CheerioSelection): LfbItem {
 	const contents = cleanText($article.text());
 	return { type: GOVERNMENT_BODY_LETTER, contents: { contents } };
 }
 
-function parseSectionIntro($: CheerioAPI, $article: ReturnType<CheerioAPI>): LfbItem {
+function parseSectionIntro($: CheerioAPI, $article: CheerioSelection): LfbItem {
 	const title = cleanText($article.find(CONSTANTS.PUB_LFB_CSS_SELECTOR_SECTION_INTRO_HEADLINE).text());
 	const contents = cleanText($article.find(CONSTANTS.PUB_LFB_CSS_SELECTOR_BODY_SELECTOR).text());
 	const lessons = $article
@@ -82,7 +83,7 @@ function parseSectionIntro($: CheerioAPI, $article: ReturnType<CheerioAPI>): Lfb
 	};
 }
 
-function findAndBuildCitation($: CheerioAPI, foo: ReturnType<CheerioAPI>, seedText: string) {
+function findAndBuildCitation($: CheerioAPI, foo: CheerioSelection, seedText: string) {
 	const citationPromises = foo
 		.find('a')
 		.map(async (index, aEl) => {
@@ -110,10 +111,7 @@ function findAndBuildCitation($: CheerioAPI, foo: ReturnType<CheerioAPI>, seedTe
 	return { citationPromises, processedText: seedText };
 }
 
-async function buildCitationBlockFromAnchors(
-	foo: ReturnType<CheerioAPI>,
-	seedText: string,
-): Promise<CitationTextBlock> {
+async function buildCitationBlockFromAnchors(foo: CheerioSelection, seedText: string): Promise<CitationTextBlock> {
 	const anchors = foo.find('a');
 	const textWithCitationsSelection = foo.clone();
 	const textWithCitationsAnchors = textWithCitationsSelection.find('a');
@@ -141,7 +139,7 @@ async function buildCitationBlockFromAnchors(
 	return block;
 }
 
-async function parseLesson($: CheerioAPI, $article: ReturnType<CheerioAPI>): Promise<LfbItem> {
+async function parseLesson($: CheerioAPI, $article: CheerioSelection): Promise<LfbItem> {
 	const lessonNumberText = cleanText($article.find(CONSTANTS.PUB_LFB_CSS_SELECTOR_SECTION_INTRO_HEADLINE).text());
 	log.debug(`Parsing lesson number text: [${lessonNumberText}]`);
 	const number = parseInt(lessonNumberText.replace(/\D/g, ''), 10);
@@ -208,7 +206,7 @@ async function parseLesson($: CheerioAPI, $article: ReturnType<CheerioAPI>): Pro
 	};
 }
 
-async function parseLessonV2($: CheerioAPI, $article: ReturnType<CheerioAPI>): Promise<LfbItemV2> {
+async function parseLessonV2($: CheerioAPI, $article: CheerioSelection): Promise<LfbItemV2> {
 	const lessonNumberText = cleanText($article.find(CONSTANTS.PUB_LFB_CSS_SELECTOR_SECTION_INTRO_HEADLINE).text());
 	log.debug(`Parsing v2 lesson number text: [${lessonNumberText}]`);
 	const number = parseInt(lessonNumberText.replace(/\D/g, ''), 10);

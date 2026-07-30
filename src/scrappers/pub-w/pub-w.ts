@@ -3,6 +3,7 @@ import { ExtractionContextOptions, createExtractionContext } from '../generics.j
 import { CheerioAPI } from 'cheerio';
 import { fetchAndParseAnchorReferenceOrThrow } from '../../data-fetching/reference-json.js';
 import { getCheerioSelectionOrThrow } from '../../data-extraction/generic.js';
+import type { CheerioSelection } from '../../data-extraction/generic.js';
 import { markify } from 'markify-ts';
 import {
 	CitationTextBlock,
@@ -40,7 +41,7 @@ export type QuestionData = {
 	rawQuestionTxt: string;
 	parts: QuestionPartData[];
 	doMentionsSupplementBox: boolean;
-	anchorsFound: ReturnType<ReturnType<CheerioAPI>['find']>;
+	anchorsFound: CheerioSelection;
 };
 
 interface QuestionReferencedFigureData {
@@ -123,7 +124,7 @@ function extractTeachBlock($: CheerioAPI): TeachBlock {
  * @param $a - The anchor Cheerio element.
  * @returns The Cheerio element representing the box supplement, or an empty Cheerio object if not found.
  */
-function resolveHrefTargetForBox($: CheerioAPI, $a: ReturnType<CheerioAPI>) {
+function resolveHrefTargetForBox($: CheerioAPI, $a: CheerioSelection) {
 	const href = $a.attr('href') || '';
 	let fragmentMatch = !!href ? href.match(CONSTANTS.PUB_W_REGEX_TEST_FOR_HREF_TO_BOX()) : '';
 	if (fragmentMatch) {
@@ -204,7 +205,7 @@ function extractQpidsFromRelPid(rel: string | undefined): string[] {
  * @param question The question element containing the text to parse
  * @returns Parsed question data
  */
-export function extractQuestionData(question: ReturnType<CheerioAPI>): QuestionData {
+export function extractQuestionData(question: CheerioSelection): QuestionData {
 	const rawQuestionTxt = cleanText(question.text());
 	const pNumbers: number[] = [];
 
@@ -282,7 +283,7 @@ export function extractQuestionData(question: ReturnType<CheerioAPI>): QuestionD
  */
 async function extractReferences(
 	$: CheerioAPI,
-	para: ReturnType<CheerioAPI>,
+	para: CheerioSelection,
 	footnoteIndexRef: { value: number },
 ): Promise<[number, string][]> {
 	const anchorElems = para.find(CONSTANTS.PUB_W_CSS_SELECTOR_RELATED_PARAGRAPH_LINK);
@@ -351,7 +352,7 @@ async function extractParagraphs(
 	return Promise.all(paragraphPromises.get());
 }
 
-async function extractReferencesV2(para: ReturnType<CheerioAPI>): Promise<CitationTextBlock> {
+async function extractReferencesV2(para: CheerioSelection): Promise<CitationTextBlock> {
 	const anchorElems = para.find(CONSTANTS.PUB_W_CSS_SELECTOR_RELATED_PARAGRAPH_LINK);
 	const textWithCitationsPara = para.clone();
 	const textWithCitationsAnchors = textWithCitationsPara.find(CONSTANTS.PUB_W_CSS_SELECTOR_RELATED_PARAGRAPH_LINK);

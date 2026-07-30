@@ -3,6 +3,8 @@ import { CheerioAPI } from 'cheerio';
 
 const log = logger.child({ ...logger.bindings(), label: 'util' });
 
+export type CheerioSelection = ReturnType<CheerioAPI>;
+
 /**
  * Finds a cheerio element based on the given selector, or throws an error if no element is found.
  *

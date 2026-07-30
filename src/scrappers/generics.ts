@@ -1,20 +1,21 @@
 import { CheerioAPI } from 'cheerio';
 import { logger } from '../kernel/index.js';
 import * as cheerio from 'cheerio';
+import type { CheerioSelection } from '../data-extraction/generic.js';
 
 const log = logger.child({ ...logger.bindings(), label: 'scraper-generics' });
 
 export interface ExtractionContextOptions {
 	$?: CheerioAPI;
 	html?: string;
-	selection?: ReturnType<CheerioAPI>;
-	selectionBuilder?: ($: CheerioAPI) => ReturnType<CheerioAPI>;
+	selection?: CheerioSelection;
+	selectionBuilder?: ($: CheerioAPI) => CheerioSelection;
 }
 
 interface ExtractionContext extends ExtractionContextOptions {
 	$: CheerioAPI;
 	html: string;
-	selection: ReturnType<CheerioAPI>;
+	selection: CheerioSelection;
 }
 
 /**
