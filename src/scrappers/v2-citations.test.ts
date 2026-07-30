@@ -74,9 +74,25 @@ const lfbHtml = `
 const mwbHtml = `
 	<div id="article">
 		<div id="tt9">
+			<div id="f1" class="dc-bleedToArticleEdge">
+				<figure>
+					<img src="/img-1.jpg" alt="Opening illustration" />
+					<figcaption><p>Opening caption</p></figcaption>
+				</figure>
+			</div>
 			<h3>1. Treasures Talk</h3>
-			<p class="du-color--textSubdued">(10 min.)</p>
-			<div><p>Point names Ref A before <a href="/es/wol/d/r4/lp-s/654">Ref A</a>.</p></div>
+			<div id="tt11">
+				<div><p class="du-color--textSubdued">(10 min.)</p></div>
+				<p>Point names Ref A before <a href="/es/wol/d/r4/lp-s/654">Ref A</a>.</p>
+				<hr />
+				<p><span><strong>PREGÚNTESE:</strong></span> “Auxiliary prompt” (<a href="/es/wol/d/r4/lp-s/987">Ref B</a>).</p>
+				<p>[<a href="https://www.jw.org/finder?wtlocale=S&amp;lank=pub-nwtsv_240_VIDEO" data-video="webpubvid://?pub=nwtsv&amp;track=240&amp;langwritten=S"><strong>Ponga el VIDEO</strong></a> <em>Información sobre Jeremías</em>].</p>
+			</div>
+			<div id="f2" class="south_center">
+				<figure>
+					<img src="/img-2.jpg" alt="Closing illustration" />
+				</figure>
+			</div>
 		</div>
 		<h3>2. Spiritual Gems</h3>
 		<div></div>
@@ -198,18 +214,61 @@ describe('v2 citation scraper contracts', () => {
 			sectionNumber: 1,
 			timeBox: 10,
 			heading: 'Treasures Talk',
-			points: [
+			content: [
 				{
-					text: 'Point names Ref A before Ref A.',
-					textWithCitations: 'Point names Ref A before [[cite:1]].',
-					citations: [
-						expect.objectContaining({
-							id: 1,
-							marker: '[[cite:1]]',
-							mnemonic: 'Ref A',
-							contents: 'Parsed reference contents',
-						}),
-					],
+					kind: 'illustration',
+					payload: {
+						src: 'https://wol.jw.org/img-1.jpg',
+						alt: 'Opening illustration',
+						caption: 'Opening caption',
+					},
+				},
+				{
+					kind: 'point',
+					payload: {
+						text: 'Point names Ref A before Ref A.',
+						textWithCitations: 'Point names Ref A before [[cite:1]].',
+						citations: [
+							expect.objectContaining({
+								id: 1,
+								marker: '[[cite:1]]',
+								mnemonic: 'Ref A',
+								contents: 'Parsed reference contents',
+							}),
+						],
+					},
+				},
+				{
+					kind: 'callout',
+					payload: {
+						label: 'PREGÚNTESE',
+						text: 'PREGÚNTESE: “Auxiliary prompt” (Ref B).',
+						textWithCitations: 'PREGÚNTESE: “Auxiliary prompt” ([[cite:1]]).',
+						citations: [
+							expect.objectContaining({
+								id: 1,
+								marker: '[[cite:1]]',
+								mnemonic: 'Ref B',
+								contents: 'Parsed reference contents',
+							}),
+						],
+					},
+				},
+				{
+					kind: 'video',
+					payload: {
+						text: '[Ponga el VIDEO Información sobre Jeremías].',
+						label: 'Ponga el VIDEO',
+						title: 'Información sobre Jeremías',
+						url: 'https://www.jw.org/finder?wtlocale=S&lank=pub-nwtsv_240_VIDEO',
+					},
+				},
+				{
+					kind: 'illustration',
+					payload: {
+						src: 'https://wol.jw.org/img-2.jpg',
+						alt: 'Closing illustration',
+					},
 				},
 			],
 		});

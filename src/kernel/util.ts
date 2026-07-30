@@ -1,3 +1,5 @@
+import { CONSTANTS } from './constants.js';
+
 /**
  * Ensures the value is a string, otherwise returns an empty string.
  * @param value - The value to enforce as string.
@@ -68,4 +70,15 @@ export function fixLineContinuations(input: string) {
 	s = s.replace(/[ \t\u00A0]*\\\n/g, '\n');
 	s = s.replace(/[ \t\u00A0]*\\\s*$/g, '');
 	return s;
+}
+
+/**
+ * Converts WOL-relative URLs to absolute WOL URLs.
+ * @param url - The URL to normalize.
+ * @returns The normalized absolute URL, or the original URL when already absolute.
+ */
+export function normalizeWolUrl(url: string | undefined): string | undefined {
+	if (!url) return undefined;
+	if (url.startsWith('/')) return `${CONSTANTS.WOL_URL}${url}`;
+	return url;
 }

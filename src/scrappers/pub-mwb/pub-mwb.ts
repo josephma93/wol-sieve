@@ -1,4 +1,11 @@
-import { logger, CONSTANTS, cleanText, collapseConsecutiveLineBreaks, takeOutTimeBoxText } from '../../kernel/index.js';
+import {
+	logger,
+	CONSTANTS,
+	cleanText,
+	collapseConsecutiveLineBreaks,
+	normalizeWolUrl,
+	takeOutTimeBoxText,
+} from '../../kernel/index.js';
 import * as cheerio from 'cheerio';
 import { CheerioAPI } from 'cheerio';
 import { ExtractionContextOptions, createExtractionContext } from '../generics.js';
@@ -49,6 +56,25 @@ interface TalkPoint {
 	footnotes: number[];
 }
 
+interface TreasuresTalkIllustration {
+	src: string;
+	alt: string;
+	caption?: string;
+}
+
+interface TreasuresTalkSpecialItem {
+	label: string;
+	text: string;
+	footnotes?: number[];
+}
+
+interface TreasuresTalkMediaItem {
+	text: string;
+	label: string;
+	title: string;
+	url: string;
+}
+
 interface CitationData extends PublicationRefDetectionData {
 	mnemonic: string;
 	footnoteNumber: number;
@@ -59,6 +85,9 @@ interface TreasuresTalkData {
 	timeBox: number;
 	heading: string;
 	points: TalkPoint[];
+	illustrations: TreasuresTalkIllustration[];
+	callout?: TreasuresTalkSpecialItem;
+	video?: TreasuresTalkMediaItem;
 	footnotes: Record<number, string>;
 	citations: CitationData[];
 }
@@ -67,8 +96,26 @@ interface TreasuresTalkDataV2 {
 	sectionNumber: number;
 	timeBox: number;
 	heading: string;
-	points: CitationTextBlock[];
+	content: TreasuresTalkContentItem[];
 }
+
+type TreasuresTalkContentItem =
+	| {
+			kind: 'point';
+			payload: CitationTextBlock;
+	  }
+	| {
+			kind: 'illustration';
+			payload: TreasuresTalkIllustration;
+	  }
+	| {
+			kind: 'callout';
+			payload: TreasuresTalkSpecialItem & CitationTextBlock;
+	  }
+	| {
+			kind: 'video';
+			payload: TreasuresTalkMediaItem;
+	  };
 
 interface AnswerSource {
 	contents: string;
@@ -442,6 +489,186 @@ function buildTextWithCitationMarkers(
 	return textFormatter(cleanText(textWithCitationsSelection.text()));
 }
 
+function buildDirectChildSelection($selection: ReturnType<CheerioAPI>, selector = '> *') {
+	if (selector === '> *') {
+		return $selection.children();
+	}
+
+	return $selection.children(selector.replace(/^>\s*/, ''));
+}
+
+function extractIllustrationData($figureContainer: ReturnType<CheerioAPI>): TreasuresTalkIllustration | null {
+	const $image = $figureContainer.find('img').first();
+	if (!$image.length) {
+		return null;
+	}
+
+	const caption = cleanText($figureContainer.find('figcaption').text());
+
+	return {
+		src: normalizeWolUrl($image.attr('src')) ?? '',
+		alt: cleanText($image.attr('alt') ?? ''),
+		...(caption ? { caption } : {}),
+	};
+}
+
+function extractSpecialItemBase($specialParagraph: ReturnType<CheerioAPI>): TreasuresTalkSpecialItem {
+	const label = cleanText($specialParagraph.find('strong').first().text()).replace(/:$/, '');
+	return {
+		label,
+		text: cleanText($specialParagraph.text()),
+	};
+}
+
+function extractVideoMediaItem($paragraph: ReturnType<CheerioAPI>): TreasuresTalkMediaItem | null {
+	const $videoAnchor = $paragraph.find('a[data-video]').first();
+	if (!$videoAnchor.length) {
+		return null;
+	}
+
+	const text = cleanText($paragraph.text());
+	const label = cleanText($videoAnchor.text());
+	const cloned = $paragraph.clone();
+	cloned.find('a[data-video]').remove();
+
+	return {
+		text,
+		label,
+		title: cleanText(cloned.text()).replace(/^[\[\]\s.]+|[\[\]\s.]+$/g, ''),
+		url: $videoAnchor.attr('href') ?? '',
+	};
+}
+
+function isSpecialItemParagraph($paragraph: ReturnType<CheerioAPI>): boolean {
+	if (!$paragraph.is('p')) {
+		return false;
+	}
+
+	const $previous = $paragraph.prev();
+	if ($previous.is('hr')) {
+		return true;
+	}
+
+	return $paragraph.find('span > strong').length > 0;
+}
+
+function isVideoPromptParagraph($paragraph: ReturnType<CheerioAPI>): boolean {
+	return $paragraph.is('p') && $paragraph.find('a[data-video]').length > 0;
+}
+
+function extractMainPointParagraphs($pointContainer: ReturnType<CheerioAPI>): ReturnType<CheerioAPI>[] {
+	const $children = buildDirectChildSelection($pointContainer);
+	const paragraphs: ReturnType<CheerioAPI>[] = [];
+
+	for (let i = 0; i < $children.length; i++) {
+		const $child = $children.eq(i);
+		if (!$child.is('p')) {
+			continue;
+		}
+		if (isSpecialItemParagraph($child) || isVideoPromptParagraph($child)) {
+			continue;
+		}
+		paragraphs.push($child);
+	}
+
+	return paragraphs;
+}
+
+function extractSpecialItemParagraphsFromPointContainer($pointContainer: ReturnType<CheerioAPI>) {
+	const $children = buildDirectChildSelection($pointContainer);
+	const paragraphs: ReturnType<CheerioAPI>[] = [];
+
+	for (let i = 0; i < $children.length; i++) {
+		const $child = $children.eq(i);
+		if (isSpecialItemParagraph($child)) {
+			paragraphs.push($child);
+		}
+	}
+
+	return paragraphs;
+}
+
+function extractMediaItemsFromPointContainer($pointContainer: ReturnType<CheerioAPI>) {
+	const $children = buildDirectChildSelection($pointContainer);
+	const items: TreasuresTalkMediaItem[] = [];
+
+	for (let i = 0; i < $children.length; i++) {
+		const $child = $children.eq(i);
+		const item = extractVideoMediaItem($child);
+		if (item) {
+			items.push(item);
+		}
+	}
+
+	return items;
+}
+
+function assignSingleOptionalValue<T>(currentValue: T | undefined, nextValues: T[], kind: string): T | undefined {
+	if (nextValues.length === 0) {
+		return currentValue;
+	}
+
+	if (currentValue || nextValues.length > 1) {
+		const msg = `Expected at most one ${kind} in treasures talk, found multiple values. The document structure may have changed.`;
+		log.error(msg);
+		throw new Error(msg);
+	}
+
+	return nextValues[0];
+}
+
+async function appendReferencesAsFootnotes(
+	$paragraph: ReturnType<CheerioAPI>,
+	result: Pick<TreasuresTalkData, 'footnotes' | 'citations'>,
+	footnoteKey: number,
+) {
+	let text = cleanText($paragraph.text());
+	const footnotes: number[] = [];
+	const $references = $paragraph.find(`a:not([data-video])`);
+
+	for (let j = 0; j < $references.length; j++) {
+		const $ref = $references.eq(j);
+		const refText = cleanText($ref.text());
+		text = text.replace(refText, `${refText}[^${++footnoteKey}]`);
+		const opRes = await fetchAndParseAnchorReferenceOrThrow($ref);
+		if (opRes.err) {
+			throw opRes.err;
+		}
+
+		result.footnotes[footnoteKey] = opRes.res.parsedContent;
+		footnotes.push(footnoteKey);
+		result.citations.push({
+			mnemonic: refText,
+			footnoteNumber: footnoteKey,
+			isPubW: opRes.res.isPubW,
+			isPubNwtsty: opRes.res.isPubNwtsty,
+			isPubG: opRes.res.isPubG,
+			issueName: opRes.res.issueName,
+			itemTitle: opRes.res.itemTitle,
+		});
+	}
+
+	return {
+		text,
+		footnotes,
+		footnoteKey,
+	};
+}
+
+async function buildSpecialItemCitationBlock($paragraph: ReturnType<CheerioAPI>) {
+	const text = cleanText($paragraph.text());
+	const selectReferences = (selection: ReturnType<CheerioAPI>) => selection.find(`a:not([data-video])`);
+	const $references = selectReferences($paragraph);
+	const textWithCitations = buildTextWithCitationMarkers($paragraph, selectReferences);
+	const base = extractSpecialItemBase($paragraph);
+	const citationBlock = await buildRequiredCitationBlockFromAnchors($references, text, textWithCitations);
+
+	return {
+		...base,
+		...citationBlock,
+	};
+}
+
 /**
  * Extracts the treasures talk data from the given input.
  * @param input The input object necessary values for correct extraction.
@@ -462,53 +689,62 @@ export async function extractTreasuresTalk(input: ExtractionContextOptions): Pro
 		timeBox: getTimeBoxFromElement($treasuresTalkSelection),
 		heading: headlineData.headline,
 		points: [],
+		illustrations: [],
 		footnotes: {},
 		citations: [],
 	};
 
-	const $points = $treasuresTalkSelection.find(`> div > p`);
-	log.debug(`Found [${$points.length}] points in the talk`);
+	const $children = buildDirectChildSelection($treasuresTalkSelection);
 
 	let footnoteKey = 0;
-	for (let i = 0; i < $points.length; i++) {
-		const $point = $points.eq(i);
-		const talkPoint: TalkPoint = {
-			text: '',
-			originalContent: '',
-			footnotes: [],
-		};
-		let pointText = cleanText($point.text());
-		let originalPointText = pointText;
-		const $references = $point.find(`a:not([data-video])`);
+	for (let i = 0; i < $children.length; i++) {
+		const $child = $children.eq(i);
 
-		log.debug(`Processing point [${i + 1}] with [${$references.length}] references`);
-
-		for (let j = 0; j < $references.length; j++) {
-			const $ref = $references.eq(j);
-			const refText = cleanText($ref.text());
-			pointText = pointText.replace(refText, `${refText}[^${++footnoteKey}]`);
-			const opRes = await fetchAndParseAnchorReferenceOrThrow($ref);
-			if (opRes.err) {
-				throw opRes.err;
+		if ($child.attr('id')?.startsWith('f')) {
+			const illustration = extractIllustrationData($child);
+			if (illustration) {
+				result.illustrations.push(illustration);
 			}
-			result.footnotes[footnoteKey] = opRes.res.parsedContent;
-			talkPoint.footnotes.push(footnoteKey);
-			result.citations.push({
-				mnemonic: refText,
-				footnoteNumber: footnoteKey,
-				isPubW: opRes.res.isPubW,
-				isPubNwtsty: opRes.res.isPubNwtsty,
-				isPubG: opRes.res.isPubG,
-				issueName: opRes.res.issueName,
-				itemTitle: opRes.res.itemTitle,
-			});
-			log.debug(`Added footnote [${footnoteKey}] for reference: [${refText}]`);
+			continue;
 		}
 
-		talkPoint.text = pointText;
-		talkPoint.originalContent = originalPointText;
-		result.points.push(talkPoint);
-		log.debug(`Added talk point [${i + 1}]`);
+		if (!$child.is('div')) {
+			continue;
+		}
+
+		result.video = assignSingleOptionalValue(result.video, extractMediaItemsFromPointContainer($child), 'video');
+		const specialParagraphs = extractSpecialItemParagraphsFromPointContainer($child);
+		const callouts: TreasuresTalkSpecialItem[] = [];
+		for (const $specialParagraph of specialParagraphs) {
+			const base = extractSpecialItemBase($specialParagraph);
+			const enriched = await appendReferencesAsFootnotes($specialParagraph, result, footnoteKey);
+			footnoteKey = enriched.footnoteKey;
+			callouts.push({
+				...base,
+				text: enriched.text,
+				footnotes: enriched.footnotes,
+			});
+		}
+		result.callout = assignSingleOptionalValue(result.callout, callouts, 'callout');
+
+		const paragraphs = extractMainPointParagraphs($child);
+		log.debug(`Processing point container [${i + 1}] with [${paragraphs.length}] main points`);
+
+		for (const $point of paragraphs) {
+			const talkPoint: TalkPoint = {
+				text: '',
+				originalContent: '',
+				footnotes: [],
+			};
+			const originalPointText = cleanText($point.text());
+			const enriched = await appendReferencesAsFootnotes($point, result, footnoteKey);
+			footnoteKey = enriched.footnoteKey;
+
+			talkPoint.text = enriched.text;
+			talkPoint.originalContent = originalPointText;
+			talkPoint.footnotes = enriched.footnotes;
+			result.points.push(talkPoint);
+		}
 	}
 
 	log.info(`Extracted ten-minute talk data`);
@@ -528,21 +764,70 @@ export async function extractTreasuresTalkV2(input: ExtractionContextOptions): P
 		sectionNumber: headlineData.number,
 		timeBox: getTimeBoxFromElement($treasuresTalkSelection),
 		heading: headlineData.headline,
-		points: [],
+		content: [],
 	};
 
-	const $points = $treasuresTalkSelection.find(`> div > p`);
-	log.debug(`Found [${$points.length}] v2 points in the talk`);
+	const $children = buildDirectChildSelection($treasuresTalkSelection);
 
-	for (let i = 0; i < $points.length; i++) {
-		const $point = $points.eq(i);
-		const pointText = cleanText($point.text());
-		const selectReferences = (selection: ReturnType<CheerioAPI>) => selection.find(`a:not([data-video])`);
-		const $references = selectReferences($point);
-		const textWithCitations = buildTextWithCitationMarkers($point, selectReferences);
+	for (let i = 0; i < $children.length; i++) {
+		const $child = $children.eq(i);
 
-		result.points.push(await buildRequiredCitationBlockFromAnchors($references, pointText, textWithCitations));
-		log.debug(`Added v2 talk point [${i + 1}]`);
+		if ($child.attr('id')?.startsWith('f')) {
+			const illustration = extractIllustrationData($child);
+			if (illustration) {
+				result.content.push({
+					kind: 'illustration',
+					payload: illustration,
+				});
+			}
+			continue;
+		}
+
+		if (!$child.is('div')) {
+			continue;
+		}
+
+		const $blockChildren = buildDirectChildSelection($child);
+		for (let j = 0; j < $blockChildren.length; j++) {
+			const $blockChild = $blockChildren.eq(j);
+
+			if (!$blockChild.is('p')) {
+				continue;
+			}
+
+			if (isSpecialItemParagraph($blockChild)) {
+				result.content.push({
+					kind: 'callout',
+					payload: await buildSpecialItemCitationBlock($blockChild),
+				});
+				continue;
+			}
+
+			if (isVideoPromptParagraph($blockChild)) {
+				const video = extractVideoMediaItem($blockChild);
+				if (!video) {
+					const msg = `Expected video metadata for treasures talk video prompt. The document structure may have changed.`;
+					log.error(msg);
+					throw new Error(msg);
+				}
+				result.content.push({
+					kind: 'video',
+					payload: video,
+				});
+				continue;
+			}
+
+			const pointText = cleanText($blockChild.text());
+			const selectReferences = (selection: ReturnType<CheerioAPI>) => selection.find(`a:not([data-video])`);
+			const $references = selectReferences($blockChild);
+			const textWithCitations = buildTextWithCitationMarkers($blockChild, selectReferences);
+
+			result.content.push({
+				kind: 'point',
+				payload: await buildRequiredCitationBlockFromAnchors($references, pointText, textWithCitations),
+			});
+			log.debug(`Added v2 talk point [${result.content.length}]`);
+		}
 	}
 
 	log.info(`Extracted v2 ten-minute talk data`);

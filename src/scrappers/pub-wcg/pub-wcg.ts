@@ -15,6 +15,7 @@ import {
 	cleanText,
 	fixLineContinuations,
 	logger,
+	normalizeWolUrl,
 	opErrored,
 	wrapAsyncOp,
 } from '../../kernel/index.js';
@@ -141,12 +142,6 @@ export const buildDefaultLinks = wrapAsyncOp(async function _buildDefaultLinks()
 
 function getArticleClasses($article: CheerioSelection): string {
 	return $article.attr('class') ?? '';
-}
-
-function normalizeWolUrl(url: string | undefined): string | undefined {
-	if (!url) return undefined;
-	if (url.startsWith('/')) return `${CONSTANTS.WOL_URL}${url}`;
-	return url;
 }
 
 function getHeaderSelection($article: CheerioSelection): CheerioSelection {

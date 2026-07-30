@@ -84,15 +84,66 @@ scraped.
 
 When adding support for a new publication:
 
-1. Collect representative pages for every apparent page type.
-2. Compare their HTML structure across the set.
-3. Identify which pages share the same `docClass-*`.
-4. For shared document classes, find the smallest structural selector that separates the stencils.
-5. Validate the selector against all known pages of that type.
-6. If possible, validate the same selector in another language.
-7. Implement the detector using structural checks first and visible text only as a fallback.
+1. Ask the stakeholder to provide representative WOL URLs for every apparent page type or scenario that matters.
+2. Prefer explicitly curated scenarios over agent-selected guesses. Scenario quality is a judgment call tied to product
+   intent, and required variants should be defined by the person specifying supported behavior.
+3. Download local HTML copies of those URLs into a temporary working folder.
+4. Compare the downloaded HTML structure across the set.
+5. Identify which pages share the same `docClass-*`.
+6. For shared document classes, find the smallest structural selector that separates the stencils.
+7. Validate the selector against all known pages of that type.
+8. If possible, validate the same selector in another language.
+9. Implement the detector using structural checks first and visible text only as a fallback.
 
 The goal is not to match one sample page. The goal is to identify the stencil.
+
+### Local HTML Workflow
+
+When investigating a WOL stencil, work from saved HTML samples before editing scraper code.
+
+Recommended steps:
+
+1. Create a temporary folder for the sample set.
+2. Download each stakeholder-provided WOL page into that folder.
+3. Inspect the HTML with focused command-line tools instead of reading whole documents manually.
+4. Test selectors against the full sample set before changing scraper logic.
+
+Useful tools:
+
+-   `curl` to download local HTML copies.
+-   `htmlq` to test CSS selectors quickly across multiple samples.
+-   `rg` to locate stable structural markers such as `docClass-*`, `data-video`, `figcaption`, `table`, `h2`, `h3`,
+    and figure containers.
+-   `sed` to inspect narrow DOM slices around the relevant block.
+
+Useful questions:
+
+-   What is the real container for the content being scraped?
+-   What are that container's direct children?
+-   Which variants share the same stencil and which do not?
+-   Is ordering in the DOM part of the meaning?
+-   Which signal is structural, and which signal is only visible text?
+
+This workflow should establish the stencil before scraper edits begin. If the structure is still unclear, gather better
+scenario coverage first rather than patching the scraper around uncertainty.
+
+### Scenario Selection
+
+Representative sample quality determines selector quality.
+
+The sample set should include scenarios that expose meaningful structural variation, for example:
+
+-   image at the beginning;
+-   image at the end;
+-   multiple images;
+-   captions or image comments;
+-   callouts or auxiliary prompts;
+-   embedded video prompts;
+-   alternate wrappers such as bleed-to-edge containers;
+-   list, table, or pull-quote variants when relevant.
+
+The URLs that define those scenarios should be supplied by the person specifying supported behavior. That keeps scenario
+selection aligned with actual product needs and avoids wasting effort on guessed edge cases that do not matter.
 
 ### Example
 
@@ -171,6 +222,19 @@ GET /v2/pub-wcg/?urls=url1&urls=url2
 
 Preserve v1 behavior when changing v2 routes. The two route families are intentionally different; do not treat v1-only
 patterns as aliases in v2 unless the v2 contract explicitly defines them.
+
+## Contract Design
+
+JSON contracts should favor semantic absence for optional simple values and structural stability for collections.
+
+-   Omit optional simple fields when no meaningful value exists.
+-   Return empty arrays for collection fields when no elements exist.
+-   Use empty strings, empty objects, or placeholder values only when they represent a meaningful domain state rather
+    than missing data.
+
+This keeps responses easier to consume. Optional simple fields work naturally with nullish coalescing such as
+`value ?? fallback`, while array fields remain safe to process with `map`, `forEach`, `filter`, and `length` checks
+without extra guards.
 
 ## Error Handling
 
