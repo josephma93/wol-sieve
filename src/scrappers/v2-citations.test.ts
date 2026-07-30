@@ -12,7 +12,7 @@ vi.mock('../data-fetching/raw.js', () => ({
 
 import { extractArticleContents, extractArticleContentsV2 } from './pub-w/pub-w.js';
 import { extractLfbContentsV2 } from './pub-lfb/pub-lfb.js';
-import { extractTreasuresTalkV2 } from './pub-mwb/pub-mwb.js';
+import { extractTreasuresTalk, extractTreasuresTalkV2 } from './pub-mwb/pub-mwb.js';
 import { extractReferencesFromLinksV2 } from './pub-nwtsty/pub-nwtsty.js';
 import { clusterBiblicalPassageEntriesV2 } from '../services/pub-nwtsty.js';
 
@@ -274,6 +274,241 @@ describe('v2 citation scraper contracts', () => {
 		});
 		expect(parsed).not.toHaveProperty('footnotes');
 		expect(parsed).not.toHaveProperty('citations');
+	});
+
+	it('preserves treasures talk ordering and v1 footnote numbering when references resolve out of order', async () => {
+		const mwbParallelHtml = `
+			<div id="article">
+				<div id="tt9">
+					<h3>1. Treasures Talk</h3>
+					<div id="tt11">
+						<div><p class="du-color--textSubdued">(10 min.)</p></div>
+						<p>Point starts with <a href="/es/wol/d/r4/lp-s/slow">Slow Ref</a> and then <a href="/es/wol/d/r4/lp-s/fast">Fast Ref</a>.</p>
+						<hr />
+						<p><span><strong>PREGÚNTESE:</strong></span> Examine <a href="/es/wol/d/r4/lp-s/mid">Mid Ref</a>.</p>
+						<p>Point closes with <a href="/es/wol/d/r4/lp-s/end">End Ref</a>.</p>
+					</div>
+				</div>
+				<h3>2. Spiritual Gems</h3>
+				<div></div>
+				<h3>3. Bible Reading</h3>
+				<div></div>
+				<div class="dc-icon--wheat"><h2>Apply Yourself to the Field Ministry</h2></div>
+				<div class="dc-icon--sheep"><h2>Living as Christians</h2></div>
+			</div>
+		`;
+
+		mocks.getJsonContent.mockImplementation(async (url: string) => {
+			const responseByUrl = {
+				'https://wol.jw.org/wol/d/r4/lp-s/slow': { delayMs: 40, content: 'Slow contents', title: 'Slow title' },
+				'https://wol.jw.org/wol/d/r4/lp-s/fast': { delayMs: 5, content: 'Fast contents', title: 'Fast title' },
+				'https://wol.jw.org/wol/d/r4/lp-s/mid': { delayMs: 20, content: 'Mid contents', title: 'Mid title' },
+				'https://wol.jw.org/wol/d/r4/lp-s/end': { delayMs: 1, content: 'End contents', title: 'End title' },
+			} as const;
+			const match = responseByUrl[url as keyof typeof responseByUrl];
+			if (!match) {
+				return referenceResponse();
+			}
+
+			await new Promise((resolve) => setTimeout(resolve, match.delayMs));
+			return referenceResponse({
+				title: match.title,
+				content: `<p class="sb"><span class="parNum">1</span>${match.content}</p>`,
+			});
+		});
+
+		const v1 = await extractTreasuresTalk({ html: mwbParallelHtml });
+		expect(v1.points).toEqual([
+			{
+				text: 'Point starts with Slow Ref[^2] and then Fast Ref[^3].',
+				originalContent: 'Point starts with Slow Ref and then Fast Ref.',
+				footnotes: [2, 3],
+			},
+			{
+				text: 'Point closes with End Ref[^4].',
+				originalContent: 'Point closes with End Ref.',
+				footnotes: [4],
+			},
+		]);
+		expect(v1.callout).toEqual({
+			label: 'PREGÚNTESE',
+			text: 'PREGÚNTESE: Examine Mid Ref[^1].',
+			footnotes: [1],
+		});
+		expect(v1.footnotes).toEqual({
+			1: 'Mid contents',
+			2: 'Slow contents',
+			3: 'Fast contents',
+			4: 'End contents',
+		});
+		expect(v1.citations.map(({ mnemonic, footnoteNumber }) => ({ mnemonic, footnoteNumber }))).toEqual([
+			{ mnemonic: 'Mid Ref', footnoteNumber: 1 },
+			{ mnemonic: 'Slow Ref', footnoteNumber: 2 },
+			{ mnemonic: 'Fast Ref', footnoteNumber: 3 },
+			{ mnemonic: 'End Ref', footnoteNumber: 4 },
+		]);
+
+		const v2 = await extractTreasuresTalkV2({ html: mwbParallelHtml });
+		expect(v2.content).toEqual([
+			{
+				kind: 'point',
+				payload: {
+					text: 'Point starts with Slow Ref and then Fast Ref.',
+					textWithCitations: 'Point starts with [[cite:1]] and then [[cite:2]].',
+					citations: [
+						expect.objectContaining({
+							id: 1,
+							mnemonic: 'Slow Ref',
+							contents: 'Slow contents',
+						}),
+						expect.objectContaining({
+							id: 2,
+							mnemonic: 'Fast Ref',
+							contents: 'Fast contents',
+						}),
+					],
+				},
+			},
+			{
+				kind: 'callout',
+				payload: {
+					label: 'PREGÚNTESE',
+					text: 'PREGÚNTESE: Examine Mid Ref.',
+					textWithCitations: 'PREGÚNTESE: Examine [[cite:1]].',
+					citations: [
+						expect.objectContaining({
+							id: 1,
+							mnemonic: 'Mid Ref',
+							contents: 'Mid contents',
+						}),
+					],
+				},
+			},
+			{
+				kind: 'point',
+				payload: {
+					text: 'Point closes with End Ref.',
+					textWithCitations: 'Point closes with [[cite:1]].',
+					citations: [
+						expect.objectContaining({
+							id: 1,
+							mnemonic: 'End Ref',
+							contents: 'End contents',
+						}),
+					],
+				},
+			},
+		]);
+	});
+
+	it('preserves order across multiple async treasures talk content groups', async () => {
+		const mwbConcurrentGroupsHtml = `
+			<div id="article">
+				<div id="tt9">
+					<h3>1. Treasures Talk</h3>
+					<div id="tt11">
+						<div><p class="du-color--textSubdued">(10 min.)</p></div>
+						<p>First point uses <a href="/es/wol/d/r4/lp-s/a1">A1</a> and <a href="/es/wol/d/r4/lp-s/a2">A2</a>.</p>
+					</div>
+					<div id="tt12">
+						<p><span><strong>DEFINICIÓN:</strong></span> Second callout cites <a href="/es/wol/d/r4/lp-s/b1">B1</a>.</p>
+					</div>
+					<div id="tt13">
+						<p>Third point uses <a href="/es/wol/d/r4/lp-s/c1">C1</a>, <a href="/es/wol/d/r4/lp-s/c2">C2</a>, and <a href="/es/wol/d/r4/lp-s/c3">C3</a>.</p>
+					</div>
+				</div>
+				<h3>2. Spiritual Gems</h3>
+				<div></div>
+				<h3>3. Bible Reading</h3>
+				<div></div>
+				<div class="dc-icon--wheat"><h2>Apply Yourself to the Field Ministry</h2></div>
+				<div class="dc-icon--sheep"><h2>Living as Christians</h2></div>
+			</div>
+		`;
+
+		mocks.getJsonContent.mockImplementation(async (url: string) => {
+			await new Promise((resolve) => setTimeout(resolve, 20));
+			const mnemonic = url.split('/').pop()?.toUpperCase() ?? 'UNKNOWN';
+			return referenceResponse({
+				title: `${mnemonic} title`,
+				content: `<p class="sb"><span class="parNum">1</span>${mnemonic} contents</p>`,
+			});
+		});
+
+		const parsed = await extractTreasuresTalkV2({ html: mwbConcurrentGroupsHtml });
+
+		expect(parsed.content).toEqual([
+			{
+				kind: 'point',
+				payload: {
+					text: 'First point uses A1 and A2.',
+					textWithCitations: 'First point uses [[cite:1]] and [[cite:2]].',
+					citations: [
+						expect.objectContaining({ id: 1, mnemonic: 'A1', contents: 'A1 contents' }),
+						expect.objectContaining({ id: 2, mnemonic: 'A2', contents: 'A2 contents' }),
+					],
+				},
+			},
+			{
+				kind: 'callout',
+				payload: {
+					label: 'DEFINICIÓN',
+					text: 'DEFINICIÓN: Second callout cites B1.',
+					textWithCitations: 'DEFINICIÓN: Second callout cites [[cite:1]].',
+					citations: [expect.objectContaining({ id: 1, mnemonic: 'B1', contents: 'B1 contents' })],
+				},
+			},
+			{
+				kind: 'point',
+				payload: {
+					text: 'Third point uses C1, C2, and C3.',
+					textWithCitations: 'Third point uses [[cite:1]], [[cite:2]], and [[cite:3]].',
+					citations: [
+						expect.objectContaining({ id: 1, mnemonic: 'C1', contents: 'C1 contents' }),
+						expect.objectContaining({ id: 2, mnemonic: 'C2', contents: 'C2 contents' }),
+						expect.objectContaining({ id: 3, mnemonic: 'C3', contents: 'C3 contents' }),
+					],
+				},
+			},
+		]);
+	});
+
+	it('fails treasures talk v2 extraction when a parallel reference load errors', async () => {
+		const mwbFailureHtml = `
+			<div id="article">
+				<div id="tt9">
+					<h3>1. Treasures Talk</h3>
+					<div id="tt11">
+						<div><p class="du-color--textSubdued">(10 min.)</p></div>
+						<p>Healthy point uses <a href="/es/wol/d/r4/lp-s/ok">Ok Ref</a>.</p>
+					</div>
+					<div id="tt12">
+						<p>Broken point uses <a href="/es/wol/d/r4/lp-s/fail">Fail Ref</a>.</p>
+					</div>
+				</div>
+				<h3>2. Spiritual Gems</h3>
+				<div></div>
+				<h3>3. Bible Reading</h3>
+				<div></div>
+				<div class="dc-icon--wheat"><h2>Apply Yourself to the Field Ministry</h2></div>
+				<div class="dc-icon--sheep"><h2>Living as Christians</h2></div>
+			</div>
+		`;
+
+		mocks.getJsonContent.mockImplementation(async (url: string) => {
+			if (url.endsWith('/fail')) {
+				await new Promise((resolve) => setTimeout(resolve, 5));
+				return { err: new Error('reference upstream failed'), res: null };
+			}
+
+			await new Promise((resolve) => setTimeout(resolve, 15));
+			return referenceResponse({
+				title: 'Ok title',
+				content: `<p class="sb"><span class="parNum">1</span>Ok contents</p>`,
+			});
+		});
+
+		await expect(extractTreasuresTalkV2({ html: mwbFailureHtml })).rejects.toThrow('reference upstream failed');
 	});
 
 	it('deduplicates repeated NWTSTY references into shared references and occurrence citations', async () => {

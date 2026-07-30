@@ -19,7 +19,11 @@ import {
 	buildRelevantProgramGroupSelections,
 	getAndValidateSongSelections,
 } from './program-selection-groups.js';
-import { fetchAnchorData, fetchAndParseAnchorReferenceOrThrow } from '../../data-fetching/reference-json.js';
+import {
+	fetchAnchorData,
+	fetchAndParseAnchorReferenceOrThrow,
+	PublicationRefData,
+} from '../../data-fetching/reference-json.js';
 import {
 	BiblicalPassageItem,
 	buildAnchorRefExtractionData,
@@ -78,6 +82,11 @@ interface TreasuresTalkMediaItem {
 interface CitationData extends PublicationRefDetectionData {
 	mnemonic: string;
 	footnoteNumber: number;
+}
+
+interface ResolvedAnchorReference {
+	mnemonic: string;
+	parsedReference: PublicationRefData;
 }
 
 interface TreasuresTalkData {
@@ -460,19 +469,38 @@ async function buildRequiredCitationBlockFromAnchors(
 	textWithCitations = seedText,
 ): Promise<CitationTextBlock> {
 	let block = createCitationTextBlock(seedText, textWithCitations);
+	const resolvedReferences = await resolveAnchorReferencesInOrder(anchors);
+
+	for (const { mnemonic, parsedReference } of resolvedReferences) {
+		block = addParsedReferenceToCitationBlock(block, mnemonic, parsedReference);
+	}
+
+	return block;
+}
+
+async function resolveAnchorReferencesInOrder(anchors: ReturnType<CheerioAPI>): Promise<ResolvedAnchorReference[]> {
+	const referencePromises: Promise<ResolvedAnchorReference>[] = [];
 
 	for (let i = 0; i < anchors.length; i++) {
 		const $anchor = anchors.eq(i);
 		const mnemonic = cleanText($anchor.text());
-		const opRes = await fetchAndParseAnchorReferenceOrThrow($anchor);
-		if (opRes.err) {
-			throw opRes.err;
-		}
 
-		block = addParsedReferenceToCitationBlock(block, mnemonic, opRes.res);
+		referencePromises.push(
+			(async () => {
+				const opRes = await fetchAndParseAnchorReferenceOrThrow($anchor);
+				if (opRes.err) {
+					throw opRes.err;
+				}
+
+				return {
+					mnemonic,
+					parsedReference: opRes.res,
+				};
+			})(),
+		);
 	}
 
-	return block;
+	return Promise.all(referencePromises);
 }
 
 function buildTextWithCitationMarkers(
@@ -617,41 +645,40 @@ function assignSingleOptionalValue<T>(currentValue: T | undefined, nextValues: T
 	return nextValues[0];
 }
 
-async function appendReferencesAsFootnotes(
-	$paragraph: ReturnType<CheerioAPI>,
-	result: Pick<TreasuresTalkData, 'footnotes' | 'citations'>,
-	footnoteKey: number,
-) {
+async function buildTreasuresTalkV1ReferenceData($paragraph: ReturnType<CheerioAPI>, startFootnoteNumber: number) {
 	let text = cleanText($paragraph.text());
 	const footnotes: number[] = [];
 	const $references = $paragraph.find(`a:not([data-video])`);
+	const resolvedReferences = await resolveAnchorReferencesInOrder($references);
+	const footnoteEntries: Array<{ footnoteNumber: number; contents: string }> = [];
+	const citations: CitationData[] = [];
 
-	for (let j = 0; j < $references.length; j++) {
-		const $ref = $references.eq(j);
-		const refText = cleanText($ref.text());
-		text = text.replace(refText, `${refText}[^${++footnoteKey}]`);
-		const opRes = await fetchAndParseAnchorReferenceOrThrow($ref);
-		if (opRes.err) {
-			throw opRes.err;
-		}
-
-		result.footnotes[footnoteKey] = opRes.res.parsedContent;
-		footnotes.push(footnoteKey);
-		result.citations.push({
-			mnemonic: refText,
-			footnoteNumber: footnoteKey,
-			isPubW: opRes.res.isPubW,
-			isPubNwtsty: opRes.res.isPubNwtsty,
-			isPubG: opRes.res.isPubG,
-			issueName: opRes.res.issueName,
-			itemTitle: opRes.res.itemTitle,
+	for (let j = 0; j < resolvedReferences.length; j++) {
+		const footnoteNumber = startFootnoteNumber + j + 1;
+		const { mnemonic, parsedReference } = resolvedReferences[j];
+		text = text.replace(mnemonic, `${mnemonic}[^${footnoteNumber}]`);
+		footnotes.push(footnoteNumber);
+		footnoteEntries.push({
+			footnoteNumber,
+			contents: parsedReference.parsedContent,
+		});
+		citations.push({
+			mnemonic,
+			footnoteNumber,
+			isPubW: parsedReference.isPubW,
+			isPubNwtsty: parsedReference.isPubNwtsty,
+			isPubG: parsedReference.isPubG,
+			issueName: parsedReference.issueName,
+			itemTitle: parsedReference.itemTitle,
 		});
 	}
 
 	return {
 		text,
 		footnotes,
-		footnoteKey,
+		footnoteEntries,
+		citations,
+		nextFootnoteNumber: startFootnoteNumber + resolvedReferences.length,
 	};
 }
 
@@ -667,6 +694,57 @@ async function buildSpecialItemCitationBlock($paragraph: ReturnType<CheerioAPI>)
 		...base,
 		...citationBlock,
 	};
+}
+
+async function buildTreasuresTalkV2ContentItem($blockChild: ReturnType<CheerioAPI>): Promise<TreasuresTalkContentItem> {
+	if (isSpecialItemParagraph($blockChild)) {
+		return {
+			kind: 'callout',
+			payload: await buildSpecialItemCitationBlock($blockChild),
+		};
+	}
+
+	if (isVideoPromptParagraph($blockChild)) {
+		const video = extractVideoMediaItem($blockChild);
+		if (!video) {
+			const msg = `Expected video metadata for treasures talk video prompt. The document structure may have changed.`;
+			log.error(msg);
+			throw new Error(msg);
+		}
+
+		return {
+			kind: 'video',
+			payload: video,
+		};
+	}
+
+	const pointText = cleanText($blockChild.text());
+	const selectReferences = (selection: ReturnType<CheerioAPI>) => selection.find(`a:not([data-video])`);
+	const $references = selectReferences($blockChild);
+	const textWithCitations = buildTextWithCitationMarkers($blockChild, selectReferences);
+
+	return {
+		kind: 'point',
+		payload: await buildRequiredCitationBlockFromAnchors($references, pointText, textWithCitations),
+	};
+}
+
+async function extractTreasuresTalkV2ContentItemsFromContainer(
+	$container: ReturnType<CheerioAPI>,
+): Promise<TreasuresTalkContentItem[]> {
+	const $blockChildren = buildDirectChildSelection($container);
+	const blockItemPromises: Promise<TreasuresTalkContentItem>[] = [];
+
+	for (let i = 0; i < $blockChildren.length; i++) {
+		const $blockChild = $blockChildren.eq(i);
+		if (!$blockChild.is('p')) {
+			continue;
+		}
+
+		blockItemPromises.push(buildTreasuresTalkV2ContentItem($blockChild));
+	}
+
+	return Promise.all(blockItemPromises);
 }
 
 /**
@@ -717,8 +795,12 @@ export async function extractTreasuresTalk(input: ExtractionContextOptions): Pro
 		const callouts: TreasuresTalkSpecialItem[] = [];
 		for (const $specialParagraph of specialParagraphs) {
 			const base = extractSpecialItemBase($specialParagraph);
-			const enriched = await appendReferencesAsFootnotes($specialParagraph, result, footnoteKey);
-			footnoteKey = enriched.footnoteKey;
+			const enriched = await buildTreasuresTalkV1ReferenceData($specialParagraph, footnoteKey);
+			footnoteKey = enriched.nextFootnoteNumber;
+			for (const { footnoteNumber, contents } of enriched.footnoteEntries) {
+				result.footnotes[footnoteNumber] = contents;
+			}
+			result.citations.push(...enriched.citations);
 			callouts.push({
 				...base,
 				text: enriched.text,
@@ -737,8 +819,12 @@ export async function extractTreasuresTalk(input: ExtractionContextOptions): Pro
 				footnotes: [],
 			};
 			const originalPointText = cleanText($point.text());
-			const enriched = await appendReferencesAsFootnotes($point, result, footnoteKey);
-			footnoteKey = enriched.footnoteKey;
+			const enriched = await buildTreasuresTalkV1ReferenceData($point, footnoteKey);
+			footnoteKey = enriched.nextFootnoteNumber;
+			for (const { footnoteNumber, contents } of enriched.footnoteEntries) {
+				result.footnotes[footnoteNumber] = contents;
+			}
+			result.citations.push(...enriched.citations);
 
 			talkPoint.text = enriched.text;
 			talkPoint.originalContent = originalPointText;
@@ -768,18 +854,25 @@ export async function extractTreasuresTalkV2(input: ExtractionContextOptions): P
 	};
 
 	const $children = buildDirectChildSelection($treasuresTalkSelection);
+	const contentGroupPromises: Promise<TreasuresTalkContentItem[]>[] = [];
 
 	for (let i = 0; i < $children.length; i++) {
 		const $child = $children.eq(i);
 
 		if ($child.attr('id')?.startsWith('f')) {
 			const illustration = extractIllustrationData($child);
-			if (illustration) {
-				result.content.push({
-					kind: 'illustration',
-					payload: illustration,
-				});
-			}
+			contentGroupPromises.push(
+				Promise.resolve(
+					illustration
+						? [
+								{
+									kind: 'illustration' as const,
+									payload: illustration,
+								},
+							]
+						: [],
+				),
+			);
 			continue;
 		}
 
@@ -787,48 +880,11 @@ export async function extractTreasuresTalkV2(input: ExtractionContextOptions): P
 			continue;
 		}
 
-		const $blockChildren = buildDirectChildSelection($child);
-		for (let j = 0; j < $blockChildren.length; j++) {
-			const $blockChild = $blockChildren.eq(j);
-
-			if (!$blockChild.is('p')) {
-				continue;
-			}
-
-			if (isSpecialItemParagraph($blockChild)) {
-				result.content.push({
-					kind: 'callout',
-					payload: await buildSpecialItemCitationBlock($blockChild),
-				});
-				continue;
-			}
-
-			if (isVideoPromptParagraph($blockChild)) {
-				const video = extractVideoMediaItem($blockChild);
-				if (!video) {
-					const msg = `Expected video metadata for treasures talk video prompt. The document structure may have changed.`;
-					log.error(msg);
-					throw new Error(msg);
-				}
-				result.content.push({
-					kind: 'video',
-					payload: video,
-				});
-				continue;
-			}
-
-			const pointText = cleanText($blockChild.text());
-			const selectReferences = (selection: ReturnType<CheerioAPI>) => selection.find(`a:not([data-video])`);
-			const $references = selectReferences($blockChild);
-			const textWithCitations = buildTextWithCitationMarkers($blockChild, selectReferences);
-
-			result.content.push({
-				kind: 'point',
-				payload: await buildRequiredCitationBlockFromAnchors($references, pointText, textWithCitations),
-			});
-			log.debug(`Added v2 talk point [${result.content.length}]`);
-		}
+		contentGroupPromises.push(extractTreasuresTalkV2ContentItemsFromContainer($child));
 	}
+
+	const contentGroups = await Promise.all(contentGroupPromises);
+	result.content = contentGroups.flat();
 
 	log.info(`Extracted v2 ten-minute talk data`);
 	return result;
