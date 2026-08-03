@@ -121,12 +121,17 @@ async function buildCitationBlockFromAnchors(foo: CheerioSelection, seedText: st
 
 	let block = createCitationTextBlock(seedText, cleanText(textWithCitationsSelection.text()));
 
-	for (let i = 0; i < anchors.length; i++) {
-		const $a = anchors.eq(i);
-		const mnemonic = cleanText($a.text());
-		log.debug(`Extracting v2 reference: [${mnemonic}]`);
+	const referenceResults = await Promise.all(
+		Array.from({ length: anchors.length }, (_, index) => {
+			const $a = anchors.eq(index);
+			const mnemonic = cleanText($a.text());
+			log.debug(`Extracting v2 reference: [${mnemonic}]`);
 
-		const opRes = await fetchAndParseAnchorReferenceOrThrow($a);
+			return fetchAndParseAnchorReferenceOrThrow($a).then((opRes) => ({ mnemonic, opRes }));
+		}),
+	);
+
+	for (const { mnemonic, opRes } of referenceResults) {
 		if (opErrored(opRes)) {
 			log.warn(`Unable to load reference data for mnemonic: [${mnemonic}] due to: [${opRes.err.message}]`);
 			block = addUnableToExtractReferenceToCitationBlock(block, mnemonic);
@@ -216,7 +221,6 @@ async function parseLessonV2($: CheerioAPI, $article: CheerioSelection): Promise
 	log.debug(`Parsing v2 lesson number text: [${lessonNumberText}]`);
 	const number = parseInt(lessonNumberText.replace(/\D/g, ''), 10);
 	const title = cleanText($article.find(CONSTANTS.PUB_LFB_CSS_SELECTOR_LESSON_TITLE_SELECTOR).text());
-	const lessonContentsAsMd = await buildLessonMarkdown($article);
 	const figures = $article
 		.find(CONSTANTS.PUB_LFB_CSS_SELECTOR_LESSON_FIGURE_SELECTOR)
 		.slice(1)
@@ -230,16 +234,18 @@ async function parseLessonV2($: CheerioAPI, $article: CheerioSelection): Promise
 		.get();
 	const $quoteEl = $article.find(CONSTANTS.PUB_LFB_CSS_SELECTOR_LESSON_HIGHLIGHT_QUOTE_SELECTOR);
 	const highlightQuoteText = cleanText($quoteEl.text());
-
-	log.debug('Extracting v2 citations for highlight quote...');
-	const highlightQuote = await buildCitationBlockFromAnchors($quoteEl, highlightQuoteText);
-
 	const questions = cleanText($article.find(CONSTANTS.PUB_LFB_CSS_SELECTOR_LESSON_QUESTIONS_SELECTOR).text());
-
 	const $sourcesEls = $article.find(CONSTANTS.PUB_LFB_CSS_SELECTOR_LESSON_CITATIONS_SELECTOR);
-	log.debug('Extracting v2 citations for bible sources...');
 	const bibleSourcesText = cleanText($sourcesEls.text());
-	const bibleSources = await buildCitationBlockFromAnchors($sourcesEls, bibleSourcesText);
+	log.debug('Extracting v2 lesson markdown and citation blocks...');
+	const lessonMarkdownPromise = buildLessonMarkdown($article);
+	const highlightQuotePromise = buildCitationBlockFromAnchors($quoteEl, highlightQuoteText);
+	const bibleSourcesPromise = buildCitationBlockFromAnchors($sourcesEls, bibleSourcesText);
+	const [lessonContentsAsMd, highlightQuote, bibleSources] = await Promise.all([
+		lessonMarkdownPromise,
+		highlightQuotePromise,
+		bibleSourcesPromise,
+	]);
 
 	const coverImg = $article.find(CONSTANTS.PUB_LFB_CSS_SELECTOR_HEADLINE_FIGURE);
 	const coverFigure = {

@@ -408,13 +408,9 @@ async function parseBibleAccountAnchor($anchor: CheerioSelection): Promise<WcgBi
 
 async function parseBibleAccount($accountSection: CheerioSelection): Promise<WcgBibleAccount[]> {
 	const anchors = getSelectionWithDescendants($accountSection, 'a');
-	const accounts: WcgBibleAccount[] = [];
-
-	for (let i = 0; i < anchors.length; i++) {
-		accounts.push(await parseBibleAccountAnchor(anchors.eq(i)));
-	}
-
-	return accounts;
+	return Promise.all(
+		Array.from({ length: anchors.length }, (_, index) => parseBibleAccountAnchor(anchors.eq(index))),
+	);
 }
 
 function parseForDiscussion($: CheerioAPI, $article: CheerioSelection): string {
@@ -456,8 +452,8 @@ async function parseDigDeeper($: CheerioAPI, $article: CheerioSelection): Promis
 	const $section = getSectionSiblingsUntilHeading($, $heading, /^Piense en las lecciones$/i);
 	const figuresByLabel = buildFigureLabelMap($, $section);
 	const fields = getSelectionWithDescendants($section, '.gen-field');
-	const blocks: WcgQuestionBlock[] = [];
 	const seenQuestions = new Set<unknown>();
+	const questionsToParse: CheerioSelection[] = [];
 
 	for (let i = 0; i < fields.length; i++) {
 		const $question = getPreviousQuestionParagraph(fields.eq(i));
@@ -466,10 +462,10 @@ async function parseDigDeeper($: CheerioAPI, $article: CheerioSelection): Promis
 		seenQuestions.add($question[0]);
 		if (!cleanInlineText($question.text())) continue;
 
-		blocks.push(await parseQuestionBlockFromParagraph($question, figuresByLabel));
+		questionsToParse.push($question);
 	}
 
-	return blocks;
+	return Promise.all(questionsToParse.map(($question) => parseQuestionBlockFromParagraph($question, figuresByLabel)));
 }
 
 function getTopLevelList($: CheerioAPI, $scope: CheerioSelection, selector: 'ol' | 'ul'): CheerioSelection {
@@ -485,30 +481,39 @@ async function parseReflectOnLessons($: CheerioAPI, $article: CheerioSelection):
 	const $section = getSectionSiblingsUntilHeading($, $heading, /^Vea el cuadro completo$/i);
 	const figuresByLabel = buildFigureLabelMap($, $section);
 	const $list = getTopLevelList($, $section, 'ul');
-	const blocks: WcgReflectQuestionBlock[] = [];
+	const listItems = $list.children('li').toArray();
+	const blocks = await Promise.all(
+		listItems.map(async (listItem) => {
+			const $li = $(listItem);
+			const $question = $li.children('p').first();
+			if ($question.length === 0 || !cleanInlineText($question.text())) {
+				return null;
+			}
 
-	for (let i = 0; i < $list.children('li').length; i++) {
-		const $li = $list.children('li').eq(i);
-		const $question = $li.children('p').first();
-		if ($question.length === 0 || !cleanInlineText($question.text())) continue;
+			const $nestedItems = $li.children('ul').children('li').toArray();
+			const [block, subPointResults] = await Promise.all([
+				parseQuestionBlockFromParagraph($question, figuresByLabel),
+				Promise.all(
+					$nestedItems.map(async (nestedItem) => {
+						const $subPoint = $(nestedItem).children('p').first();
+						if ($subPoint.length === 0 || !cleanInlineText($subPoint.text())) {
+							return null;
+						}
 
-		const block = await parseQuestionBlockFromParagraph($question, figuresByLabel);
-		const subPoints: WcgQuestionBlock[] = [];
-		const $nestedItems = $li.children('ul').children('li');
+						return parseQuestionBlockFromParagraph($subPoint, figuresByLabel);
+					}),
+				),
+			]);
+			const subPoints = subPointResults.filter((subPoint) => subPoint !== null);
 
-		for (let j = 0; j < $nestedItems.length; j++) {
-			const $subPoint = $nestedItems.eq(j).children('p').first();
-			if ($subPoint.length === 0 || !cleanInlineText($subPoint.text())) continue;
-			subPoints.push(await parseQuestionBlockFromParagraph($subPoint, figuresByLabel));
-		}
+			return {
+				...block,
+				...(subPoints.length > 0 ? { subPoints } : {}),
+			};
+		}),
+	);
 
-		blocks.push({
-			...block,
-			...(subPoints.length > 0 ? { subPoints } : {}),
-		});
-	}
-
-	return blocks;
+	return blocks.filter((block) => block !== null);
 }
 
 function parseMeditateOnBiggerPicture($: CheerioAPI, $article: CheerioSelection): string[] {

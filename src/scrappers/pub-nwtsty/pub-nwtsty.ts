@@ -465,23 +465,30 @@ export async function extractReferencesFromLinksV2(links: string[]): Promise<Nwt
 		});
 	}
 
-	for (const { link, opRes } of opResults) {
+	const extractionResults = await Promise.all(
+		opResults.map(async ({ link, opRes }) => {
+			if (opErrored(opRes)) {
+				return { link, opRes };
+			}
+
+			return {
+				link,
+				opRes: await extractBibleReferencesV2(opRes.res),
+			};
+		}),
+	);
+
+	for (const { link, opRes } of extractionResults) {
 		if (opErrored(opRes)) {
 			registerOpWithErr({ link, opRes });
 			continue;
 		}
-		const extractRes = await extractBibleReferencesV2(opRes.res);
-		if (opErrored(extractRes)) {
-			registerOpWithErr({ link, opRes: extractRes });
-			continue;
-		}
-		log.debug(`V2 reference extraction for link [${link}] was successful.`);
-		const extracted = extractRes.res;
 
+		log.debug(`V2 reference extraction for link [${link}] was successful.`);
 		result.results.push({
 			link,
-			entries: extracted.entries,
-			sharedReferences: extracted.sharedReferences,
+			entries: opRes.res.entries,
+			sharedReferences: opRes.res.sharedReferences,
 		});
 	}
 

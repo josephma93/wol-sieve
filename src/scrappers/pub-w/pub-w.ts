@@ -362,12 +362,17 @@ async function extractReferencesV2(para: CheerioSelection): Promise<CitationText
 
 	let block = createCitationTextBlock(cleanText(para.text()), cleanText(textWithCitationsPara.text()));
 
-	for (let i = 0; i < anchorElems.length; i++) {
-		const anchorRef = anchorElems.eq(i);
-		const mnemonic = cleanText(anchorRef.text());
-		log.debug(`Extracting v2 reference: [${mnemonic}]`);
+	const referenceResults = await Promise.all(
+		Array.from({ length: anchorElems.length }, (_, index) => {
+			const anchorRef = anchorElems.eq(index);
+			const mnemonic = cleanText(anchorRef.text());
+			log.debug(`Extracting v2 reference: [${mnemonic}]`);
 
-		const opRes = await fetchAndParseAnchorReferenceOrThrow(anchorRef);
+			return fetchAndParseAnchorReferenceOrThrow(anchorRef).then((opRes) => ({ mnemonic, opRes }));
+		}),
+	);
+
+	for (const { mnemonic, opRes } of referenceResults) {
 		if (opErrored(opRes)) {
 			log.warn(`Unable to load reference data for mnemonic: [${mnemonic}] due to: [${opRes.err.message}]`);
 			block = addUnableToExtractReferenceToCitationBlock(block, mnemonic);
@@ -545,8 +550,10 @@ async function extractContentsV2($: CheerioAPI): Promise<ContentDataV2[]> {
 
 		log.debug(`Processing v2 question [${dataPid}]`);
 
-		const paragraphs = await extractParagraphsV2($, dataPid);
-		const questionReferencedData = await extractQuestionReferencedData($, questionData, dataPid);
+		const [paragraphs, questionReferencedData] = await Promise.all([
+			extractParagraphsV2($, dataPid),
+			extractQuestionReferencedData($, questionData, dataPid),
+		]);
 
 		return {
 			pNumbers: questionData.pNumbers,
