@@ -404,6 +404,22 @@ interface QuestionReferencedBoxSupplementData {
 	content: string;
 }
 
+async function buildQuestionReferencedBoxSupplement(
+	$boxSupplement: CheerioSelection,
+): Promise<QuestionReferencedBoxSupplementData> {
+	const title = cleanText($boxSupplement.find(CONSTANTS.PUB_W_CSS_SELECTOR_FOR_BOX_TITLE).text());
+	const markedContent = await markify({
+		htmlContent: $boxSupplement.find(CONSTANTS.PUB_W_CSS_SELECTOR_FOR_BOX_CONTENT).html() ?? '',
+		ignoreSelectors: CONSTANTS.MARKIFY_GENERAL_CSS_SELECTORS_TO_IGNORE,
+		ignoreHiddenElements: true,
+	});
+
+	return {
+		title,
+		content: fixLineContinuations(markedContent.markdown),
+	};
+}
+
 function extractFigures($: CheerioAPI, questionPid: string) {
 	const figures: QuestionReferencedFigureData[] = [];
 	$(CONSTANTS.GENERAL_CSS_SELECTOR_FOR_FIGURES).each((_, fig) => {
@@ -457,18 +473,7 @@ async function extractQuestionReferencedData($: CheerioAPI, questionData: Questi
 			.get(); // Convert Cheerio object to a plain array of Cheerio elements
 
 		boxSupplements = await Promise.all(
-			$boxSupplements.map(async ($boxSupplement) => {
-				const title = cleanText($boxSupplement.find(CONSTANTS.PUB_W_CSS_SELECTOR_FOR_BOX_TITLE).text());
-				const markedContent = await markify({
-					htmlContent: $boxSupplement.find(CONSTANTS.PUB_W_CSS_SELECTOR_FOR_BOX_CONTENT).html() ?? '',
-					ignoreSelectors: CONSTANTS.MARKIFY_GENERAL_CSS_SELECTORS_TO_IGNORE,
-					ignoreHiddenElements: true,
-				});
-				return {
-					title: title,
-					content: fixLineContinuations(markedContent.markdown),
-				};
-			}),
+			$boxSupplements.map(($boxSupplement) => buildQuestionReferencedBoxSupplement($boxSupplement)),
 		);
 	}
 

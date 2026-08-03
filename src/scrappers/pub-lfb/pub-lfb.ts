@@ -139,17 +139,22 @@ async function buildCitationBlockFromAnchors(foo: CheerioSelection, seedText: st
 	return block;
 }
 
+async function buildLessonMarkdown($article: CheerioSelection): Promise<string> {
+	const { markdown } = await markify({
+		htmlContent: $article.find(CONSTANTS.PUB_LFB_CSS_SELECTOR_BODY_SELECTOR).html() ?? '',
+		ignoreSelectors: CONSTANTS.MARKIFY_GENERAL_CSS_SELECTORS_TO_IGNORE,
+		ignoreHiddenElements: true,
+	});
+
+	return fixLineContinuations(markdown);
+}
+
 async function parseLesson($: CheerioAPI, $article: CheerioSelection): Promise<LfbItem> {
 	const lessonNumberText = cleanText($article.find(CONSTANTS.PUB_LFB_CSS_SELECTOR_SECTION_INTRO_HEADLINE).text());
 	log.debug(`Parsing lesson number text: [${lessonNumberText}]`);
 	const number = parseInt(lessonNumberText.replace(/\D/g, ''), 10);
 	const title = cleanText($article.find(CONSTANTS.PUB_LFB_CSS_SELECTOR_LESSON_TITLE_SELECTOR).text());
-	const contents = await markify({
-		htmlContent: $article.find(CONSTANTS.PUB_LFB_CSS_SELECTOR_BODY_SELECTOR).html() ?? '',
-		ignoreSelectors: CONSTANTS.MARKIFY_GENERAL_CSS_SELECTORS_TO_IGNORE,
-		ignoreHiddenElements: true,
-	});
-	const lessonContentsAsMd = fixLineContinuations(contents.markdown);
+	const lessonContentsAsMd = await buildLessonMarkdown($article);
 	const figures = $article
 		.find(CONSTANTS.PUB_LFB_CSS_SELECTOR_LESSON_FIGURE_SELECTOR)
 		// This selector matches the cover image too so we just skip it
@@ -211,12 +216,7 @@ async function parseLessonV2($: CheerioAPI, $article: CheerioSelection): Promise
 	log.debug(`Parsing v2 lesson number text: [${lessonNumberText}]`);
 	const number = parseInt(lessonNumberText.replace(/\D/g, ''), 10);
 	const title = cleanText($article.find(CONSTANTS.PUB_LFB_CSS_SELECTOR_LESSON_TITLE_SELECTOR).text());
-	const contents = await markify({
-		htmlContent: $article.find(CONSTANTS.PUB_LFB_CSS_SELECTOR_BODY_SELECTOR).html() ?? '',
-		ignoreSelectors: CONSTANTS.MARKIFY_GENERAL_CSS_SELECTORS_TO_IGNORE,
-		ignoreHiddenElements: true,
-	});
-	const lessonContentsAsMd = fixLineContinuations(contents.markdown);
+	const lessonContentsAsMd = await buildLessonMarkdown($article);
 	const figures = $article
 		.find(CONSTANTS.PUB_LFB_CSS_SELECTOR_LESSON_FIGURE_SELECTOR)
 		.slice(1)

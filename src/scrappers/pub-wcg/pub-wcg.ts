@@ -589,6 +589,27 @@ async function parseWcgBodyMarkdown($article: CheerioSelection): Promise<string>
 	return fixLineContinuations(contents.markdown);
 }
 
+async function parseLessonStudySections(
+	$: CheerioAPI,
+	$article: CheerioSelection,
+	$accountSection: CheerioSelection,
+): Promise<Pick<WcgLessonContents, 'readTheBibleAccount' | 'digDeeper' | 'reflectOnTheLessons'>> {
+	const readTheBibleAccountPromise = parseBibleAccount($accountSection);
+	const digDeeperPromise = parseDigDeeper($, $article);
+	const reflectOnTheLessonsPromise = parseReflectOnLessons($, $article);
+	const [readTheBibleAccount, digDeeper, reflectOnTheLessons] = await Promise.all([
+		readTheBibleAccountPromise,
+		digDeeperPromise,
+		reflectOnTheLessonsPromise,
+	]);
+
+	return {
+		readTheBibleAccount,
+		digDeeper,
+		reflectOnTheLessons,
+	};
+}
+
 function parseWcgSectionNumber(contextTitle: string): number | undefined {
 	const match = contextTitle.match(/\d+/);
 	return match ? parseInt(match[0], 10) : undefined;
@@ -654,6 +675,7 @@ async function parseLesson($: CheerioAPI, $article: CheerioSelection): Promise<W
 	const $openingBlock = getOpeningBlock($article, $readHeading);
 	const { narration, narrationFigures, featuredQuote } = parseNarration($, $openingBlock, $readHeading);
 	const accountSection = getSectionSiblingsUntilHeading($, $readHeading);
+	const studySections = await parseLessonStudySections($, $article, accountSection);
 	const contents: WcgLessonContents = {
 		number: lessonContextMatch ? parseInt(lessonContextMatch[1], 10) : undefined,
 		subject: cleanInlineText(lessonContextMatch?.[2] ?? ''),
@@ -661,10 +683,10 @@ async function parseLesson($: CheerioAPI, $article: CheerioSelection): Promise<W
 		narration,
 		narrationFigures,
 		featuredQuote,
-		readTheBibleAccount: await parseBibleAccount(accountSection),
+		readTheBibleAccount: studySections.readTheBibleAccount,
 		forDiscussion: parseForDiscussion($, $article),
-		digDeeper: await parseDigDeeper($, $article),
-		reflectOnTheLessons: await parseReflectOnLessons($, $article),
+		digDeeper: studySections.digDeeper,
+		reflectOnTheLessons: studySections.reflectOnTheLessons,
 		meditateOnTheBiggerPicture: parseMeditateOnBiggerPicture($, $article),
 	};
 
