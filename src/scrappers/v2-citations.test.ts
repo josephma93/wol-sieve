@@ -276,6 +276,58 @@ describe('v2 citation scraper contracts', () => {
 		expect(parsed).not.toHaveProperty('citations');
 	});
 
+	it('includes embedded video anchors inside treasures talk callout citations', async () => {
+		const mwbHybridCalloutHtml = `
+			<div id="article">
+				<div id="tt9">
+					<h3>1. Treasures Talk</h3>
+					<div id="tt11">
+						<div><p class="du-color--textSubdued">(10 min.)</p></div>
+						<hr />
+						<p><span><strong>SUGERENCIA PARA LA ADORACIÓN EN FAMILIA:</strong></span> Vean el <a href="https://www.jw.org/finder?lank=pub-jwb-098_7_VIDEO&amp;wtlocale=S" data-video="webpubvid://?pub=jwb-098&amp;track=7&amp;langwritten=S"><strong>VIDEO</strong></a> <em>Compren un campo en Anatot</em> y hablen sobre cómo la instrucción que Jehová le dio a Jeremías fortaleció su fe y cómo puede fortalecer la nuestra (<a href="/es/wol/d/r4/lp-s/456">Jer 32:6-8</a>).</p>
+					</div>
+				</div>
+				<h3>2. Spiritual Gems</h3>
+				<div></div>
+				<h3>3. Bible Reading</h3>
+				<div></div>
+				<div class="dc-icon--wheat"><h2>Apply Yourself to the Field Ministry</h2></div>
+				<div class="dc-icon--sheep"><h2>Living as Christians</h2></div>
+			</div>
+		`;
+
+		const parsed = await extractTreasuresTalkV2({ html: mwbHybridCalloutHtml });
+
+		expect(parsed.content).toEqual([
+			{
+				kind: 'callout',
+				payload: {
+					label: 'SUGERENCIA PARA LA ADORACIÓN EN FAMILIA',
+					text: 'SUGERENCIA PARA LA ADORACIÓN EN FAMILIA: Vean el VIDEO Compren un campo en Anatot y hablen sobre cómo la instrucción que Jehová le dio a Jeremías fortaleció su fe y cómo puede fortalecer la nuestra (Jer 32:6-8).',
+					textWithCitations:
+						'SUGERENCIA PARA LA ADORACIÓN EN FAMILIA: Vean el [[cite:1]] Compren un campo en Anatot y hablen sobre cómo la instrucción que Jehová le dio a Jeremías fortaleció su fe y cómo puede fortalecer la nuestra ([[cite:2]]).',
+					citations: [
+						{
+							id: 1,
+							marker: '[[cite:1]]',
+							mnemonic: 'VIDEO',
+							referenceType: 'video',
+							itemTitle: 'Compren un campo en Anatot',
+							contents: 'Compren un campo en Anatot',
+							url: 'https://www.jw.org/finder?lank=pub-jwb-098_7_VIDEO&wtlocale=S',
+						},
+						expect.objectContaining({
+							id: 2,
+							marker: '[[cite:2]]',
+							mnemonic: 'Jer 32:6-8',
+							contents: 'Parsed reference contents',
+						}),
+					],
+				},
+			},
+		]);
+	});
+
 	it('preserves treasures talk ordering and v1 footnote numbering when references resolve out of order', async () => {
 		const mwbParallelHtml = `
 			<div id="article">

@@ -5,9 +5,10 @@ export interface Citation {
 	marker?: string;
 	mnemonic: string;
 	referenceType: string;
-	issueName: string;
+	issueName?: string;
 	itemTitle: string;
 	contents: string;
+	url?: string;
 }
 
 export interface CitationTextBlock {
@@ -73,13 +74,14 @@ export function buildCitationFromParsedReference({
 	parsedReference: ParsedCitationReference;
 }): Citation {
 	const itemTitle = parsedReference.title || parsedReference.itemTitle || '';
+	const issueName = parsedReference.source || parsedReference.publicationTitle || '';
 
 	return {
 		id,
 		...(marker ? { marker } : {}),
 		mnemonic: cleanText(mnemonic) || itemTitle,
 		referenceType: parsedReference.referenceType || 'unknown',
-		issueName: parsedReference.source || parsedReference.publicationTitle || '',
+		...(issueName ? { issueName } : {}),
 		itemTitle,
 		contents: parsedReference.parsedContent,
 	};
@@ -99,7 +101,6 @@ export function buildUnableToExtractCitation({
 		...(marker ? { marker } : {}),
 		mnemonic: cleanText(mnemonic),
 		referenceType: 'unknown',
-		issueName: '',
 		itemTitle: '',
 		contents: CONSTANTS.UNABLE_TO_EXTRACT_REFERENCE,
 	};

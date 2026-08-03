@@ -94,7 +94,7 @@ export interface BibleCitationOccurrence {
 export interface SharedReference {
 	mnemonic: string;
 	referenceType: string;
-	issueName: string;
+	issueName?: string;
 	itemTitle: string;
 	contents: string;
 }
@@ -145,7 +145,7 @@ function buildSharedReferenceFromFetchedReference(
 	return {
 		mnemonic: citation.mnemonic,
 		referenceType: citation.referenceType,
-		issueName: citation.issueName,
+		...(citation.issueName ? { issueName: citation.issueName } : {}),
 		itemTitle: citation.itemTitle,
 		contents: citation.contents,
 	};

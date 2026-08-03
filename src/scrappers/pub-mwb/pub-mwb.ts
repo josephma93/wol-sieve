@@ -34,6 +34,7 @@ import {
 	PublicationRefDetectionData,
 } from '../../data-extraction/reference-json-commons.js';
 import {
+	Citation,
 	CitationTextBlock,
 	addParsedReferenceToCitationBlock,
 	buildCitationMarker,
@@ -568,6 +569,21 @@ function extractVideoMediaItem($paragraph: CheerioSelection): TreasuresTalkMedia
 	};
 }
 
+function extractVideoCitationDataFromAnchor($videoAnchor: CheerioSelection) {
+	const label = cleanText($videoAnchor.text());
+	const title = cleanText($videoAnchor.nextAll('em').first().text()) || label;
+
+	return {
+		mnemonic: label,
+		citation: {
+			referenceType: 'video',
+			itemTitle: title,
+			contents: title,
+			url: $videoAnchor.attr('href') ?? '',
+		} satisfies Omit<Citation, 'id' | 'marker' | 'mnemonic'>,
+	};
+}
+
 function isSpecialItemParagraph($paragraph: CheerioSelection): boolean {
 	if (!$paragraph.is('p')) {
 		return false;
@@ -685,11 +701,60 @@ async function buildTreasuresTalkV1ReferenceData($paragraph: CheerioSelection, s
 
 async function buildSpecialItemCitationBlock($paragraph: CheerioSelection) {
 	const text = cleanText($paragraph.text());
-	const selectReferences = (selection: CheerioSelection) => selection.find(`a:not([data-video])`);
-	const $references = selectReferences($paragraph);
-	const textWithCitations = buildTextWithCitationMarkers($paragraph, selectReferences);
+	const selectAnchors = (selection: CheerioSelection) => selection.find('a');
+	const $anchors = selectAnchors($paragraph);
+	const textWithCitations = buildTextWithCitationMarkers($paragraph, selectAnchors);
 	const base = extractSpecialItemBase($paragraph);
-	const citationBlock = await buildRequiredCitationBlockFromAnchors($references, text, textWithCitations);
+	let citationBlock = createCitationTextBlock(text, textWithCitations);
+	const citationTasks: Promise<{ mnemonic: string; citation: Omit<Citation, 'id' | 'marker' | 'mnemonic'> }>[] = [];
+
+	for (let i = 0; i < $anchors.length; i++) {
+		const $anchor = $anchors.eq(i);
+		if ($anchor.is('[data-video]')) {
+			citationTasks.push(Promise.resolve(extractVideoCitationDataFromAnchor($anchor)));
+			continue;
+		}
+
+		const mnemonic = cleanText($anchor.text());
+		citationTasks.push(
+			(async () => {
+				const opRes = await fetchAndParseAnchorReferenceOrThrow($anchor);
+				if (opRes.err) {
+					throw opRes.err;
+				}
+
+				return {
+					mnemonic,
+					citation: {
+						referenceType: opRes.res.referenceType || 'unknown',
+						...(opRes.res.source || opRes.res.publicationTitle
+							? { issueName: opRes.res.source || opRes.res.publicationTitle }
+							: {}),
+						itemTitle: opRes.res.title || opRes.res.itemTitle || '',
+						contents: opRes.res.parsedContent,
+					} satisfies Omit<Citation, 'id' | 'marker' | 'mnemonic'>,
+				};
+			})(),
+		);
+	}
+
+	const resolvedCitations = await Promise.all(citationTasks);
+	for (const { mnemonic, citation } of resolvedCitations) {
+		const id = citationBlock.citations.length + 1;
+		citationBlock = {
+			text: citationBlock.text,
+			textWithCitations: citationBlock.textWithCitations,
+			citations: [
+				...citationBlock.citations,
+				{
+					id,
+					marker: buildCitationMarker(id),
+					mnemonic,
+					...citation,
+				},
+			],
+		};
+	}
 
 	return {
 		...base,
