@@ -1,0 +1,293 @@
+{
+  "info": {
+    "_postman_id": "9db09112-0d97-4eb3-89a9-c4d95c631b65",
+    "name": "wol-sieve MWB Positive Regression",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Positive E2E regression checks for MWB v2 endpoints. Expected values must come from iteration data files."
+  },
+  "variable": [
+    {
+      "key": "v2BasePath",
+      "value": "v2"
+    },
+    {
+      "key": "mwbPath",
+      "value": "pub-mwb"
+    },
+    {
+      "key": "treasuresPath",
+      "value": "treasures-talk"
+    }
+  ],
+  "item": [
+    {
+      "name": "MWB Treasures Talk",
+      "item": [
+        {
+          "name": "Treasures Talk matches curated fragments",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const scenario = pm.iterationData.toObject();",
+                  "",
+                  "pm.test('iteration data provides a single-source MWB scenario', function () {",
+                  "    pm.expect(scenario).to.be.an('object');",
+                  "    pm.expect(scenario.id).to.be.a('string').and.not.empty;",
+                  "    pm.expect(scenario.url).to.be.a('string').and.match(/^https:\\/\\//);",
+                  "    pm.expect(scenario.expected).to.be.an('object');",
+                  "});",
+                  "",
+                  "pm.variables.set('scenarioUrl', scenario.url);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const scenario = pm.iterationData.toObject();",
+                  "const expected = scenario.expected || {};",
+                  "const responseJson = pm.response.json();",
+                  "",
+                  "function assertDeepSubset(actual, expectedValue, path) {",
+                  "    const fullPath = path || 'response';",
+                  "",
+                  "    if (expectedValue === null || typeof expectedValue !== 'object') {",
+                  "        pm.expect(actual, fullPath).to.eql(expectedValue);",
+                  "        return;",
+                  "    }",
+                  "",
+                  "    if (Array.isArray(expectedValue)) {",
+                  "        pm.expect(actual, fullPath + ' should be an array').to.be.an('array');",
+                  "        pm.expect(actual.length, fullPath + ' length').to.eql(expectedValue.length);",
+                  "",
+                  "        expectedValue.forEach(function (child, index) {",
+                  "            assertDeepSubset(actual[index], child, fullPath + '[' + index + ']');",
+                  "        });",
+                  "        return;",
+                  "    }",
+                  "",
+                  "    pm.expect(actual, fullPath + ' should be an object').to.be.an('object');",
+                  "    Object.keys(expectedValue).forEach(function (key) {",
+                  "        pm.expect(actual, fullPath + '.' + key + ' should exist').to.have.property(key);",
+                  "        assertDeepSubset(actual[key], expectedValue[key], fullPath + '.' + key);",
+                  "    });",
+                  "}",
+                  "",
+                  "pm.test('status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('top-level treasures talk fields match', function () {",
+                  "    assertDeepSubset(responseJson, {",
+                  "        sectionNumber: expected.sectionNumber,",
+                  "        timeBox: expected.timeBox,",
+                  "        heading: expected.heading",
+                  "    }, 'response');",
+                  "});",
+                  "",
+                  "pm.test('content kind order is exact', function () {",
+                  "    pm.expect(responseJson.content, 'response.content').to.be.an('array');",
+                  "    const contentKinds = responseJson.content.map(function (item) { return item.kind; });",
+                  "    pm.expect(contentKinds).to.eql(expected.contentKinds);",
+                  "});",
+                  "",
+                  "pm.test('curated item fragments match at each index', function () {",
+                  "    pm.expect(responseJson.content, 'response.content').to.be.an('array');",
+                  "    pm.expect(responseJson.content.length, 'response.content length').to.eql(expected.items.length);",
+                  "",
+                  "    expected.items.forEach(function (expectedItem) {",
+                  "        const actualItem = responseJson.content[expectedItem.index];",
+                  "",
+                  "        pm.expect(actualItem, 'response.content[' + expectedItem.index + ']').to.be.an('object');",
+                  "        pm.expect(actualItem.kind, 'response.content[' + expectedItem.index + '].kind').to.eql(expectedItem.kind);",
+                  "        assertDeepSubset(actualItem.payload, expectedItem.payload, 'response.content[' + expectedItem.index + '].payload');",
+                  "    });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/{{v2BasePath}}/{{mwbPath}}/{{treasuresPath}}?url={{scenarioUrl}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{v2BasePath}}",
+                "{{mwbPath}}",
+                "{{treasuresPath}}"
+              ],
+              "query": [
+                {
+                  "key": "url",
+                  "value": "{{scenarioUrl}}"
+                }
+              ]
+            },
+            "description": "Run this request with postman/data/mwb-treasures-talk-positive.json."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "MWB Full Program",
+      "item": [
+        {
+          "name": "Full program matches curated envelope",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const scenario = pm.iterationData.toObject();",
+                  "",
+                  "pm.test('iteration data provides a single-source MWB program scenario', function () {",
+                  "    pm.expect(scenario).to.be.an('object');",
+                  "    pm.expect(scenario.id).to.be.a('string').and.not.empty;",
+                  "    pm.expect(scenario.url).to.be.a('string').and.match(/^https:\\/\\//);",
+                  "    pm.expect(scenario.expected).to.be.an('object');",
+                  "});",
+                  "",
+                  "pm.variables.set('scenarioUrl', scenario.url);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const scenario = pm.iterationData.toObject();",
+                  "const expected = scenario.expected || {};",
+                  "const responseJson = pm.response.json();",
+                  "",
+                  "function assertDeepSubset(actual, expectedValue, path) {",
+                  "    const fullPath = path || 'response';",
+                  "",
+                  "    if (expectedValue === null || typeof expectedValue !== 'object') {",
+                  "        pm.expect(actual, fullPath).to.eql(expectedValue);",
+                  "        return;",
+                  "    }",
+                  "",
+                  "    if (Array.isArray(expectedValue)) {",
+                  "        pm.expect(actual, fullPath + ' should be an array').to.be.an('array');",
+                  "        pm.expect(actual.length, fullPath + ' length').to.eql(expectedValue.length);",
+                  "",
+                  "        expectedValue.forEach(function (child, index) {",
+                  "            assertDeepSubset(actual[index], child, fullPath + '[' + index + ']');",
+                  "        });",
+                  "        return;",
+                  "    }",
+                  "",
+                  "    pm.expect(actual, fullPath + ' should be an object').to.be.an('object');",
+                  "    Object.keys(expectedValue).forEach(function (key) {",
+                  "        pm.expect(actual, fullPath + '.' + key + ' should exist').to.have.property(key);",
+                  "        assertDeepSubset(actual[key], expectedValue[key], fullPath + '.' + key);",
+                  "    });",
+                  "}",
+                  "",
+                  "pm.test('status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('projected program summary matches curated baseline', function () {",
+                  "    const projected = {",
+                  "        weekDateSpan: responseJson.weekDateSpan,",
+                  "        startingSong: {",
+                  "            songNumber: responseJson.startingSong.songNumber,",
+                  "            name: responseJson.startingSong.songData.name",
+                  "        },",
+                  "        middleSong: {",
+                  "            songNumber: responseJson.middleSong.songNumber,",
+                  "            name: responseJson.middleSong.songData.name",
+                  "        },",
+                  "        closingSong: {",
+                  "            songNumber: responseJson.closingSong.songNumber,",
+                  "            name: responseJson.closingSong.songData.name",
+                  "        },",
+                  "        weeklyBibleReadData: responseJson.weeklyBibleReadData,",
+                  "        treasuresTalk: {",
+                  "            heading: responseJson.treasuresTalk.heading,",
+                  "            timeBox: responseJson.treasuresTalk.timeBox,",
+                  "            contentKinds: responseJson.treasuresTalk.content.map(function (item) { return item.kind; })",
+                  "        },",
+                  "        spiritualGems: {",
+                  "            headline: responseJson.spiritualGems.headline,",
+                  "            question: responseJson.spiritualGems.printedQuestionData.question,",
+                  "            scriptureMnemonic: responseJson.spiritualGems.printedQuestionData.citations[0].mnemonic",
+                  "        },",
+                  "        bibleRead: {",
+                  "            headline: responseJson.bibleRead.headline,",
+                  "            text: responseJson.bibleRead.contents.text,",
+                  "            textWithCitations: responseJson.bibleRead.contents.textWithCitations",
+                  "        },",
+                  "        fieldMinistry: responseJson.fieldMinistry.map(function (item) {",
+                  "            return {",
+                  "                headline: item.headline,",
+                  "                isStudentTask: item.isStudentTask,",
+                  "                contentsText: item.contents.text",
+                  "            };",
+                  "        }),",
+                  "        christianLiving: responseJson.christianLiving.map(function (item) { return item.contents; }),",
+                  "        bibleStudy: {",
+                  "            headline: responseJson.bibleStudy.headline,",
+                  "            contents: responseJson.bibleStudy.contents,",
+                  "            references: responseJson.bibleStudy.references",
+                  "        }",
+                  "    };",
+                  "",
+                  "    assertDeepSubset(projected, expected, 'projected');",
+                  "});",
+                  "",
+                  "pm.test('treasures talk summary matches curated baseline', function () {",
+                  "    pm.expect(responseJson.treasuresTalk, 'response.treasuresTalk').to.be.an('object');",
+                  "    assertDeepSubset(responseJson.treasuresTalk, {",
+                  "        heading: expected.treasuresTalk.heading,",
+                  "        timeBox: expected.treasuresTalk.timeBox",
+                  "    }, 'response.treasuresTalk');",
+                  "",
+                  "    pm.expect(responseJson.treasuresTalk.content, 'response.treasuresTalk.content').to.be.an('array');",
+                  "    const contentKinds = responseJson.treasuresTalk.content.map(function (item) { return item.kind; });",
+                  "    pm.expect(contentKinds).to.eql(expected.treasuresTalk.contentKinds);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/{{v2BasePath}}/{{mwbPath}}?url={{scenarioUrl}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{v2BasePath}}",
+                "{{mwbPath}}"
+              ],
+              "query": [
+                {
+                  "key": "url",
+                  "value": "{{scenarioUrl}}"
+                }
+              ]
+            },
+            "description": "Run this request with postman/data/mwb-program-positive.json."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

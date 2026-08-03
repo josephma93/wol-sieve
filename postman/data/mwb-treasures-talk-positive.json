@@ -1,0 +1,534 @@
+[
+  {
+    "id": "mwb_treasures_202026244_standard_opening_illustration",
+    "url": "https://wol.jw.org/es/wol/d/r4/lp-s/202026244",
+    "why": "Baseline simple: imagen al inicio y tres puntos.",
+    "expected": {
+      "sectionNumber": 1,
+      "timeBox": 10,
+      "heading": "Predicó con valor",
+      "contentKinds": ["illustration", "point", "point", "point"],
+      "items": [
+        {
+          "index": 0,
+          "kind": "illustration",
+          "payload": {
+            "alt": "Jeremías predica con valor el mensaje de Jehová en público. Algunos se niegan a escucharlo y otros le gritan."
+          }
+        },
+        {
+          "index": 1,
+          "kind": "point",
+          "payload": {
+            "text": "Jeremías fue perseguido por llevar el mensaje de condena de Jehová (Jer 20:2, 8).",
+            "textWithCitations": "Jeremías fue perseguido por llevar el mensaje de condena de Jehová ([[cite:1]][[cite:2]]).",
+            "citations": [
+              {
+                "mnemonic": "Jer 20:2,",
+                "referenceType": "pub-nwtsty",
+                "itemTitle": "Jeremías 20:2"
+              },
+              {
+                "mnemonic": "8",
+                "referenceType": "pub-nwtsty",
+                "itemTitle": "Jeremías 20:8"
+              }
+            ]
+          }
+        },
+        {
+          "index": 2,
+          "kind": "point",
+          "payload": {
+            "text": "Jeremías se desanimó y pensó en rendirse (Jer 20:9a).",
+            "textWithCitations": "Jeremías se desanimó y pensó en rendirse ([[cite:1]]).",
+            "citations": [
+              {
+                "mnemonic": "Jer 20:9a",
+                "referenceType": "pub-nwtsty",
+                "itemTitle": "Jeremías 20:9"
+              }
+            ]
+          }
+        },
+        {
+          "index": 3,
+          "kind": "point",
+          "payload": {
+            "text": "Jeremías pudo seguir predicando con valor porque Jehová le dio fuerzas y porque sabía que las palabras de Jehová eran muy importantes (Jer 20:9b, 11; w11 15/3 30 párr. 9; w10 15/2 7 párrs. 8, 9).",
+            "textWithCitations": "Jeremías pudo seguir predicando con valor porque Jehová le dio fuerzas y porque sabía que las palabras de Jehová eran muy importantes ([[cite:1]][[cite:2]]; [[cite:3]] [[cite:4]]).",
+            "citations": [
+              {
+                "mnemonic": "Jer 20:9b,",
+                "referenceType": "pub-nwtsty",
+                "itemTitle": "Jeremías 20:9"
+              },
+              {
+                "mnemonic": "11",
+                "referenceType": "pub-nwtsty",
+                "itemTitle": "Jeremías 20:11"
+              },
+              {
+                "mnemonic": "w11 15/3 30 párr. 9;",
+                "referenceType": "pub-w",
+                "itemTitle": "Mantengámonos despiertos tal como Jeremías"
+              },
+              {
+                "mnemonic": "w10 15/2 7 párrs. 8, 9",
+                "referenceType": "pub-w",
+                "itemTitle": "Hablemos la palabra de Dios con valentía"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  {
+    "id": "mwb_treasures_202026241_two_illustrations_with_caption",
+    "url": "https://wol.jw.org/es/wol/d/r4/lp-s/202026241",
+    "why": "Dos ilustraciones; la inicial trae caption y la final no.",
+    "expected": {
+      "sectionNumber": 1,
+      "timeBox": 10,
+      "heading": "Jehová merece que le obedezcamos",
+      "contentKinds": ["illustration", "point", "point", "point", "illustration"],
+      "items": [
+        {
+          "index": 0,
+          "kind": "illustration",
+          "payload": {
+            "alt": "Imágenes de Jeremías siguiendo las instrucciones de Jehová: 1. Piensa en las instrucciones de Jehová mientras sostiene un cinturón de lino en las manos. 2. Viaja por el desierto en camello. 3. Mientras se pone el sol, camina por el desierto llevando al camello con una cuerda.",
+            "caption": "Jeremías medita en las instrucciones que le acaba de dar Jehová."
+          }
+        },
+        {
+          "index": 1,
+          "kind": "point",
+          "payload": {
+            "text": "Aunque a Jeremías quizás le sorprendió lo que Jehová le había pedido, hizo un gran sacrificio para obedecer (Jer 13:1-7; jr 51, 52 párrs. 17, 18).",
+            "textWithCitations": "Aunque a Jeremías quizás le sorprendió lo que Jehová le había pedido, hizo un gran sacrificio para obedecer ([[cite:1]]; [[cite:2]]).",
+            "citations": [
+              {
+                "mnemonic": "Jer 13:1-7",
+                "referenceType": "pub-nwtsty",
+                "itemTitle": "Jeremías 13:1-7"
+              },
+              {
+                "mnemonic": "jr 51, 52 párrs. 17, 18",
+                "referenceType": "pub-jr",
+                "itemTitle": "Evitemos los engaños de un corazón traicionero"
+              }
+            ]
+          }
+        },
+        {
+          "index": 2,
+          "kind": "point",
+          "payload": {
+            "text": "Más tarde, Jeremías comprendió por qué Jehová le había dado esas instrucciones (Jer 13:8-11; jr 52 párr. 19).",
+            "textWithCitations": "Más tarde, Jeremías comprendió por qué Jehová le había dado esas instrucciones ([[cite:1]]; [[cite:2]]).",
+            "citations": [
+              {
+                "mnemonic": "Jer 13:8-11",
+                "referenceType": "pub-nwtsty",
+                "itemTitle": "Jeremías 13:8-11"
+              },
+              {
+                "mnemonic": "jr 52 párr. 19",
+                "referenceType": "pub-jr",
+                "itemTitle": "Evitemos los engaños de un corazón traicionero"
+              }
+            ]
+          }
+        },
+        {
+          "index": 3,
+          "kind": "point",
+          "payload": {
+            "text": "Los cristianos nos esforzamos por ser obedientes como Jeremías aunque no entendamos por qué recibimos ciertas instrucciones (w22.12 21 párr. 16; w08 15/6 19 párr. 7).",
+            "textWithCitations": "Los cristianos nos esforzamos por ser obedientes como Jeremías aunque no entendamos por qué recibimos ciertas instrucciones ([[cite:1]] [[cite:2]]).",
+            "citations": [
+              {
+                "mnemonic": "w22.12 21 párr. 16;",
+                "referenceType": "pub-w",
+                "itemTitle": "Cómo sentir paz en momentos de crisis"
+              },
+              {
+                "mnemonic": "w08 15/6 19 párr. 7",
+                "referenceType": "pub-w",
+                "itemTitle": "Aceptemos la autoridad de Jehová"
+              }
+            ]
+          }
+        },
+        {
+          "index": 4,
+          "kind": "illustration",
+          "payload": {
+            "alt": "En un sótano durante la gran tribulación, un grupo de hermanos escucha a un anciano que lee instrucciones de la organización. Un hermano lo mira con actitud escéptica."
+          }
+        }
+      ]
+    }
+  },
+  {
+    "id": "mwb_treasures_202026161_callout_with_references",
+    "url": "https://wol.jw.org/es/wol/d/r4/lp-s/202026161",
+    "why": "Callout PREGÚNTESE con referencias que también deben extraerse.",
+    "expected": {
+      "sectionNumber": 1,
+      "timeBox": 10,
+      "heading": "Disfrute al máximo de la bendición de Jehová",
+      "contentKinds": ["point", "point", "point", "callout", "illustration"],
+      "items": [
+        {
+          "index": 0,
+          "kind": "point",
+          "payload": {
+            "text": "Muestre hospitalidad (Is 58:7-9).",
+            "textWithCitations": "Muestre hospitalidad ([[cite:1]]).",
+            "citations": [
+              {
+                "mnemonic": "Is 58:7-9",
+                "referenceType": "pub-nwtsty",
+                "itemTitle": "Isaías 58:7-9"
+              }
+            ]
+          }
+        },
+        {
+          "index": 1,
+          "kind": "point",
+          "payload": {
+            "text": "Dé prioridad a los asuntos espirituales (Is 58:13, 14; w06 15/6 21 párr. 9).",
+            "textWithCitations": "Dé prioridad a los asuntos espirituales ([[cite:1]]; [[cite:2]]).",
+            "citations": [
+              {
+                "mnemonic": "Is 58:13, 14",
+                "referenceType": "pub-nwtsty",
+                "itemTitle": "Isaías 58:13, 14"
+              },
+              {
+                "mnemonic": "w06 15/6 21 párr. 9",
+                "referenceType": "pub-w",
+                "itemTitle": "“¡Cómo amo tu ley, sí!”"
+              }
+            ]
+          }
+        },
+        {
+          "index": 2,
+          "kind": "point",
+          "payload": {
+            "text": "Confíe en que Jehová cuidará de usted (Is 59:1; w13 15/1 13 párrs. 5, 6).",
+            "textWithCitations": "Confíe en que Jehová cuidará de usted ([[cite:1]]; [[cite:2]]).",
+            "citations": [
+              {
+                "mnemonic": "Is 59:1",
+                "referenceType": "pub-nwtsty",
+                "itemTitle": "Isaías 59:1"
+              },
+              {
+                "mnemonic": "w13 15/1 13 párrs. 5, 6",
+                "referenceType": "pub-w",
+                "itemTitle": "No permita que nada lo aleje de Jehová"
+              }
+            ]
+          }
+        },
+        {
+          "index": 3,
+          "kind": "callout",
+          "payload": {
+            "text": "PREGÚNTESE: “¿Por qué los israelitas desaprovecharon la bendición de Jehová? ¿Qué lecciones aprendo de su mal ejemplo?” (Is 58:1-5; it “Ayuno” párr. 3).",
+            "textWithCitations": "PREGÚNTESE: “¿Por qué los israelitas desaprovecharon la bendición de Jehová? ¿Qué lecciones aprendo de su mal ejemplo?” ([[cite:1]]; [[cite:2]]).",
+            "label": "PREGÚNTESE",
+            "citations": [
+              {
+                "mnemonic": "Is 58:1-5",
+                "referenceType": "pub-nwtsty",
+                "itemTitle": "Isaías 58:1-5"
+              },
+              {
+                "mnemonic": "it “Ayuno” párr. 3",
+                "referenceType": "pub-it",
+                "itemTitle": "Ayuno"
+              }
+            ]
+          }
+        },
+        {
+          "index": 4,
+          "kind": "illustration",
+          "payload": {
+            "alt": "En una casa humilde, una mamá y sus dos hijas están sentadas en el suelo leyendo el libro “Aprendamos del Gran Maestro”. Se ven muy contentas."
+          }
+        }
+      ]
+    }
+  },
+  {
+    "id": "mwb_treasures_202026164_definition_callout",
+    "url": "https://wol.jw.org/es/wol/d/r4/lp-s/202026164",
+    "why": "Callout tipo DEFINICIÓN sin citas asociadas.",
+    "expected": {
+      "sectionNumber": 1,
+      "timeBox": 10,
+      "heading": "¡Cuánto amamos nuestro paraíso espiritual!",
+      "contentKinds": ["point", "point", "point", "callout", "illustration"],
+      "items": [
+        {
+          "index": 0,
+          "kind": "point",
+          "payload": {
+            "text": "En el paraíso espiritual, los siervos de Dios disfrutamos de alimento espiritual en abundancia (Is 65:13; cl 275 párrs. 12, 14).",
+            "textWithCitations": "En el paraíso espiritual, los siervos de Dios disfrutamos de alimento espiritual en abundancia ([[cite:1]]; [[cite:2]][[cite:3]]).",
+            "citations": [
+              {
+                "mnemonic": "Is 65:13",
+                "referenceType": "pub-nwtsty",
+                "itemTitle": "Isaías 65:13"
+              },
+              {
+                "mnemonic": "cl 275 párrs. 12,",
+                "referenceType": "pub-cl",
+                "itemTitle": "“Qué grande es su bondad”"
+              },
+              {
+                "mnemonic": "14",
+                "referenceType": "pub-cl",
+                "itemTitle": "“Qué grande es su bondad”"
+              }
+            ]
+          }
+        },
+        {
+          "index": 1,
+          "kind": "point",
+          "payload": {
+            "text": "En nuestro paraíso espiritual, encontramos todo lo que necesitamos para sobrellevar el dolor y la angustia (Is 65:14-17; w24.04 22 párrs. 9, 10).",
+            "textWithCitations": "En nuestro paraíso espiritual, encontramos todo lo que necesitamos para sobrellevar el dolor y la angustia ([[cite:1]]; [[cite:2]]).",
+            "citations": [
+              {
+                "mnemonic": "Is 65:14-17",
+                "referenceType": "pub-nwtsty",
+                "itemTitle": "Isaías 65:14-17"
+              },
+              {
+                "mnemonic": "w24.04 22 párrs. 9, 10",
+                "referenceType": "pub-w",
+                "itemTitle": "No abandonemos nunca el paraíso espiritual"
+              }
+            ]
+          }
+        },
+        {
+          "index": 2,
+          "kind": "point",
+          "payload": {
+            "text": "No hay nada en el mundo que pueda compararse con la paz y seguridad de nuestro paraíso espiritual (Is 65:25; w24.04 23 párr. 13).",
+            "textWithCitations": "No hay nada en el mundo que pueda compararse con la paz y seguridad de nuestro paraíso espiritual ([[cite:1]]; [[cite:2]]).",
+            "citations": [
+              {
+                "mnemonic": "Is 65:25",
+                "referenceType": "pub-nwtsty",
+                "itemTitle": "Isaías 65:25"
+              },
+              {
+                "mnemonic": "w24.04 23 párr. 13",
+                "referenceType": "pub-w",
+                "itemTitle": "No abandonemos nunca el paraíso espiritual"
+              }
+            ]
+          }
+        },
+        {
+          "index": 3,
+          "kind": "callout",
+          "payload": {
+            "text": "DEFINICIÓN: El paraíso espiritual es el ambiente en el que adoramos a Jehová. En él, disfrutamos de amistad y paz con Jehová y las personas que le sirven.",
+            "textWithCitations": "DEFINICIÓN: El paraíso espiritual es el ambiente en el que adoramos a Jehová. En él, disfrutamos de amistad y paz con Jehová y las personas que le sirven.",
+            "label": "DEFINICIÓN",
+            "citations": []
+          }
+        },
+        {
+          "index": 4,
+          "kind": "illustration",
+          "payload": {
+            "alt": "Imágenes de hermanos disfrutando del paraíso espiritual. 1. Conversan muy alegres en el Salón del Reino. 2. Afuera del Salón del Reino, pasan un buen rato trabajando juntos en las tareas de mantenimiento. 3. En una celda, un hermano mayor anima a un hermano más joven. En la pared, hay cartas y tarjetas de los hermanos. 4. Un matrimonio visita a una hermana en el hospital. La esposa toma la mano de la hermana y el esposo sostiene una canasta con frutas y tarjetas."
+          }
+        }
+      ]
+    }
+  },
+  {
+    "id": "mwb_treasures_202026165_video_prompt",
+    "url": "https://wol.jw.org/es/wol/d/r4/lp-s/202026165",
+    "why": "Prompt de video entre ilustraciones y puntos.",
+    "expected": {
+      "sectionNumber": 1,
+      "timeBox": 10,
+      "heading": "“No te dejes intimidar [...], porque ‘yo estoy contigo’”",
+      "contentKinds": ["illustration", "video", "point", "point", "illustration"],
+      "items": [
+        {
+          "index": 0,
+          "kind": "illustration",
+          "payload": {
+            "alt": "En un mercado, Jeremías les anuncia el mensaje de Jehová a unos adoradores de ídolos.",
+            "caption": "En Jerusalén, Jeremías les anuncia las sentencias de Jehová a unos adoradores de ídolos."
+          }
+        },
+        {
+          "index": 1,
+          "kind": "video",
+          "payload": {
+            "text": "[Ponga el VIDEO Información sobre Jeremías].",
+            "label": "Ponga el VIDEO",
+            "title": "Información sobre Jeremías",
+            "url": "https://www.jw.org/finder?wtlocale=S&lank=pub-nwtsv_240_VIDEO"
+          }
+        },
+        {
+          "index": 2,
+          "kind": "point",
+          "payload": {
+            "text": "Como a Jeremías, puede que nos asuste predicar o sintamos que no somos capaces de hacerlo bien (Jer 1:6).",
+            "textWithCitations": "Como a Jeremías, puede que nos asuste predicar o sintamos que no somos capaces de hacerlo bien ([[cite:1]]).",
+            "citations": [
+              {
+                "mnemonic": "Jer 1:6",
+                "referenceType": "pub-nwtsty",
+                "itemTitle": "Jeremías 1:6"
+              }
+            ]
+          }
+        },
+        {
+          "index": 3,
+          "kind": "point",
+          "payload": {
+            "text": "Jehová nos capacita y nos da fuerzas para hacer su voluntad (Jer 1:8, 9; w10 15/1 9 párrs. 7, 8).",
+            "textWithCitations": "Jehová nos capacita y nos da fuerzas para hacer su voluntad ([[cite:1]]; [[cite:2]]).",
+            "citations": [
+              {
+                "mnemonic": "Jer 1:8, 9",
+                "referenceType": "pub-nwtsty",
+                "itemTitle": "Jeremías 1:8, 9"
+              },
+              {
+                "mnemonic": "w10 15/1 9 párrs. 7, 8",
+                "referenceType": "pub-w",
+                "itemTitle": "Pertenecemos a Jehová gracias a su bondad inmerecida"
+              }
+            ]
+          }
+        },
+        {
+          "index": 4,
+          "kind": "illustration",
+          "payload": {
+            "alt": "En la predicación, un hermano que está nervioso ora antes de tocar a una puerta."
+          }
+        }
+      ]
+    }
+  },
+  {
+    "id": "mwb_treasures_202026089_callout_after_illustration",
+    "url": "https://wol.jw.org/es/wol/d/r4/lp-s/202026089",
+    "why": "El callout aparece después de la ilustración; importa el orden.",
+    "expected": {
+      "sectionNumber": 1,
+      "timeBox": 10,
+      "heading": "Felices de tener a Jehová en nuestra vida",
+      "contentKinds": ["point", "point", "point", "illustration", "callout"],
+      "items": [
+        {
+          "index": 0,
+          "kind": "point",
+          "payload": {
+            "text": "Los ídolos no pueden escuchar a quienes les gritan por ayuda (Is 57:13; ip-2 269 párrs. 14-16).",
+            "textWithCitations": "Los ídolos no pueden escuchar a quienes les gritan por ayuda ([[cite:1]]; [[cite:2]]).",
+            "citations": [
+              {
+                "mnemonic": "Is 57:13",
+                "referenceType": "pub-nwtsty",
+                "itemTitle": "Isaías 57:13"
+              },
+              {
+                "mnemonic": "ip-2 269 párrs. 14-16",
+                "referenceType": "pub-ip-2",
+                "itemTitle": "Jehová revivifica el espíritu de los humildes"
+              }
+            ]
+          }
+        },
+        {
+          "index": 1,
+          "kind": "point",
+          "payload": {
+            "text": "Quienes no tienen a Jehová en su vida viven agitados y no están unidos (Is 57:20; w18.06 7 párr. 16; it “Tierra” párr. 21).",
+            "textWithCitations": "Quienes no tienen a Jehová en su vida viven agitados y no están unidos ([[cite:1]]; [[cite:2]] [[cite:3]]).",
+            "citations": [
+              {
+                "mnemonic": "Is 57:20",
+                "referenceType": "pub-nwtsty",
+                "itemTitle": "Isaías 57:20"
+              },
+              {
+                "mnemonic": "w18.06 7 párr. 16;",
+                "referenceType": "pub-w",
+                "itemTitle": "“Mi reino no es parte de este mundo”"
+              },
+              {
+                "mnemonic": "it “Tierra” párr. 21",
+                "referenceType": "pub-it",
+                "itemTitle": "Tierra"
+              }
+            ]
+          }
+        },
+        {
+          "index": 2,
+          "kind": "point",
+          "payload": {
+            "text": "No hay paz para los malvados (Is 57:21; it  “Paz” párr. 3).",
+            "textWithCitations": "No hay paz para los malvados ([[cite:1]]; [[cite:2]]).",
+            "citations": [
+              {
+                "mnemonic": "Is 57:21",
+                "referenceType": "pub-nwtsty",
+                "itemTitle": "Isaías 57:21"
+              },
+              {
+                "mnemonic": "it  “Paz” párr. 3",
+                "referenceType": "pub-it",
+                "itemTitle": "Paz"
+              }
+            ]
+          }
+        },
+        {
+          "index": 3,
+          "kind": "illustration",
+          "payload": {
+            "alt": "Dos hermanas disfrutan predicando juntas."
+          }
+        },
+        {
+          "index": 4,
+          "kind": "callout",
+          "payload": {
+            "text": "PREGÚNTESE: “¿Cómo ha mejorado mi vida desde que tengo una buena relación con Jehová?”.",
+            "textWithCitations": "PREGÚNTESE: “¿Cómo ha mejorado mi vida desde que tengo una buena relación con Jehová?”.",
+            "label": "PREGÚNTESE",
+            "citations": []
+          }
+        }
+      ]
+    }
+  }
+]

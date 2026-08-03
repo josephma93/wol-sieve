@@ -14,6 +14,7 @@
     "test:run": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+    "e2e": "node scripts/postman-e2e.mjs",
     "docker:image": "node -p \"'dkr-reg.home.leaflex.site/' + process.env.npm_package_name + ':latest'\"",
     "docker:build": "docker build -t $(npm run -s docker:image) .",
     "docker:push": "docker push $(npm run -s docker:image)",
@@ -24,6 +25,7 @@
   "devDependencies": {
     "@types/express": "4.17.21",
     "@types/node": "22.5.5",
+    "newman": "^6.2.2",
     "nodemon": "3.1.7",
     "prettier": "3.3.3",
     "typescript": "5.6.2",

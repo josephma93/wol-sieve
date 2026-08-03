@@ -1,0 +1,330 @@
+[
+  {
+    "id": "wcg_positive_mixed_batch",
+    "why": "Batch positivo con tipos mixtos para validar inferencia de tipo y contratos específicos por link.",
+    "urls": [
+      "https://wol.jw.org/es/wol/d/r4/lp-s/1102025908",
+      "https://wol.jw.org/es/wol/d/r4/lp-s/1102025953",
+      "https://wol.jw.org/es/wol/d/r4/lp-s/1102025961",
+      "https://wol.jw.org/es/wol/d/r4/lp-s/1102025962",
+      "https://wol.jw.org/es/wol/d/r4/lp-s/1102025971",
+      "https://wol.jw.org/es/wol/d/r4/lp-s/1102025970"
+    ],
+    "expectedOrder": [
+      "https://wol.jw.org/es/wol/d/r4/lp-s/1102025908",
+      "https://wol.jw.org/es/wol/d/r4/lp-s/1102025953",
+      "https://wol.jw.org/es/wol/d/r4/lp-s/1102025961",
+      "https://wol.jw.org/es/wol/d/r4/lp-s/1102025962",
+      "https://wol.jw.org/es/wol/d/r4/lp-s/1102025971",
+      "https://wol.jw.org/es/wol/d/r4/lp-s/1102025970"
+    ],
+    "expectedItems": [
+      {
+        "link": "https://wol.jw.org/es/wol/d/r4/lp-s/1102025908",
+        "type": "LESSON",
+        "expected": {
+          "number": 8,
+          "subject": "JOSÉ",
+          "title": "Resistió la tentación",
+          "narration": "JOSÉ era un joven que contaba con el cariño y la aprobación de su padre, Jacob, y de su Dios, Jehová. Pero su vida no fue de color de rosa. De hecho, sus medio hermanos lo odiaban. Como Jacob le daba un trato especial, se pusieron muy celosos, y trataban a José cada vez peor. Además, Dios hizo que José tuviera unos sueños proféticos que indicaban que un día su propia familia se inclinaría ante él. Y eso hizo que sus hermanos lo odiaran aún más.\n\nUn día, cuando José tenía unos 17 años, Jacob le pidió que hiciera un viaje de varios días para ir a ver a sus hermanos y comprobar si estaban bien. Cuando llegó, lo atacaron brutalmente y lo echaron en una cisterna que estaba vacía. Fueron tan crueles que ignoraron sus gritos de auxilio. Aunque primero querían matarlo, al final se lo vendieron a unos mercaderes que pasaban por ahí. Y luego le hicieron creer a Jacob que una fiera había matado a su querido hijo. Pero en realidad los mercaderes se lo llevaron muy lejos, hacia el sur, hasta llegar a Egipto. Ahí se lo vendieron como esclavo a Potifar, un funcionario del faraón.\n\nAhora bien, en vez de caer en la desesperación, José fue valiente y no se quedó de brazos cruzados. ¿Cuál fue el resultado? La Biblia dice: “Jehová estaba con José”. Jehová se encargaba de que le saliera bien todo lo que hacía, y Potifar lo puso a cargo de toda su casa.\n\nPero los problemas no acabaron aquí para José. Él se había convertido “en un joven fornido y atractivo”, y eso no le pasó desapercibido a la esposa de Potifar. A ella le gustaba José, y era tan descarada que le decía: “Acuéstate conmigo”. ¿Qué haría José? Su familia vivía muy lejos, él era un simple esclavo, y sus amos podían hacer con él lo que quisieran. Estaba claro que esa mujer podía hacerle la vida imposible. ¿Cedió José a la tentación? ¿Tendría el valor suficiente para decir que no?\n\nLa Biblia cuenta que “él se negaba” a acostarse con ella. José le dijo que no traicionaría a Potifar, quien confiaba mucho en él. Y es más, le dijo: “¿Cómo podría yo hacer algo tan malo y de hecho pecar contra Dios?”. El amor que José sentía por su Padre, Jehová, le dio el valor necesario para decir que no con firmeza. Pero la esposa de Potifar no se daba por vencida, sino que “insistía día tras día”. Al final, un día en que no había ningún sirviente por allí, lo agarró por la ropa y le exigió: “¡Acuéstate conmigo!”. Entonces José se soltó y salió huyendo. Pero ella se quedó con su prenda de vestir. Más tarde, se la enseñó a Potifar y acusó a José de haber intentado violarla. Así que Potifar se puso muy furioso y metió a José en prisión.\n\nAhora José estaba en una oscura prisión. Le ataron los pies con grilletes y lo encadenaron por el cuello, y estuvo así por un tiempo (Sal. 105:17, 18). José podría haberse hundido en la desesperación. ¿Acaso Jehová lo había abandonado? ¡No! Y José nunca dejó de confiar en Dios. Trabajó lo mejor que pudo en las tareas que le daban en prisión, y Jehová bendijo su esfuerzo. Con el tiempo, le dieron una responsabilidad muy importante. Y año tras año él siguió aguantando con valor.\n\nGracias a su fe y valentía, José no dejó de ser útil para Jehová. En cierto momento, Dios hizo que el faraón tuviera unos sueños proféticos y le dio a José la capacidad de interpretarlos. José le explicó al faraón que los sueños significaban que habría siete años de abundancia pero después siete años de hambre. El faraón se quedó tan impresionado que le pidió a José que se encargara de preparar a la nación para lo que vendría. Lo nombró gobernante del país. ¡Sería el segundo más importante, solo después del faraón! Como resultado, José no solo salvó a los egipcios del hambre, sino también a su propia familia. Cuando sus hermanos llegaron a Egipto para conseguir comida, sin saberlo se inclinaron ante su hermano menor. Y así se cumplió el sueño que Jehová le dio a José cuando era joven. Además, sus hermanos demostraron que con el tiempo se habían hecho mejores personas. José, a quien tanto habían odiado, los salvó a ellos, a su padre y a la futura nación de Israel. ¡Y todo fue gracias a su valor y a su fe en Jehová!",
+          "narrationFigures": [
+            "En la casa de Potifar, José va caminando mirando de frente y lleva una jarra de barro. La esposa de Potifar está afuera de su habitación viendo de forma seductora a José mientras él pasa por allí sin mirarla."
+          ],
+          "featuredQuote": "José sabía que la esposa de su amo podía hacerle la vida imposible, así que ¿cómo conseguiría rechazar sus insinuaciones?",
+          "readTheBibleAccount": ["Génesis 37:1-36", "Génesis 39:1-23", "Génesis 41:1-45:28"],
+          "forDiscussion": "¿De qué maneras demostró valor José?",
+          "digDeeper": [
+            {
+              "text": "1. ¿Qué pruebas hay de que el relato de la vida de José en Egipto es exacto? (g 11/10 15 párr. 2).",
+              "figure": null,
+              "citationMnemonics": ["g 11/10 15 párr. 2"]
+            },
+            {
+              "text": "2. ¿Cómo sabía José que para Dios el adulterio es “algo tan malo”? (Gén. 39:9; w22.08 26 párr. 2).",
+              "figure": null,
+              "citationMnemonics": ["Gén. 39:9", "w22.08 26 párr. 2"]
+            },
+            {
+              "text": "3. ¿Por qué permitió Jehová que José llegara a ser primer ministro de Egipto? (w96 1/5 11 párr. 4). A",
+              "figure": {
+                "alt": "José, como primer ministro de Egipto, dándoles instrucciones a dos esclavos egipcios.",
+                "caption": "Imagen A"
+              },
+              "citationMnemonics": ["w96 1/5 11 párr. 4"]
+            },
+            {
+              "text": "4. ¿Cómo sabemos que la fe de José nunca se debilitó, ni siquiera cuando tenía 110 años? (Gén. 50:25, 26; w07 1/6 28 párrs. 10, 11). B",
+              "figure": {
+                "alt": "Hombres israelitas cargando un ataúd con los huesos de José para llevarlo al lugar donde finalmente lo enterrarían en la Tierra Prometida.",
+                "caption": "Imagen B"
+              },
+              "citationMnemonics": ["Gén. 50:25, 26", "w07 1/6 28 párrs. 10, 11"]
+            }
+          ],
+          "reflectOnTheLessons": [
+            {
+              "text": "¿Qué nos enseña la forma en que José trató a sus hermanos sobre cómo debemos reaccionar cuando un hermano nos trata mal? (Gén. 45:4, 5; 50:19-21).",
+              "figure": null,
+              "citationMnemonics": ["Gén. 45:4, 5;", "50:19-21"],
+              "subPoints": []
+            },
+            {
+              "text": "José fue siempre leal a Jehová, incluso cuando estaba lejos de casa. ¿Cómo puede ayudarnos su ejemplo...",
+              "figure": null,
+              "citationMnemonics": [],
+              "subPoints": [
+                {
+                  "text": "... cuando estamos en la escuela? C",
+                  "figure": {
+                    "alt": "Una hermana joven saliendo de la escuela y yendo de camino a su casa. Pasa cerca de unos compañeros que están fumando cigarrillos electrónicos. Ellos se le quedan viendo mientras ella mira de frente con seguridad.",
+                    "caption": "Imagen C"
+                  },
+                  "citationMnemonics": []
+                },
+                {
+                  "text": "... cuando estamos de viaje? D",
+                  "figure": {
+                    "alt": "Un hermano joven que está casado y viaja por negocios registrándose en el mostrador de un hotel. Una joven atractiva que no es Testigo se registra al mismo tiempo y no le quita los ojos de encima al hermano.",
+                    "caption": "Imagen D"
+                  },
+                  "citationMnemonics": []
+                },
+                {
+                  "text": "... cuando usamos el teléfono u otro dispositivo electrónico? E",
+                  "figure": {
+                    "alt": "Un Testigo adolescente acostado bocabajo en su cama mirando la pantalla de su teléfono.",
+                    "caption": "Imagen E"
+                  },
+                  "citationMnemonics": []
+                }
+              ]
+            },
+            {
+              "text": "¿De qué maneras puede usted copiar el ejemplo de valor de José?",
+              "figure": null,
+              "citationMnemonics": [],
+              "subPoints": []
+            }
+          ],
+          "meditateOnTheBiggerPicture": [
+            "¿Qué me enseña este relato sobre Jehová?",
+            "¿Cómo se relaciona este relato con el propósito de Jehová y el tema principal de la Biblia?",
+            "¿Qué me gustaría preguntarle a José cuando resucite?"
+          ]
+        }
+      },
+      {
+        "link": "https://wol.jw.org/es/wol/d/r4/lp-s/1102025953",
+        "type": "LESSON",
+        "expected": {
+          "number": 53,
+          "subject": "PABLO",
+          "title": "“Ahora les pido que tengan valor”",
+          "narration": "CUANDO Saulo de Tarso se hizo cristiano, Jesús reveló todo lo que tendría que sufrir por predicar y enseñar las buenas noticias. ¡Y vaya que sufrió! Saulo, que llegó a ser conocido como el apóstol Pablo, escribió su segunda carta a los corintios unos 20 años después de que se hiciera cristiano. Y, para cuando escribió esa carta, él había recibido “incontables golpes” y había estado “a punto de morir muchas veces”. De hecho, había sobrevivido a tres naufragios. En uno de ellos, pasó una noche y un día en altamar. Sin embargo, se enfrentaría a otro naufragio, y de ese hablaremos aquí.\n\nPablo llevaba dos años recluido en una prisión romana en Cesarea. Resulta que cierto gobernante corrupto no quería liberarlo si no recibía dinero a cambio. Cuando ese gobernante fue sustituido, Pablo usó su derecho de apelar a César, la máxima autoridad de Roma. Así que se llevaron a Pablo en un barco y ese fue el inicio de un trayecto de más de 3.000 kilómetros (unas 2.000 millas). Pero no estuvo solo en este viaje tan pesado hasta Roma. Lo acompañaron Lucas —que era “el médico amado” y su compañero de predicación— y un cristiano llamado Aristarco (Col. 4:14).\n\nPrimero llegaron a Mira, en Asia Menor. Allí, el oficial del ejército romano que estaba al mando, Julio, puso a los presos en otro barco. Todos subieron a una embarcación egipcia que llevaba grano a Italia. Durante el viaje, se desató un viento tan fuerte que les impedía avanzar. En su relato, Lucas dijo dos veces que el barco navegaba “con dificultad”. Pararon en Bellos Puertos para esperar a que se pasara el temporal. Pablo sabía que seguir navegando en esas condiciones era demasiado peligroso, así que pensó que lo mejor era quedarse allí todo el invierno.\n\n¿Se atrevería a decirlo? Con valor, advirtió que si seguían navegando sufrirían “daños y graves pérdidas”. Pero Julio no le hizo caso; prefirió escuchar a los que llevaban el barco. ¡Qué pronto se arrepentiría de haber tomado esa decisión! Y es que, según cuenta Lucas, “un viento muy fuerte” se desató y el barco fue “arrastrado con violencia”. Este viento se convirtió rápidamente en una espantosa tempestad. Veían cómo pasaban las horas, los días..., y la tormenta seguía sacudiéndolos violentamente. Para aligerar el barco, tiraron cuerdas pesadas y otras cosas al mar. ¡Y estuvieron sin comer varios días! Después de dos semanas en esta situación, es normal que Lucas dijera: “Toda esperanza de salvarnos comenzó a desaparecer”.\n\nSe veía venir la tragedia. Pero Pablo les dijo con voz firme: “Ahora les pido que tengan valor”. Y predijo: “Ninguno de ustedes perderá la vida. Solo se perderá el barco”. Aun así, unos marineros quisieron huir en un bote; pero Pablo advirtió que muchos morirían si ellos se iban. Así que los soldados soltaron el bote vacío al mar.\n\nAntes del amanecer, cuando todavía estaba oscuro, los animó a comer todo lo que quisieran sin tener que preocuparse. Les aseguró: “Ninguno de ustedes perderá ni un solo pelo de su cabeza”. Pablo hizo una oración delante de todos antes de comer para darle gracias a Dios. Y, cuando quedaron satisfechos, echaron al mar el trigo que quedaba en el barco. Pablo les contagió su valentía y todos cobraron valor. De hecho, Lucas señala: “Todos se animaron”. Al amanecer, el barco chocó contra un banco de arena y las olas lo empezaron a hacer pedazos. Aun así, “todos llegaron a tierra sanos y salvos”, tal como había dicho Pablo. ¡Qué alivio!\n\n¿Adónde habían llegado? A la isla de Malta. Enseguida, Pablo y sus acompañantes se pusieron a predicar. Pablo incluso hizo milagros allí gracias al poder de Dios, y la reacción de la gente de la isla fue muy buena.\n\nPablo nunca dejó de ser valiente. Unos meses más tarde, en primavera, Pablo finalmente llegó a Roma. Aunque estuvo bajo arresto domiciliario durante dos años y un guardia lo vigilaba, siguió predicando y escribió varias cartas por inspiración. Una vez libre, continuó predicando, pero unos años más tarde lo volvieron a encarcelar en Roma. Fue la última vez que estuvo preso, pues todo parece indicar que allí lo ejecutaron. Pablo fue fiel y valiente hasta el final. Ni siquiera le tuvo miedo a la muerte. Él la llamó “el último enemigo”, y sabía que Jehová acabaría con ella (1 Cor. 15:26). Pablo iba a recibir la recompensa que tanto tiempo llevaba esperando. Cuando llegara el momento escogido por Dios, tendría vida inmortal en el cielo y sería rey y sacerdote al lado de Cristo Jesús.",
+          "narrationFigures": [
+            "Pablo y otros hombres van a bordo de un barco que está siendo sacudido por una terrible tormenta. Pablo les dice con firmeza a unos marineros muy asustados que no se suban a un bote para escapar.",
+            "Pablo y todos los que van en el barco saltan al mar mientras el barco se hace pedazos. Nadan para llegar a la isla de Malta, que está muy cerca."
+          ],
+          "featuredQuote": "Pablo, que iba preso, ayudó a los que viajaban con él a sobrevivir a una gran tormenta",
+          "readTheBibleAccount": [
+            "Hechos 9:16",
+            "Hechos 24:24-27",
+            "Hechos 25:11",
+            "Hechos 27:1-44",
+            "Hechos 28:1-10",
+            "Hechos 28:16",
+            "Hechos 28:30, 31",
+            "2 Corintios 11:23-27",
+            "2 Timoteo 1:16, 17",
+            "2 Timoteo 4:6-8"
+          ],
+          "forDiscussion": "¿De qué maneras demostró valor Pablo durante esta etapa de su vida?",
+          "digDeeper": [
+            {
+              "text": "1. Al parecer, ¿por qué prefería Saulo que lo llamaran Pablo, que era su nombre romano? (w08 1/3 12 párrs. 4, 5).",
+              "figure": null,
+              "citationMnemonics": ["w08 1/3 12 párrs. 4, 5"]
+            },
+            {
+              "text": "2. A los nueve años que pasaron desde que Pablo regresó a Tarso hasta que se mudó a Antioquía se les llama “años desconocidos”. ¿Qué dificultades es posible que afrontara durante ese periodo? (w00 15/7 26, 27, recuadro).",
+              "figure": null,
+              "citationMnemonics": ["w00 15/7 26, 27, recuadro"]
+            },
+            {
+              "text": "3. ¿Por qué recomendó Pablo que se retrasara el viaje a Italia? (Hech. 27:9, 10; wp17.5 9 párrs. 3, 4). A",
+              "figure": {
+                "alt": "",
+                "caption": "Imagen A: Barco mercante del primer siglo similar al que se usó cuando Pablo salió de Mira."
+              },
+              "citationMnemonics": ["Hech. 27:9, 10", "wp17.5 9 párrs. 3, 4"]
+            },
+            {
+              "text": "4. ¿Por qué la gente de Malta dijo de Pablo: “Este hombre debe ser un asesino”? (Hech. 28:4; w15 1/10 9 párrs. 5, 6).",
+              "figure": null,
+              "citationMnemonics": ["Hech. 28:4", "w15 1/10 9 párrs. 5, 6"]
+            }
+          ],
+          "reflectOnTheLessons": [
+            {
+              "text": "Pablo le dijo a la gente del barco que Dios se encargaría de que ninguno de ellos perdiera “ni un solo pelo de su cabeza” (Hech. 27:22, 34). ¿Qué nos enseña esto sobre Jehová y sobre la forma en que debemos ver la predicación?",
+              "figure": null,
+              "citationMnemonics": ["Hech. 27:22,", "34"],
+              "subPoints": []
+            },
+            {
+              "text": "Después de la oración de Pablo, los que estaban con él en el barco “se animaron” y cobraron valor (Hech. 27:35, 36). ¿En qué situaciones podrían nuestras oraciones tener un efecto parecido en otros? B",
+              "figure": {
+                "alt": "Serie de imágenes: Un hermano y dos hermanas orando; cada uno ora a favor de otros. Las escenas de esta serie se repiten después.",
+                "caption": "Imagen B"
+              },
+              "citationMnemonics": ["Hech. 27:35, 36"],
+              "subPoints": []
+            },
+            {
+              "text": "¿De qué maneras puede usted imitar el valor que Pablo demostró en este relato?",
+              "figure": null,
+              "citationMnemonics": [],
+              "subPoints": []
+            }
+          ],
+          "meditateOnTheBiggerPicture": [
+            "¿Qué me enseña este relato sobre Jehová?",
+            "¿Cómo se relaciona este relato con el propósito de Jehová y el tema principal de la Biblia?",
+            "Después de estudiar este relato, ¿cómo se siente al pensar en que Dios eligió a Pablo para gobernar con Cristo en el cielo, y por qué?"
+          ]
+        }
+      },
+      {
+        "link": "https://wol.jw.org/es/wol/d/r4/lp-s/1102025961",
+        "type": "SECTION_INTRO",
+        "expected": {
+          "title": "De los días de los patriarcas a la época de los jueces",
+          "sectionNumber": 1,
+          "contents": "En esta sección haremos un viaje a través de 22 siglos. Empezaremos con un patriarca: Enoc, que nació mientras Adán todavía vivía. Y llegaremos hasta el profeta Samuel, quien nombró al primer rey de Israel. A lo largo de este viaje, conoceremos a hombres y mujeres que fueron muy valientes, como Noé, Abrahán, Sara, Moisés, Rahab, Débora y Gedeón. Algunos hicieron largas travesías por lugares peligrosos, mientras que otros aceptaron el reto de luchar en “las guerras de Jehová”. Todos ellos cumplieron con valor las asignaciones que recibieron del Dios al que tanto amaban.",
+          "headingImg": {
+            "src": "https://wol.jw.org/es/wol/mp/r4/lp-s/wcg/2025/1345",
+            "alt": "Abrahán y Sara viajando en camello por la orilla frondosa y exuberante del río Éufrates. Van acompañados de muchos siervos y familiares."
+          }
+        }
+      },
+      {
+        "link": "https://wol.jw.org/es/wol/d/r4/lp-s/1102025962",
+        "type": "TIMELINE",
+        "expected": {
+          "title": "Línea de tiempo de la sección 1",
+          "sectionNumber": 1,
+          "tables": [
+            {
+              "heading": "Antes del Diluvio",
+              "headers": ["PERSONAJE", "AÑO"],
+              "rows": [
+                ["Adán", "4026-3096 a. e. c."],
+                ["Enoc", "3404-3039 a. e. c."],
+                ["Noé", "2970-2020 a. e. c."]
+              ]
+            },
+            {
+              "heading": "Después del Diluvio",
+              "headers": ["PERSONAJE", "AÑO"],
+              "rows": [
+                ["Abrahán", "2018-1843 a. e. c."],
+                ["Sara", "2008-1881 a. e. c."],
+                ["Rebeca", "1900*-1775* a. e. c."],
+                ["Jacob", "1858-1711 a. e. c."],
+                ["José", "1767-1657 a. e. c."],
+                ["Sifrá, Pua, Amram, Jokébed y Míriama", "1645*-1474* a. e. c."],
+                ["Moisés", "1593-1473 a. e. c."],
+                ["Caleb", "1552-1450* a. e. c."],
+                ["Josué", "1560*-1450* a. e. c."],
+                ["Rahab", "1500*-1400* a. e. c."]
+              ]
+            },
+            {
+              "heading": "Época de los jueces",
+              "headers": ["PERSONAJE", "AÑO"],
+              "rows": [
+                ["Noemí, Rut, Débora, Barac, Jael, Gedeón, Jefté y su hija, y Sansónb", "1450*-1120* a. e. c."],
+                ["Samuel", "1180*-1080* a. e. c."]
+              ]
+            }
+          ],
+          "footnotes": [
+            "a La duración de la vida de estos personajes está fusionada en una sola línea.",
+            "b Aunque esta línea representa un periodo de 330 años, ninguno de estos personajes vivió esa cantidad de años. Además, se desconoce el orden en que vivió cada uno.",
+            "c Año aproximado."
+          ]
+        }
+      },
+      {
+        "link": "https://wol.jw.org/es/wol/d/r4/lp-s/1102025971",
+        "type": "INTRODUCTION",
+        "expected": {
+          "title": "¡Usted puede ser cada vez más valiente!",
+          "questions": [
+            "1-3. ¿Por qué demostró Jesús que era valiente cuando dijo: “Levántense, vámonos”?",
+            "4, 5. ¿Qué clase de valor demostró Jesús, y por qué necesitamos imitarlo?",
+            "6. Si sentimos que nos falta valor, ¿cómo puede animarnos la forma en que trató Jesús a sus discípulos?",
+            "7, 8. ¿Cómo sabemos que Jesús confía en sus discípulos y quiere ayudarlos a ser valientes?",
+            "9. ¿Cómo nos ayuda la Palabra de Dios a ser más valientes?",
+            "10, 11. ¿A qué lo ayudará este libro, y cómo puede sacarle el máximo provecho? (Vea también el recuadro “Cómo puede usar este libro en su estudio personal y en su adoración en familia”)."
+          ],
+          "sections": [
+            {
+              "heading": "¡Podemos ser valientes como Jesús!",
+              "level": "h2",
+              "paragraphs": [
+                "6 Tal vez se pregunte si usted puede ser tan valiente como Jesús ante las pruebas. Si es así, recuerde esto: Jesús es razonable. Igual que su Padre, Jesús nunca espera de nosotros más de lo que podemos dar (Sal. 103:14; Juan 14:9). Un ejemplo lo tenemos en lo que pasó aquella noche en el jardín de Getsemaní. Jesús les pidió a sus apóstoles que se mantuvieran despiertos, pero ellos no fueron capaces. Aun así, les dijo con cariño: “Claro, el espíritu está dispuesto, pero la carne es débil” (Mat. 26:41). Él entendía perfectamente sus debilidades, y entiende también las nuestras.",
+                "7 Además, Jesús mostró que confiaba en sus discípulos. Imagínese lo seguros y tranquilos que debieron sentirse cuando él les dijo: “¡Sean valientes!, que yo he vencido al mundo” (Juan 16:33). Jesús estaba convencido de que ellos podían seguir sus pasos, y el tiempo demostró que tenía razón. En muchas ocasiones, les transmitió a otros confianza y los ayudó a no perder el ánimo y el valor. Por ejemplo, eso hizo con un paralítico cuando le dijo que tuviera ánimo porque sus pecados habían sido perdonados (Mat. 9:2). También animó a una mujer que tenía mucho miedo por haber tocado su prenda de vestir (Mat. 9:20-22). Tranquilizó a sus discípulos en una ocasión en la que estaban muy asustados (Mat. 14:27). Y ya resucitado en el cielo le dijo a Pablo “¡Ten valor!” después de que unos jueces enfurecidos amenazaran con matarlo (Hech. 23:9-11).",
+                "8 En cierto sentido, nuestro valeroso Rey, Jesús, nos dice también a todos nosotros: “¡Sean valientes!”. Y, si nos lo dice, es porque podemos serlo. Él confía en cada uno de nosotros. Además, Jehová nos ha dado justo lo que necesitamos para conseguirlo."
+              ],
+              "questions": [
+                "6. Si sentimos que nos falta valor, ¿cómo puede animarnos la forma en que trató Jesús a sus discípulos?",
+                "7, 8. ¿Cómo sabemos que Jesús confía en sus discípulos y quiere ayudarlos a ser valientes?"
+              ]
+            },
+            {
+              "heading": "Cómo nos ayuda la Biblia a ser más valientes",
+              "level": "h2",
+              "paragraphs": [
+                "9 Por amor, Jehová dejó en su Palabra inspirada muchos ejemplos de la vida real para que seamos más valientes. En la Biblia, leemos sobre hombres y mujeres de todas las edades y con circunstancias muy diferentes. Seguramente, todos ellos tenían “los mismos sentimientos que nosotros”, como se dice del profeta Elías (Sant. 5:17). Eran imperfectos, con sus debilidades, limitaciones y errores. Se enfrentaron a dificultades y, en ocasiones, hasta sus vidas corrieron peligro. ¿Verdad que no hay tantas diferencias entre ellos y nosotros? Igual que Jesús, ellos también salieron vencedores en sus luchas. Fueron valientes y dejaron huella. Al leer sus historias, nos dan ganas de ser como ellos.",
+                "10 El objetivo de este libro es ayudarnos a ser cada vez más valientes. Este libro tiene 54 capítulos, y en ellos veremos cómo ayudó Jehová a humanos imperfectos como nosotros a armarse de valor cuando lo necesitaron. Así que lea el resumen de cada relato bíblico y luego investigue sobre cada personaje para sacar lecciones. Así conocerá a estos hombres y mujeres cada vez mejor.",
+                "11 Deseamos que estos ejemplos lo ayuden a ser más valiente y a aguantar durante estos tiempos difíciles, los “últimos días” (2 Tim. 3:1). Recuerde cada día lo que Jehová le promete: “Nunca te dejaré y jamás te abandonaré”. Así podrá decir lleno de confianza y valor: “Jehová es mi ayudante. No tendré miedo” (Heb. 13:5, 6)."
+              ],
+              "questions": [
+                "9. ¿Cómo nos ayuda la Palabra de Dios a ser más valientes?",
+                "10, 11. ¿A qué lo ayudará este libro, y cómo puede sacarle el máximo provecho? (Vea también el recuadro “Cómo puede usar este libro en su estudio personal y en su adoración en familia”)."
+              ]
+            },
+            {
+              "heading": "Cómo puede usar este libro en su estudio personal y en su adoración en familia",
+              "level": "h2",
+              "paragraphs": [
+                "Lea la narración (1), busque los textos bíblicos (2) y reflexione en la pregunta que aparece bajo el título “¿Qué diría?” (3).",
+                "Fíjese en todos los detalles de las imágenes (4). ¿Qué le enseñan estas imágenes sobre los personajes que aparecen en ellas, los retos que afrontaron y el valor que demostraron?",
+                "Investigue un poco más (5) sobre el relato leyendo las referencias que aparecen en esta sección.a",
+                "Piense en las lecciones (6) que le enseña este relato y en cómo puede ponerlas en práctica, y pregúntese en qué situaciones puede usarlas para ayudar a otros.",
+                "Vea el cuadro completo (7). Piense qué le enseña el relato sobre Jehová y su propósito, y reflexione en el futuro que le espera a usted.",
+                "Para saber más (8), vea los artículos y videos que aparecen al final de cada capítulo.",
+                "En su estudio personal, navegue por el sitio jw.org para buscar artículos, videos o discursos relacionados con el personaje del capítulo."
+              ],
+              "questions": []
+            }
+          ]
+        }
+      },
+      {
+        "link": "https://wol.jw.org/es/wol/d/r4/lp-s/1102025970",
+        "type": "GB_LETTER",
+        "expected": {
+          "title": "Carta del Cuerpo Gobernante",
+          "closing": "Sus hermanos,\nCuerpo Gobernante de los Testigos de Jehová",
+          "figures": [
+            {
+              "alt": "Un hombre de tiempos bíblicos atravesando un gran desierto."
+            }
+          ]
+        }
+      }
+    ]
+  }
+]

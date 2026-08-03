@@ -1,0 +1,224 @@
+[
+  {
+    "id": "mwb_program_202026241_two_illustrations_with_caption",
+    "url": "https://wol.jw.org/es/wol/d/r4/lp-s/202026241",
+    "why": "Programa completo cuyo treasures talk tiene dos ilustraciones y una de ellas con caption.",
+    "expected": {
+      "weekDateSpan": "6-12 de julio",
+      "startingSong": {
+        "songNumber": 123,
+        "name": "Seamos leales y sumisos al orden teocrático"
+      },
+      "middleSong": {
+        "songNumber": 49,
+        "name": "Alegremos el corazón de Jehová"
+      },
+      "closingSong": {
+        "songNumber": 61,
+        "name": "¡Avancen, Testigos!"
+      },
+      "weeklyBibleReadData": {
+        "bookName": "Jeremías",
+        "bookNumber": 24,
+        "firstChapter": 13,
+        "lastChapter": 15,
+        "links": [
+          "https://wol.jw.org/es/wol/b/r4/lp-s/nwtsty/24/13",
+          "https://wol.jw.org/es/wol/b/r4/lp-s/nwtsty/24/14",
+          "https://wol.jw.org/es/wol/b/r4/lp-s/nwtsty/24/15"
+        ]
+      },
+      "treasuresTalk": {
+        "heading": "Jehová merece que le obedezcamos",
+        "timeBox": 10,
+        "contentKinds": ["illustration", "point", "point", "point", "illustration"]
+      },
+      "spiritualGems": {
+        "headline": "Busquemos perlas escondidas",
+        "question": "¿Cómo podemos imitar a Jeremías y luchar contra el desánimo?",
+        "scriptureMnemonic": "Jer 15:16, 17"
+      },
+      "bibleRead": {
+        "headline": "Lectura de la Biblia",
+        "text": "Jer 13:1-14 (th lección 2).",
+        "textWithCitations": "[[cite:1]] ([[cite:2]])."
+      },
+      "fieldMinistry": [
+        {
+          "headline": "Empiece conversaciones",
+          "isStudentTask": true,
+          "contentsText": "DE CASA EN CASA. Use un tratado para empezar una conversación (lmd lección 1 punto 5)."
+        },
+        {
+          "headline": "Haga revisitas",
+          "isStudentTask": true,
+          "contentsText": "PREDICACIÓN INFORMAL. Muéstrele a la persona un artículo de jw.org relacionado con el tema del que hablaron en la conversación anterior (lmd lección 9 punto 4)."
+        },
+        {
+          "headline": "Discurso",
+          "isStudentTask": true,
+          "contentsText": "lmd apéndice A punto 18. Título: Jesús predijo los acontecimientos que vemos hoy (th lección 7)."
+        }
+      ],
+      "christianLiving": [
+        "Análisis con el auditorio.\nSamuel le dijo al rey Saúl que “obedecer es mejor que ofrecer un sacrificio”. Esto se lo dijo después de que Saúl desobedeciera las instrucciones que Jehová le había dado mediante el profeta.\nLea 1 Samuel 15:3, 7-9, 22, 23. Luego pregunte:\n  ¿De qué manera desobedeció Saúl a Jehová, y cuáles pudieron ser las razones?\nRespuesta\n  ¿Por qué obedecer es mejor que ofrecer un sacrificio?\nRespuesta\n  ¿Por qué es la rebeldía tan grave como el pecado de la adivinación?\nRespuesta\nLea Lucas 16:10. Luego pregunte:\n  ¿Por qué deberíamos ser obedientes hasta en los asuntos que parecen menos importantes?\nRespuesta\n  ¿Qué cosas podrían ver algunos como asuntos menos importantes?\nRespuesta\n\nPonga el VIDEO Hazte amigo de Jehová: ¿Por qué obedecer a Dios si no podemos verlo? Luego pregunte:\n  ¿Qué aprendemos de este video?\nRespuesta"
+      ],
+      "bibleStudy": {
+        "headline": "Estudio bíblico de la congregación",
+        "contents": "lfb lecciones 100, 101.",
+        "references": [
+          "https://wol.jw.org/es/wol/pc/r4/lp-s/202026241/12/0",
+          "https://wol.jw.org/es/wol/pc/r4/lp-s/202026241/12/1"
+        ]
+      }
+    }
+  },
+  {
+    "id": "mwb_program_202026161_callout_with_references",
+    "url": "https://wol.jw.org/es/wol/d/r4/lp-s/202026161",
+    "why": "Programa completo con treasures talk que incluye callout con referencias.",
+    "expected": {
+      "weekDateSpan": "4-10 de mayo",
+      "startingSong": {
+        "songNumber": 21,
+        "name": "Busquemos primero el Reino"
+      },
+      "middleSong": {
+        "songNumber": 100,
+        "name": "Seamos hospitalarios"
+      },
+      "closingSong": {
+        "songNumber": 42,
+        "name": "La oración del siervo de Dios"
+      },
+      "weeklyBibleReadData": {
+        "bookName": "Isaías",
+        "bookNumber": 23,
+        "firstChapter": 58,
+        "lastChapter": 59,
+        "links": [
+          "https://wol.jw.org/es/wol/b/r4/lp-s/nwtsty/23/58",
+          "https://wol.jw.org/es/wol/b/r4/lp-s/nwtsty/23/59"
+        ]
+      },
+      "treasuresTalk": {
+        "heading": "Disfrute al máximo de la bendición de Jehová",
+        "timeBox": 10,
+        "contentKinds": ["point", "point", "point", "callout", "illustration"]
+      },
+      "spiritualGems": {
+        "headline": "Busquemos perlas escondidas",
+        "question": "¿Por qué dijo Isaías que los israelitas seguían “gruñendo como osos”?",
+        "scriptureMnemonic": "Is 59:11"
+      },
+      "bibleRead": {
+        "headline": "Lectura de la Biblia",
+        "text": "Is 59:1-12 (th lección 10).",
+        "textWithCitations": "[[cite:1]] ([[cite:2]])."
+      },
+      "fieldMinistry": [
+        {
+          "headline": "Empiece conversaciones",
+          "isStudentTask": true,
+          "contentsText": "DE CASA EN CASA. Use un tratado para empezar una conversación (lmd lección 1 punto 5)."
+        },
+        {
+          "headline": "Empiece conversaciones",
+          "isStudentTask": true,
+          "contentsText": "PREDICACIÓN INFORMAL. Utilice una de las verdades del apéndice A del folleto Una obra de amor (lmd lección 2 punto 4)."
+        },
+        {
+          "headline": "Discurso",
+          "isStudentTask": true,
+          "contentsText": "lmd apéndice A punto 16. Título: Deberíamos orar con frecuencia (th lección 8)."
+        }
+      ],
+      "christianLiving": [
+        "Análisis con el auditorio.\nPablo les dijo a los cristianos: “Sean siempre hospitalarios” (Ro 12:13; nota de estudio, nwtsty). Cuando seguimos este consejo, Jehová nos bendice a manos llenas (Pr 11:25).\n\nPonga el VIDEO Hazte amigo de Jehová: Sé hospitalario. Luego pregunte:\n  ¿Qué le enseña sobre la hospitalidad este video?\nRespuesta\n  ¿Cómo le ha beneficiado ser hospitalario?\nRespuesta\nJehová es el mejor ejemplo de hospitalidad (Hch 14:17). Lea Deuteronomio 10:17, 18. Luego pregunte:\n  ¿Qué aprende usted de la hospitalidad de Jehová?\nRespuesta\n  ¿Por qué es bueno ser hospitalarios con todos, y no solo con nuestros amigos cercanos?\nRespuesta\n  ¿Qué personajes bíblicos fueron hospitalarios, y qué aprendemos de ellos?\nRespuesta\n  Piense en cómo usted podría mostrar hospitalidad, y escriba lo que le gustaría hacer:\nRespuesta"
+      ],
+      "bibleStudy": {
+        "headline": "Estudio bíblico de la congregación",
+        "contents": "lfb lecciones 82, 83.",
+        "references": [
+          "https://wol.jw.org/es/wol/pc/r4/lp-s/202026161/13/0",
+          "https://wol.jw.org/es/wol/pc/r4/lp-s/202026161/13/1"
+        ]
+      }
+    }
+  },
+  {
+    "id": "mwb_program_202026165_video_prompt",
+    "url": "https://wol.jw.org/es/wol/d/r4/lp-s/202026165",
+    "why": "Programa completo con treasures talk que incluye prompt de video.",
+    "expected": {
+      "weekDateSpan": "1-7 de junio",
+      "startingSong": {
+        "songNumber": 84,
+        "name": "Servimos donde se nos necesite"
+      },
+      "middleSong": {
+        "songNumber": 76,
+        "name": "Cuéntame lo que sientes"
+      },
+      "closingSong": {
+        "songNumber": 18,
+        "name": "Gracias por el rescate"
+      },
+      "weeklyBibleReadData": {
+        "bookName": "Jeremías",
+        "bookNumber": 24,
+        "firstChapter": 1,
+        "lastChapter": 3,
+        "links": [
+          "https://wol.jw.org/es/wol/b/r4/lp-s/nwtsty/24/1",
+          "https://wol.jw.org/es/wol/b/r4/lp-s/nwtsty/24/2",
+          "https://wol.jw.org/es/wol/b/r4/lp-s/nwtsty/24/3"
+        ]
+      },
+      "treasuresTalk": {
+        "heading": "“No te dejes intimidar [...], porque ‘yo estoy contigo’”",
+        "timeBox": 10,
+        "contentKinds": ["illustration", "video", "point", "point", "illustration"]
+      },
+      "spiritualGems": {
+        "headline": "Busquemos perlas escondidas",
+        "question": "Jehová desafió a los judíos infieles. ¿Qué aprendemos de lo que les dijo?",
+        "scriptureMnemonic": "Jer 2:28"
+      },
+      "bibleRead": {
+        "headline": "Lectura de la Biblia",
+        "text": "Jer 3:14-25 (th lección 12).",
+        "textWithCitations": "[[cite:1]] ([[cite:2]])."
+      },
+      "fieldMinistry": [
+        {
+          "headline": "Empiece conversaciones",
+          "isStudentTask": true,
+          "contentsText": "DE CASA EN CASA. Empiece hablando de un tema de actualidad, pero luego muéstrele a la persona lo que dice la Biblia sobre un tema que a ella le interese más (lmd lección 2 punto 5)."
+        },
+        {
+          "headline": "Haga revisitas",
+          "isStudentTask": true,
+          "contentsText": "DE CASA EN CASA. Ofrezca un curso de la Biblia (lmd lección 8 punto 3)."
+        },
+        {
+          "headline": "Haga discípulos",
+          "isStudentTask": true,
+          "contentsText": "Converse con alguien que estudia la Biblia con usted pero no progresa (lmd lección 12 punto 5)."
+        }
+      ],
+      "christianLiving": [
+        "Análisis con el auditorio.\nPonga el VIDEO Aprende de los amigos de Jehová: Jeremías. Luego pregunte:\n  ¿Qué hizo Jeremías para ser amigo de Jehová? (Jer 1:6-8).\nRespuesta\n  ¿A quién quieres hablarle de Jehová?\nRespuesta\n  ¿Qué le dirías para ayudarle a hacerse amigo de Jehová?\nRespuesta",
+        "Análisis con el auditorio.\nPara predicar las buenas noticias y defender las normas morales de Jehová, necesitamos ser valientes. Pero hay que equilibrar el valor con otras cualidades cristianas.\nLea 1 Pedro 3:15. Luego pregunte:\n  ¿Qué otras cualidades necesitamos cuando explicamos nuestras creencias?\nRespuesta\n  ¿Por qué son importantes estas cualidades?\nRespuesta\n\nPonga el VIDEO “El resultado de la verdadera rectitud será paz”. Luego pregunte:\n  Según lo que vimos en el video, ¿qué puede ayudarnos a explicar con tacto lo que creemos sobre la homosexualidad?\nRespuesta\nRECUERDE: Cuando defienda las normas morales de Jehová, evite meterse en debates políticos (Jn 18:36)."
+      ],
+      "bibleStudy": {
+        "headline": "Estudio bíblico de la congregación",
+        "contents": "lfb lecciones 90, 91.",
+        "references": [
+          "https://wol.jw.org/es/wol/pc/r4/lp-s/202026165/8/0",
+          "https://wol.jw.org/es/wol/pc/r4/lp-s/202026165/8/1"
+        ]
+      }
+    }
+  }
+]
