@@ -190,6 +190,7 @@ web_modules/
 
 # Optional REPL history
 .node_repl_history
+.codex/
 
 # Output of 'npm pack'
 *.tgz
