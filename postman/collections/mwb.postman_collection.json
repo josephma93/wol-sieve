@@ -117,14 +117,8 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/{{v2BasePath}}/{{mwbPath}}/{{treasuresPath}}?url={{scenarioUrl}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "{{v2BasePath}}",
-                "{{mwbPath}}",
-                "{{treasuresPath}}"
-              ],
+              "host": ["{{baseUrl}}"],
+              "path": ["{{v2BasePath}}", "{{mwbPath}}", "{{treasuresPath}}"],
               "query": [
                 {
                   "key": "url",
@@ -269,13 +263,8 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/{{v2BasePath}}/{{mwbPath}}?url={{scenarioUrl}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "{{v2BasePath}}",
-                "{{mwbPath}}"
-              ],
+              "host": ["{{baseUrl}}"],
+              "path": ["{{v2BasePath}}", "{{mwbPath}}"],
               "query": [
                 {
                   "key": "url",
