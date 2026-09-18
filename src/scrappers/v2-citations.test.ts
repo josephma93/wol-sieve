@@ -12,7 +12,12 @@ vi.mock('../data-fetching/raw.js', () => ({
 
 import { extractArticleContents, extractArticleContentsV2 } from './pub-w/pub-w.js';
 import { extractLfbContentsV2 } from './pub-lfb/pub-lfb.js';
-import { extractTreasuresTalk, extractTreasuresTalkV2 } from './pub-mwb/pub-mwb.js';
+import {
+	extractChristianLiving,
+	extractChristianLivingV2,
+	extractTreasuresTalk,
+	extractTreasuresTalkV2,
+} from './pub-mwb/pub-mwb.js';
 import { extractReferencesFromLinksV2 } from './pub-nwtsty/pub-nwtsty.js';
 import { clusterBiblicalPassageEntriesV2 } from '../services/pub-nwtsty.js';
 
@@ -141,6 +146,114 @@ beforeEach(() => {
 });
 
 describe('v2 citation scraper contracts', () => {
+	it('preserves Christian Living content order, structure, media, and external links', async () => {
+		const christianLivingHtml = `
+			<div class="bodyTxt">
+				<h3 id="p3">Starting Song</h3>
+				<h3 class="dc-icon--music">Middle Song</h3>
+				<h3>7. Christian Living Assignment</h3>
+				<div>
+					<div class="du-color--textSubdued"><p>(15 min.) Discussion.</p></div>
+					<p>Consider <a href="/es/wol/bc/r4/lp-s/123">John 3:16</a>.</p>
+				</div>
+				<div id="f2"><figure><img src="/image.jpg" alt="Illustration" /><figcaption>Caption</figcaption></figure></div>
+				<div>
+					<p><a href="https://www.jw.org/finder?lank=pub-test_VIDEO" data-video="webpubvid://test"><strong>Play VIDEO</strong></a> Video title.</p>
+					<ul>
+						<li><p>Read <a href="/es/wol/pc/r4/lp-s/456">w25.01 10</a>.</p></li>
+						<li><p><a href="https://donate.jw.org/">External resource</a></p></li>
+					</ul>
+				</div>
+				<h3>8. Congregation Bible Study</h3>
+				<div><p>(30 min.) Study.</p></div>
+				<h3>Closing Song</h3>
+			</div>
+		`;
+
+		const parsed = await extractChristianLivingV2({ html: christianLivingHtml });
+		const plainText = extractChristianLiving({ html: christianLivingHtml })[0].contents;
+
+		expect(parsed).toEqual([
+			{
+				sectionNumber: 7,
+				timeBox: 15,
+				headline: 'Christian Living Assignment',
+				plainText: expect.any(String),
+				content: [
+					{
+						kind: 'text',
+						payload: {
+							text: 'Consider John 3:16.',
+							textWithCitations: 'Consider [[cite:1]].',
+							citations: [
+								expect.objectContaining({
+									mnemonic: 'John 3:16',
+									contents: 'Parsed reference contents',
+								}),
+							],
+							externalLinks: [],
+						},
+					},
+					{
+						kind: 'illustration',
+						payload: {
+							src: 'https://wol.jw.org/image.jpg',
+							alt: 'Illustration',
+							caption: 'Caption',
+						},
+					},
+					{
+						kind: 'video',
+						payload: {
+							text: 'Play VIDEO Video title.',
+							textWithCitations: 'Play VIDEO Video title.',
+							citations: [],
+							externalLinks: [],
+							label: 'Play VIDEO',
+							title: 'Video title',
+							url: 'https://www.jw.org/finder?lank=pub-test_VIDEO',
+						},
+					},
+					{
+						kind: 'list',
+						payload: {
+							items: [
+								{
+									content: [
+										{
+											kind: 'text',
+											payload: expect.objectContaining({
+												text: 'Read w25.01 10.',
+												textWithCitations: 'Read [[cite:1]].',
+												externalLinks: [],
+											}),
+										},
+									],
+								},
+								{
+									content: [
+										{
+											kind: 'text',
+											payload: {
+												text: 'External resource',
+												textWithCitations: 'External resource',
+												citations: [],
+												externalLinks: [
+													{ text: 'External resource', url: 'https://donate.jw.org/' },
+												],
+											},
+										},
+									],
+								},
+							],
+						},
+					},
+				],
+			},
+		]);
+		expect(parsed[0].plainText).toBe(plainText);
+	});
+
 	it('keeps Watchtower v1 paragraphs stable while v2 uses canonical citation blocks', async () => {
 		const v1 = await extractArticleContents({ html: watchtowerHtml });
 		const v1Paragraph = v1.contents[0].paragraphs[0];

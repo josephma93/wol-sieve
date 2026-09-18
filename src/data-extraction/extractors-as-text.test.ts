@@ -3,6 +3,17 @@ import { detectReferenceDataType } from './reference-json-commons.js';
 import { extractPubWReferenceAsText, pickAndApplyTextExtractor } from './extractors-as-text.js';
 
 describe('extractPubWReferenceAsText', () => {
+	it('extracts standard publication paragraphs when citation paragraph classes are absent', () => {
+		const content = `
+			<div class="bodyTxt">
+				<p id="p2">First standard paragraph.</p>
+				<p id="p3">Second standard paragraph.</p>
+			</div>
+		`;
+
+		expect(extractPubWReferenceAsText(content)).toBe('First standard paragraph.\nSecond standard paragraph.');
+	});
+
 	it('extracts Watchtower citation paragraphs without p.sb classes', () => {
 		const content = `
 			<div class="bodyTxt">

@@ -63,6 +63,7 @@ interface TalkPoint {
 }
 
 interface TreasuresTalkIllustration {
+	/** Image URL. Images do not use citations. */
 	src: string;
 	alt: string;
 	caption?: string;
@@ -78,6 +79,7 @@ interface TreasuresTalkMediaItem {
 	text: string;
 	label: string;
 	title: string;
+	/** Video destination URL. Media remains navigable after extraction. */
 	url: string;
 }
 
@@ -204,6 +206,63 @@ interface ChristianLivingSectionData {
 	contents: string;
 }
 
+interface ChristianLivingSectionDataV2 {
+	sectionNumber: number;
+	timeBox: number;
+	headline: string;
+	/**
+	 * Linear text for agenda navigation.
+	 *
+	 * This value matches the former text-only extraction. Use `content` when
+	 * presentation needs figures, videos, lists, citations, or link metadata.
+	 */
+	plainText: string;
+	/** Content items in their published DOM order. */
+	content: ChristianLivingContentItem[];
+}
+
+/** A published content item. The `kind` field defines its payload shape. */
+type ChristianLivingContentItem =
+	| {
+			kind: 'text';
+			payload: ChristianLivingTextBlock;
+	  }
+	| {
+			kind: 'illustration';
+			payload: TreasuresTalkIllustration;
+	  }
+	| {
+			kind: 'video';
+			payload: TreasuresTalkMediaItem & ChristianLivingTextBlock;
+	  }
+	| {
+			kind: 'list';
+			payload: ChristianLivingList;
+	  };
+
+interface ChristianLivingLink {
+	/** Visible text for an external link. */
+	text: string;
+	/** External destination URL. */
+	url: string;
+}
+
+interface ChristianLivingTextBlock extends CitationTextBlock {
+	/**
+	 * Links outside WOL that do not have reference content to extract.
+	 *
+	 * Resolved WOL references are available only through `citations`. This
+	 * avoids duplicating a citation as both a link and resolved content. Video
+	 * URLs remain on their `video` content item.
+	 */
+	externalLinks: ChristianLivingLink[];
+}
+
+interface ChristianLivingList {
+	/** Each item is a member of this published list and keeps its nested content. */
+	items: Array<{ content: ChristianLivingContentItem[] }>;
+}
+
 export interface CongregationBibleStudyData {
 	sectionNumber: number;
 	timeBox: number;
@@ -235,7 +294,7 @@ interface FullWeekProgramDataV2 {
 	bibleRead: BibleReadDataV2;
 	fieldMinistry: FieldMinistryAssignmentDataV2[];
 	middleSong: SongData;
-	christianLiving: ChristianLivingSectionData[];
+	christianLiving: ChristianLivingSectionDataV2[];
 	bibleStudy: CongregationBibleStudyData;
 	closingSong: SongData;
 }
@@ -1374,14 +1433,12 @@ export async function extractFieldMinistryV2(
  * @returns The extracted data.
  * @throws {Error} If the extraction fails.
  */
-export function extractChristianLiving(input: ExtractionContextOptions): ChristianLivingSectionData[] {
-	function polishElementText($el: CheerioSelection) {
-		let result = $el.text();
-		result = cleanText(result);
-		result = collapseConsecutiveLineBreaks(result);
-		return result;
-	}
+function extractChristianLivingPlainText(contents: CheerioSelection[]): string {
+	const text = contents.map(($content) => collapseConsecutiveLineBreaks(cleanText($content.text()))).join('\n');
+	return takeOutTimeBoxText(text);
+}
 
+export function extractChristianLiving(input: ExtractionContextOptions): ChristianLivingSectionData[] {
 	log.info('Extracting Christian Living section data');
 	input.selectionBuilder = ($) => buildChristianLivingSelections($).christianLiving;
 	const { $, selection: $christianLivingSelection } = createExtractionContext(input);
@@ -1393,11 +1450,156 @@ export function extractChristianLiving(input: ExtractionContextOptions): Christi
 			sectionNumber: headlineData.number,
 			timeBox: getTimeBoxFromElement(contents[0]),
 			headline: headlineData.headline,
-			contents: takeOutTimeBoxText(contents.map(polishElementText).join('\n')),
+			contents: extractChristianLivingPlainText(contents),
 		};
 		log.info(`Extracted Christian Living section`);
 		return result;
 	});
+}
+
+function isChristianLivingReferenceAnchor($anchor: CheerioSelection): boolean {
+	const href = $anchor.attr('href') ?? '';
+	return href.startsWith('/') && href.includes('/wol/');
+}
+
+function getChristianLivingExternalLinks($: CheerioAPI, $element: CheerioSelection): ChristianLivingLink[] {
+	return $element
+		.find('a:not([data-video])')
+		.map((_, anchor) => {
+			if (isChristianLivingReferenceAnchor($(anchor))) {
+				return null;
+			}
+
+			const $anchor = $(anchor);
+			const href = $anchor.attr('href');
+			if (!href) {
+				return null;
+			}
+
+			return {
+				text: cleanText($anchor.text()),
+				url: normalizeWolUrl(href) ?? href,
+			};
+		})
+		.get()
+		.filter((link): link is ChristianLivingLink => link !== null);
+}
+
+function selectChristianLivingReferenceAnchors($: CheerioAPI, $element: CheerioSelection): CheerioSelection {
+	return $element.find('a:not([data-video])').filter((_, anchor) => isChristianLivingReferenceAnchor($(anchor)));
+}
+
+async function buildChristianLivingTextBlock(
+	$: CheerioAPI,
+	$paragraph: CheerioSelection,
+): Promise<ChristianLivingTextBlock> {
+	const $references = selectChristianLivingReferenceAnchors($, $paragraph);
+	const text = cleanText($paragraph.text());
+	const citationBlock = await buildRequiredCitationBlockFromAnchors(
+		$references,
+		text,
+		buildTextWithCitationMarkers($paragraph, (selection) => selectChristianLivingReferenceAnchors($, selection)),
+	);
+
+	return {
+		...citationBlock,
+		externalLinks: getChristianLivingExternalLinks($, $paragraph),
+	};
+}
+
+async function extractChristianLivingContentItem(
+	$: CheerioAPI,
+	$element: CheerioSelection,
+): Promise<ChristianLivingContentItem[]> {
+	if ($element.is('figure')) {
+		const illustration = extractIllustrationData($element);
+		return illustration ? [{ kind: 'illustration', payload: illustration }] : [];
+	}
+
+	if ($element.is('p, blockquote')) {
+		if ($element.parents(CONSTANTS.PUB_MWB_CSS_SELECTOR_LINE_WITH_TIME_BOX).length) {
+			return [];
+		}
+
+		const textBlock = await buildChristianLivingTextBlock($, $element);
+		if ($element.find('a[data-video]').length) {
+			const video = extractVideoMediaItem($element);
+			if (!video) {
+				const msg =
+					'Expected video metadata for Christian Living content. The document structure may have changed.';
+				log.error(msg);
+				throw new Error(msg);
+			}
+
+			return [{ kind: 'video', payload: { ...video, ...textBlock } }];
+		}
+
+		return [{ kind: 'text', payload: textBlock }];
+	}
+
+	if ($element.is('ul, ol')) {
+		const items = await Promise.all(
+			$element
+				.children('li')
+				.toArray()
+				.map(async (item) => ({ content: await extractChristianLivingContentItems($, $(item)) })),
+		);
+
+		return [
+			{
+				kind: 'list',
+				payload: {
+					items,
+				},
+			},
+		];
+	}
+
+	if ($element.is('hr, textarea, label, script, style')) {
+		return [];
+	}
+
+	return extractChristianLivingContentItems($, $element);
+}
+
+async function extractChristianLivingContentItems(
+	$: CheerioAPI,
+	$container: CheerioSelection,
+): Promise<ChristianLivingContentItem[]> {
+	const contentGroups = await Promise.all(
+		$container
+			.children()
+			.toArray()
+			.map((child) => extractChristianLivingContentItem($, $(child))),
+	);
+	return contentGroups.flat();
+}
+
+export async function extractChristianLivingV2(
+	input: ExtractionContextOptions,
+): Promise<ChristianLivingSectionDataV2[]> {
+	log.info('Extracting v2 Christian Living section data');
+	input.selectionBuilder = ($) => buildChristianLivingSelections($).christianLiving;
+	const { $, selection: $christianLivingSelection } = createExtractionContext(input);
+	const sectionGroups = buildHeadlineToContentGroups($christianLivingSelection, $);
+
+	return Promise.all(
+		sectionGroups.map(async ({ heading, contents }) => {
+			const headlineData = parseSectionHeadlineDataFromElement(heading);
+			const contentGroups = await Promise.all(
+				contents.map(($content) => extractChristianLivingContentItem($, $content)),
+			);
+			const result: ChristianLivingSectionDataV2 = {
+				sectionNumber: headlineData.number,
+				timeBox: getTimeBoxFromElement(contents[0]),
+				headline: headlineData.headline,
+				plainText: extractChristianLivingPlainText(contents),
+				content: contentGroups.flat(),
+			};
+			log.info('Extracted v2 Christian Living section');
+			return result;
+		}),
+	);
 }
 
 /**
@@ -1488,7 +1690,7 @@ export async function extractFullWeekProgramV2(input: ExtractionContextOptions):
 	const programGroups = buildRelevantProgramGroupSelections($);
 
 	const weekDateSpan = extractWeekDateSpan(inputObj);
-	const christianLiving = extractChristianLiving({ $, selection: programGroups.christianLiving });
+	const christianLiving = await extractChristianLivingV2({ $, selection: programGroups.christianLiving });
 	const bibleStudy = extractBibleStudy({ $, selection: programGroups.bibleStudy });
 
 	const [

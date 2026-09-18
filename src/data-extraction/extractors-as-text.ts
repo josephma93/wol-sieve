@@ -16,7 +16,10 @@ type ReferenceAsTextBuilder = (content: string) => string;
  */
 export function extractPubWReferenceAsText(content: string): string {
 	const $ = cheerio.load(content);
-	return $('p.sb, p[data-rel-pid]')
+	const $citationParagraphs = $('p.sb, p[data-rel-pid]');
+	const $paragraphs = $citationParagraphs.length ? $citationParagraphs : $('.bodyTxt p');
+
+	return $paragraphs
 		.map((_, el) => {
 			const $el = $(el);
 			$el.find('.parNum').remove();
