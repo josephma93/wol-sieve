@@ -118,6 +118,18 @@ const currentWatchtowerTopicHtml = `
 			<p class="pubRefs"><strong>TEMA</strong></p>
 			<p class="pubRefs">Current stencil article topic.</p>
 		</div>
+		<div class="bodyTxt">
+			<div class="dc-ttClassStyle--unset"><h2>Current teach block</h2><ul><li><p>Current teach point</p></li></ul></div>
+		</div>
+	</div>
+`;
+
+const watchtowerWithoutTeachBlockHtml = `
+	<div id="article">
+		<p class="contextTtl"><strong>Study Article 4</strong></p>
+		<h1><strong>Missing teach block article</strong></h1>
+		<p class="themeScrp">Missing teach block theme scripture</p>
+		<div id="tt10"><p>ignored</p><p>Missing teach block topic</p></div>
 		<div class="bodyTxt"></div>
 	</div>
 `;
@@ -340,8 +352,8 @@ describe('v2 citation scraper contracts', () => {
 			articleTopic: 'Flow article topic',
 		});
 		expect(v2).not.toHaveProperty('contents');
-		expect(v2).not.toHaveProperty('teachBlock');
 		expect(v2).not.toHaveProperty('questions');
+		expect(v2).not.toHaveProperty('teachBlock');
 		expect(v2.content.map((item) => item.kind)).toEqual([
 			'sectionHeading',
 			'question',
@@ -432,6 +444,13 @@ describe('v2 citation scraper contracts', () => {
 				],
 			},
 		});
+		expect(v2.content[6]).toEqual({
+			kind: 'teachBlock',
+			payload: {
+				headline: 'Teach block',
+				points: ['Teach point'],
+			},
+		});
 		expect(v2.content[7]).toMatchObject({
 			kind: 'footnote',
 			payload: {
@@ -466,6 +485,7 @@ describe('v2 citation scraper contracts', () => {
 					relevantFootnoteIndexes: [7, 8],
 				},
 			],
+			teachBlockIndex: 6,
 			footnotes: [
 				{ sourceIndex: 2, targetIndex: 7, marker: 'a' },
 				{ sourceIndex: 3, targetIndex: 8, marker: 'b' },
@@ -494,6 +514,12 @@ describe('v2 citation scraper contracts', () => {
 
 		expect(v1.articleTopic).toBe('Current stencil article topic.');
 		expect(v2.articleTopic).toBe('Current stencil article topic.');
+	});
+
+	it('fails Watchtower v2 extraction when the required teach block is missing', async () => {
+		await expect(extractArticleContentsV2({ html: watchtowerWithoutTeachBlockHtml })).rejects.toThrow(
+			'No selection found for selector [.dc-ttClassStyle--unset h2]',
+		);
 	});
 
 	it('converts LFB quote and source references to canonical v2 citation blocks', async () => {

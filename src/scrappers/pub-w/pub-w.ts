@@ -217,6 +217,7 @@ interface WatchtowerBoxSupplementIndexReference {
 
 interface WatchtowerIndexReferences {
 	questions: WatchtowerQuestionAssociation[];
+	teachBlockIndex: number;
 	footnotes?: WatchtowerFootnoteIndexReference[];
 	boxSupplements?: WatchtowerBoxSupplementIndexReference[];
 }
@@ -244,26 +245,13 @@ interface PendingBoxSupplementIndexReference {
  * @returns An object containing the headline and points of the "teach block".
  */
 function extractTeachBlock($: CheerioAPI): TeachBlock {
-	try {
-		const teachBlockHeadline = cleanText(
-			getCheerioSelectionOrThrow($, CONSTANTS.PUB_W_CSS_SELECTOR_TEACH_BLOCK_HEADLINE).text(),
-		);
-		const teachBlockPoints: string[] = $(CONSTANTS.PUB_W_CSS_SELECTOR_TEACH_BLOCK_POINTS)
-			.map((_, elem) => cleanText($(elem).text()))
-			.get();
+	const $headline = getCheerioSelectionOrThrow($, CONSTANTS.PUB_W_CSS_SELECTOR_TEACH_BLOCK_HEADLINE);
+	const $points = getCheerioSelectionOrThrow($, CONSTANTS.PUB_W_CSS_SELECTOR_TEACH_BLOCK_POINTS);
 
-		return {
-			headline: teachBlockHeadline,
-			points: teachBlockPoints,
-		};
-	} catch (e: any) {
-		log.warn(`Unable to extract teach block due to: ${e.message}`);
-
-		return {
-			headline: CONSTANTS.UNABLE_TO_EXTRACT_REFERENCE,
-			points: [],
-		};
-	}
+	return {
+		headline: cleanText($headline.text()),
+		points: $points.map((_, elem) => cleanText($(elem).text())).get(),
+	};
 }
 
 /**
@@ -861,14 +849,6 @@ function buildQuestionAssociation(
 	};
 }
 
-function isTopLevelTeachBlock($element: CheerioSelection): boolean {
-	return (
-		$element.is('.blockTeach') ||
-		($element.is(CONSTANTS.PUB_W_CSS_SELECTOR_TEACH_BLOCK) &&
-			$element.find(CONSTANTS.PUB_W_CSS_SELECTOR_TEACH_BLOCK_POINTS).length > 0)
-	);
-}
-
 function addIndexesForQuestionPids(
 	questionPids: string[],
 	questionIndexByPid: Map<string, number>,
@@ -1033,6 +1013,7 @@ function addQuestionRelevantIndex(
 
 function buildIndexReferences(input: {
 	questions: WatchtowerQuestionAssociation[];
+	teachBlockIndex: number;
 	pendingFootnotes: PendingFootnoteIndexReference[];
 	pendingBoxSupplements: PendingBoxSupplementIndexReference[];
 	footnoteIndexByFnid: Map<string, number>;
@@ -1090,6 +1071,7 @@ function buildIndexReferences(input: {
 
 	return {
 		questions: input.questions,
+		teachBlockIndex: input.teachBlockIndex,
 		...(footnotes.length > 0 ? { footnotes } : {}),
 		...(boxSupplements.length > 0 ? { boxSupplements } : {}),
 	};
@@ -1138,6 +1120,10 @@ function assertIndexReferences(
 	content: WatchtowerArticleContentItem[],
 	indexReferences: WatchtowerIndexReferences,
 ): void {
+	if (content[indexReferences.teachBlockIndex]?.kind !== 'teachBlock') {
+		throw new Error(`Invalid teachBlockIndex [${indexReferences.teachBlockIndex}] in Watchtower v2 flow.`);
+	}
+
 	for (const ref of indexReferences.footnotes ?? []) {
 		if (!content[ref.sourceIndex]) {
 			throw new Error(`Invalid footnote sourceIndex [${ref.sourceIndex}] in Watchtower v2 flow.`);
@@ -1273,20 +1259,6 @@ async function extractArticleFlow($: CheerioAPI): Promise<WatchtowerFlowExtracti
 			continue;
 		}
 
-		if (isTopLevelTeachBlock($element)) {
-			addContent({
-				kind: 'teachBlock',
-				payload: {
-					headline: cleanText($element.find('h2').first().text()),
-					points: $element
-						.find('ul li p')
-						.map((_, point) => cleanText($(point).text()))
-						.get(),
-				},
-			});
-			continue;
-		}
-
 		if ($element.is('p') && $element.find(CONSTANTS.GENERAL_CSS_SELECTOR_FOR_VIDEO_ANCHORS).length > 0) {
 			$element.find(CONSTANTS.GENERAL_CSS_SELECTOR_FOR_VIDEO_ANCHORS).each((_, anchor) => {
 				const videoIndex = addContent({
@@ -1304,6 +1276,11 @@ async function extractArticleFlow($: CheerioAPI): Promise<WatchtowerFlowExtracti
 			});
 		}
 	}
+
+	const teachBlockIndex = addContent({
+		kind: 'teachBlock',
+		payload: extractTeachBlock($),
+	});
 
 	const footnotes = $('#article .groupFootnote .fn-ref').toArray();
 	for (const footnote of footnotes) {
@@ -1324,6 +1301,7 @@ async function extractArticleFlow($: CheerioAPI): Promise<WatchtowerFlowExtracti
 
 	const indexReferences = buildIndexReferences({
 		questions,
+		teachBlockIndex,
 		pendingFootnotes,
 		pendingBoxSupplements,
 		footnoteIndexByFnid,

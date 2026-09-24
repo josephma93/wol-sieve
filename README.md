@@ -249,6 +249,9 @@ Supported item kinds:
 
 The `indexReferences` object contains relation indexes. These indexes point to items in `content`.
 
+The `indexReferences.teachBlockIndex` field is always present. It points to the `teachBlock` item in `content`.
+Extraction fails when the source article does not contain the required teach block.
+
 The `indexReferences.questions` array contains question association records.
 
 Question association fields:
