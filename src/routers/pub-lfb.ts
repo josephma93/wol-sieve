@@ -1,6 +1,6 @@
 import express, { Request, Response, NextFunction } from 'express';
 import { getHtmlContent } from '../data-fetching/raw.js';
-import { logger, opErrored } from '../kernel/index.js';
+import { isWolUrl, logger, opErrored } from '../kernel/index.js';
 import { AppError } from '../kernel/app-error.js';
 import { LfbItem, extractLfbContents, buildDefaultLinks } from '../scrappers/pub-lfb/pub-lfb.js';
 
@@ -37,7 +37,7 @@ async function fetchHtmlsMiddleware(req: Request, res: Response, next: NextFunct
 	const links = req.validatedLinks!;
 
 	for (const link of links) {
-		if (!link.includes('wol.jw.org')) {
+		if (!isWolUrl(link)) {
 			log.warn({ link }, 'Invalid link provided.');
 			return next(new AppError(`Invalid link: ${link}`, 400, { link }));
 		}

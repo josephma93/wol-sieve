@@ -1,6 +1,6 @@
 import express, { NextFunction, Request, Response } from 'express';
 import { fetchThisWeekMeetingHtml } from '../data-fetching/wol-pages.js';
-import { opErrored } from '../kernel/index.js';
+import { isWolUrl, opErrored } from '../kernel/index.js';
 import { AppError } from '../kernel/app-error.js';
 import {
 	extractBibleRead,
@@ -42,7 +42,7 @@ async function fillHtmlContent(req: Request, res: Response, next: NextFunction) 
 async function fetchHtmlFromSourceUrl(req: Request, _res: Response, next: NextFunction) {
 	const sourceUrl = req.query.source_url as string;
 
-	if (sourceUrl && sourceUrl.includes('wol.jw.org')) {
+	if (isWolUrl(sourceUrl)) {
 		const opRes = await getHtmlContent(sourceUrl);
 		if (opErrored(opRes)) {
 			return next(new AppError(opRes.err.message, 500, opRes.err));

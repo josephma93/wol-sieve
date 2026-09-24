@@ -1,5 +1,5 @@
 import { NextFunction, Request, RequestHandler, Response } from 'express';
-import { AsyncOperationResult, CONSTANTS, opErrored, ScrapperMethod } from '../../kernel/index.js';
+import { AsyncOperationResult, isWolUrl, opErrored, ScrapperMethod } from '../../kernel/index.js';
 import { AppError } from '../../kernel/app-error.js';
 import { getHtmlContent } from '../../data-fetching/raw.js';
 
@@ -14,15 +14,7 @@ interface SingleSourceScraperHandlerSettings {
 	errorLabel: string;
 }
 
-export function isWolUrl(value: string): boolean {
-	try {
-		const parsed = new URL(value);
-		const wolHost = new URL(CONSTANTS.WOL_URL).hostname;
-		return parsed.hostname === wolHost;
-	} catch {
-		return false;
-	}
-}
+export { isWolUrl };
 
 export function normalizeUrlsQueryParam(value: unknown): string[] | undefined {
 	if (value === undefined) {

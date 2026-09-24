@@ -1,6 +1,6 @@
 import express, { Request, Response, NextFunction } from 'express';
 import { fetchLanguageSpecificLandingHtml, fetchThisWeekMeetingHtml } from '../data-fetching/wol-pages.js';
-import { opErrored } from '../kernel/index.js';
+import { isWolUrl, opErrored } from '../kernel/index.js';
 import { logger } from '../kernel/index.js';
 import { AppError } from '../kernel/app-error.js';
 import {
@@ -69,8 +69,9 @@ function validateWolUrl(req: Request, _res: Response, next: NextFunction) {
 	try {
 		const articleUrl = new URL(url);
 
-		if (articleUrl.hostname !== new URL(CONSTANTS.WOL_URL).hostname) {
-			return next(new AppError(`URL must belong to ${new URL(CONSTANTS.WOL_URL).hostname} domain.`, 400));
+		const wolHost = new URL(CONSTANTS.WOL_URL).hostname;
+		if (!isWolUrl(articleUrl.href)) {
+			return next(new AppError(`URL must belong to ${wolHost} domain.`, 400));
 		}
 
 		req.wolUrl = url;

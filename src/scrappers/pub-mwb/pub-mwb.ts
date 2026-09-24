@@ -3,6 +3,7 @@ import {
 	CONSTANTS,
 	cleanText,
 	collapseConsecutiveLineBreaks,
+	isExternalHttpUrl,
 	normalizeWolUrl,
 	takeOutTimeBoxText,
 } from '../../kernel/index.js';
@@ -11,7 +12,7 @@ import { CheerioAPI } from 'cheerio';
 import { ExtractionContextOptions, createExtractionContext } from '../generics.js';
 import { parsePubSjj, PubSjjParsedData } from '../../data-extraction/extractors-as-obj.js';
 import { opErrored } from '../../kernel/index.js';
-import { getCheerioSelectionOrThrow } from '../../data-extraction/generic.js';
+import { getCheerioSelectionOrThrow, isVideoAnchor } from '../../data-extraction/generic.js';
 import type { CheerioSelection } from '../../data-extraction/generic.js';
 import {
 	buildChristianLivingSelections,
@@ -610,7 +611,7 @@ function extractSpecialItemBase($specialParagraph: CheerioSelection): TreasuresT
 }
 
 function extractVideoMediaItem($paragraph: CheerioSelection): TreasuresTalkMediaItem | null {
-	const $videoAnchor = $paragraph.find('a[data-video]').first();
+	const $videoAnchor = $paragraph.find(CONSTANTS.GENERAL_CSS_SELECTOR_FOR_VIDEO_ANCHORS).first();
 	if (!$videoAnchor.length) {
 		return null;
 	}
@@ -618,7 +619,7 @@ function extractVideoMediaItem($paragraph: CheerioSelection): TreasuresTalkMedia
 	const text = cleanText($paragraph.text());
 	const label = cleanText($videoAnchor.text());
 	const cloned = $paragraph.clone();
-	cloned.find('a[data-video]').remove();
+	cloned.find(CONSTANTS.GENERAL_CSS_SELECTOR_FOR_VIDEO_ANCHORS).remove();
 
 	return {
 		text,
@@ -657,7 +658,7 @@ function isSpecialItemParagraph($paragraph: CheerioSelection): boolean {
 }
 
 function isVideoPromptParagraph($paragraph: CheerioSelection): boolean {
-	return $paragraph.is('p') && $paragraph.find('a[data-video]').length > 0;
+	return $paragraph.is('p') && $paragraph.find(CONSTANTS.GENERAL_CSS_SELECTOR_FOR_VIDEO_ANCHORS).length > 0;
 }
 
 function extractMainPointParagraphs($pointContainer: CheerioSelection): CheerioSelection[] {
@@ -724,7 +725,7 @@ function assignSingleOptionalValue<T>(currentValue: T | undefined, nextValues: T
 async function buildTreasuresTalkV1ReferenceData($paragraph: CheerioSelection, startFootnoteNumber: number) {
 	let text = cleanText($paragraph.text());
 	const footnotes: number[] = [];
-	const $references = $paragraph.find(`a:not([data-video])`);
+	const $references = $paragraph.find(CONSTANTS.GENERAL_CSS_SELECTOR_FOR_NON_VIDEO_ANCHORS);
 	const resolvedReferences = await resolveAnchorReferencesInOrder($references);
 	const footnoteEntries: Array<{ footnoteNumber: number; contents: string }> = [];
 	const citations: CitationData[] = [];
@@ -769,7 +770,7 @@ async function buildSpecialItemCitationBlock($paragraph: CheerioSelection) {
 
 	for (let i = 0; i < $anchors.length; i++) {
 		const $anchor = $anchors.eq(i);
-		if ($anchor.is('[data-video]')) {
+		if (isVideoAnchor($anchor)) {
 			citationTasks.push(Promise.resolve(extractVideoCitationDataFromAnchor($anchor)));
 			continue;
 		}
@@ -844,7 +845,8 @@ async function buildTreasuresTalkV2ContentItem($blockChild: CheerioSelection): P
 	}
 
 	const pointText = cleanText($blockChild.text());
-	const selectReferences = (selection: CheerioSelection) => selection.find(`a:not([data-video])`);
+	const selectReferences = (selection: CheerioSelection) =>
+		selection.find(CONSTANTS.GENERAL_CSS_SELECTOR_FOR_NON_VIDEO_ANCHORS);
 	const $references = selectReferences($blockChild);
 	const textWithCitations = buildTextWithCitationMarkers($blockChild, selectReferences);
 
@@ -1464,21 +1466,17 @@ function isChristianLivingReferenceAnchor($anchor: CheerioSelection): boolean {
 
 function getChristianLivingExternalLinks($: CheerioAPI, $element: CheerioSelection): ChristianLivingLink[] {
 	return $element
-		.find('a:not([data-video])')
+		.find(CONSTANTS.GENERAL_CSS_SELECTOR_FOR_NON_VIDEO_ANCHORS)
 		.map((_, anchor) => {
-			if (isChristianLivingReferenceAnchor($(anchor))) {
-				return null;
-			}
-
 			const $anchor = $(anchor);
 			const href = $anchor.attr('href');
-			if (!href) {
+			if (!isExternalHttpUrl(href)) {
 				return null;
 			}
 
 			return {
 				text: cleanText($anchor.text()),
-				url: normalizeWolUrl(href) ?? href,
+				url: href,
 			};
 		})
 		.get()
@@ -1486,7 +1484,9 @@ function getChristianLivingExternalLinks($: CheerioAPI, $element: CheerioSelecti
 }
 
 function selectChristianLivingReferenceAnchors($: CheerioAPI, $element: CheerioSelection): CheerioSelection {
-	return $element.find('a:not([data-video])').filter((_, anchor) => isChristianLivingReferenceAnchor($(anchor)));
+	return $element
+		.find(CONSTANTS.GENERAL_CSS_SELECTOR_FOR_NON_VIDEO_ANCHORS)
+		.filter((_, anchor) => isChristianLivingReferenceAnchor($(anchor)));
 }
 
 async function buildChristianLivingTextBlock(
@@ -1522,7 +1522,7 @@ async function extractChristianLivingContentItem(
 		}
 
 		const textBlock = await buildChristianLivingTextBlock($, $element);
-		if ($element.find('a[data-video]').length) {
+		if ($element.find(CONSTANTS.GENERAL_CSS_SELECTOR_FOR_VIDEO_ANCHORS).length) {
 			const video = extractVideoMediaItem($element);
 			if (!video) {
 				const msg =

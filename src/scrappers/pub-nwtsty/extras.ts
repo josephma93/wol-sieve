@@ -1,4 +1,4 @@
-import { logger, opErrored, wrapAsyncOp } from '../../kernel/index.js';
+import { isWolUrl, logger, opErrored, wrapAsyncOp } from '../../kernel/index.js';
 import { extractWeeklyBibleRead, WeeklyBibleReadData } from '../pub-mwb/pub-mwb.js';
 import { fetchThisWeekMeetingHtml } from '../../data-fetching/wol-pages.js';
 
@@ -32,7 +32,7 @@ export function isValidWolBibleBookUrl(url: string): boolean {
 		return false;
 	}
 
-	if (parsedUrl.hostname !== 'wol.jw.org') {
+	if (!isWolUrl(url)) {
 		log.debug(`URL is not from wol.jw.org, skipping: ${url}`);
 		return false;
 	}
