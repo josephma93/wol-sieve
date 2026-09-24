@@ -37,6 +37,7 @@ export interface BasePublicationItem {
 	url: string;
 	caption: string;
 	content: string;
+	studyContent?: string;
 	articleClasses: string;
 	englishSymbol?: string;
 	reference: string;

@@ -40,7 +40,7 @@ export interface PublicationRefData extends PublicationRefDetectionData {
  */
 export function buildPublicationRefData(rawReferenceData: BasePublicationItem): PublicationRefData {
 	const contentDetectionData = detectReferenceDataType(rawReferenceData);
-	const parsedContent = pickAndApplyTextExtractor(contentDetectionData, rawReferenceData.content);
+	const parsedContent = pickAndApplyTextExtractor(contentDetectionData, rawReferenceData);
 	return {
 		...contentDetectionData,
 		parsedContent,

@@ -9,24 +9,107 @@ import type { CheerioSelection } from './generic.js';
  */
 type ReferenceAsTextBuilder = (content: string) => string;
 
+interface TextExtractionContext {
+	$: CheerioAPI;
+	root: CheerioSelection;
+}
+
+type TextExtractionStep = (context: TextExtractionContext) => TextExtractionContext;
+type TextExtractionOutput = (context: TextExtractionContext) => string;
+
+function createTextExtractionContext(
+	content: string | CheerioSelection,
+	$document?: CheerioAPI,
+): TextExtractionContext {
+	if (typeof content === 'string') {
+		const $ = $document ?? cheerio.load(content);
+		return { $, root: $(content) };
+	}
+
+	return { $: $document ?? cheerio.load(''), root: content };
+}
+
+function runTextExtractionPipeline(
+	context: TextExtractionContext,
+	steps: TextExtractionStep[],
+	output: TextExtractionOutput,
+): string {
+	const finalContext = steps.reduce((currentContext, step) => step(currentContext), context);
+	return output(finalContext);
+}
+
+function removeElements(selector: string): TextExtractionStep {
+	return (context) => {
+		context.root.find(selector).remove();
+		return context;
+	};
+}
+
+function selectPubWReferenceParagraphs(context: TextExtractionContext): TextExtractionContext {
+	const $citationParagraphs = context.$('p.sb, p[data-rel-pid]');
+	const root = $citationParagraphs.length ? $citationParagraphs : context.$('.bodyTxt p');
+	return { ...context, root };
+}
+
+function fixNwtstySpacing(context: TextExtractionContext): TextExtractionContext {
+	context.root.find('.sz').each((_, el) => {
+		const element = context.$(el);
+		const previousText = element.prev().text();
+		// Fix for padding spacing.
+		if (previousText && !/\s$/.test(previousText) && !/^\s/.test(element.text())) {
+			element.prepend(' ');
+		}
+	});
+
+	context.root.each((_, el) => {
+		const element = context.$(el);
+		const hasSpacingSignal = element.hasClass('sz') || element.parent().hasClass('sz');
+		if (!hasSpacingSignal || /^\s/.test(element.text())) {
+			return;
+		}
+
+		element.prepend(' ');
+	});
+
+	return context;
+}
+
+function outputCleanText(context: TextExtractionContext): string {
+	return cleanText(context.root.text());
+}
+
+function outputNwtstyText(context: TextExtractionContext): string {
+	return context.root
+		.map((_, el) => cleanText(context.$(el).text().replace(/\s+/g, ' ')).replace(/(\s\n|\n\s)/g, '\n'))
+		.get()
+		.filter(Boolean)
+		.join(' ');
+}
+
+function outputDefaultText(context: TextExtractionContext): string {
+	return collapseConsecutiveLineBreaks(cleanText(context.$.text()));
+}
+
+function outputParagraphText(separator: string): TextExtractionOutput {
+	return (context) =>
+		context.root
+			.map((_, el) => cleanText(context.$(el).text().replace(/\s+/g, ' ')))
+			.get()
+			.filter(Boolean)
+			.join(separator);
+}
+
 /**
  * Pub W text extraction strategy.
  * @param content - The HTML content to parse.
  * @returns The text parsed.
  */
 export function extractPubWReferenceAsText(content: string): string {
-	const $ = cheerio.load(content);
-	const $citationParagraphs = $('p.sb, p[data-rel-pid]');
-	const $paragraphs = $citationParagraphs.length ? $citationParagraphs : $('.bodyTxt p');
-
-	return $paragraphs
-		.map((_, el) => {
-			const $el = $(el);
-			$el.find('.parNum').remove();
-			return cleanText($el.text());
-		})
-		.get()
-		.join('\n');
+	return runTextExtractionPipeline(
+		createTextExtractionContext(content),
+		[selectPubWReferenceParagraphs, removeElements('.parNum')],
+		outputParagraphText('\n'),
+	);
 }
 
 /**
@@ -38,28 +121,31 @@ export function extractPubWReferenceAsText(content: string): string {
 export function extractPubNwtstyReferenceAsText(content: CheerioSelection, $document: CheerioAPI): string;
 export function extractPubNwtstyReferenceAsText(content: string, $document?: CheerioAPI): string;
 export function extractPubNwtstyReferenceAsText(content: string | CheerioSelection, $document?: CheerioAPI): string {
-	let context: CheerioSelection;
-	let $: CheerioAPI;
+	return runTextExtractionPipeline(
+		createTextExtractionContext(content, $document),
+		[removeElements('a.fn, a.b'), fixNwtstySpacing],
+		outputNwtstyText,
+	);
+}
 
-	if (typeof content === 'string') {
-		$ = $document ?? cheerio.load(content);
-		context = $(content);
-	} else {
-		$ = $document ?? cheerio.load('');
-		context = content;
+/**
+ * Pub NWTSTY study note extraction strategy.
+ * @param content - The studyContent HTML to parse.
+ * @returns The study note text parsed.
+ */
+export function extractPubNwtstyStudyContentAsText(content: string): string {
+	const context = createTextExtractionContext(content);
+	const $noteParagraphs = context.$('p');
+
+	if (!$noteParagraphs.length) {
+		return runTextExtractionPipeline(context, [], outputCleanText);
 	}
 
-	context.find('a.fn, a.b').remove();
-	context.find('.sz').each((_, el) => {
-		const element = $(el);
-		const previousText = element.prev().text();
-		// Fix for padding spacing
-		if (previousText && !/\s$/.test(previousText) && !/^\s/.test(element.text())) {
-			element.prepend(' ');
-		}
-	});
-
-	return cleanText(context.text()).replace(/(\s\n|\n\s)/g, '\n');
+	return runTextExtractionPipeline(
+		{ ...context, root: $noteParagraphs },
+		[removeElements('a.fn')],
+		outputParagraphText('\n\n'),
+	);
 }
 
 /**
@@ -68,21 +154,32 @@ export function extractPubNwtstyReferenceAsText(content: string | CheerioSelecti
  * @returns The text parsed.
  */
 export function extractReferenceAsTextDefaultStrategy(content: string): string {
-	const $ = cheerio.load(content);
-	return collapseConsecutiveLineBreaks(cleanText($.text()));
+	return runTextExtractionPipeline(createTextExtractionContext(content), [], outputDefaultText);
+}
+
+function isPubNwtstyStudyNoteReference(
+	{ isPubNwtsty }: PublicationRefDetectionData,
+	publicationItem: BasePublicationItem,
+): boolean {
+	return isPubNwtsty && Boolean(publicationItem.studyContent?.trim());
 }
 
 /**
  * Extracts the reference text from the given publication reference data.
  * @param contentDetectionData
- * @param contentToParse
+ * @param publicationItem
  * @returns The reference text extracted.
  */
 export function pickAndApplyTextExtractor(
-	{ isPubW, isPubNwtsty }: PublicationRefDetectionData,
-	contentToParse: BasePublicationItem['content'],
+	contentDetectionData: PublicationRefDetectionData,
+	publicationItem: BasePublicationItem,
 ): string {
 	let parserStrategy: ReferenceAsTextBuilder;
+	const { isPubW, isPubNwtsty } = contentDetectionData;
+
+	if (isPubNwtstyStudyNoteReference(contentDetectionData, publicationItem)) {
+		return extractPubNwtstyStudyContentAsText(publicationItem.studyContent || '');
+	}
 
 	if (isPubW) {
 		parserStrategy = extractPubWReferenceAsText;
@@ -92,5 +189,5 @@ export function pickAndApplyTextExtractor(
 		parserStrategy = extractReferenceAsTextDefaultStrategy;
 	}
 
-	return parserStrategy(contentToParse);
+	return parserStrategy(publicationItem.content);
 }
