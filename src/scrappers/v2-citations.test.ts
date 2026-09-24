@@ -51,10 +51,74 @@ const watchtowerHtml = `
 		<p class="contextTtl"><strong>Study Article 1</strong></p>
 		<h1><strong>Article title</strong></h1>
 		<p class="themeScrp">Theme scripture</p>
-		<div id="tt9"><p>ignored</p><p>Article topic</p></div>
+		<div id="tt10"><p>ignored</p><p>Article topic</p></div>
 		<p class="qu" data-pid="1">1. Question?</p>
 		<p data-rel-pid="[1]"><span class="parNum" data-pnum="1">1 </span>Paragraph mentions Ref A before <a href="/es/wol/d/r4/lp-s/123">Ref A</a> end.</p>
 		<div class="dc-ttClassStyle--unset"><h2>Teach block</h2><ul><li><p>Teach point</p></li></ul></div>
+	</div>
+`;
+
+const watchtowerFlowHtml = `
+	<div id="article">
+		<p class="contextTtl"><strong>Study Article 2</strong></p>
+		<h1><strong>Flow article title</strong></h1>
+		<p class="themeScrp">Flow theme scripture</p>
+		<div id="tt10"><p>ignored</p><p>Flow article topic</p></div>
+		<div class="bodyTxt">
+			<h2 id="p10" data-pid="10"><strong>SECTION HEADING</strong></h2>
+			<p id="p40" data-pid="40" class="qu"><strong>1.</strong> What does the <a class="it" href="/es/wol/d/r4/lp-s/flow#h=80-82:0">Question Box</a> show?</p>
+			<div class="gen-field"></div>
+			<p id="p11" data-pid="11" data-rel-pid="[40]"><span class="parNum" data-pnum="1">1 </span>Paragraph cites <a href="/es/wol/bc/r4/lp-s/flow/1/0">Bible Ref</a> and mentions the <a class="it" href="/es/wol/d/r4/lp-s/flow#h=90-92:0">Paragraph Box</a>.<a id="footnotesource1" data-fnid="1" class="fn" href="/es/wol/fn/r4/lp-s/flow/0">a</a></p>
+			<div id="f1">
+				<figure>
+					<img src="/flow.jpg" alt="Flow illustration" />
+					<figcaption>Flow caption (mira el párrafo 1).<a id="footnotesource2" data-fnid="2" class="fn" href="/es/wol/fn/r4/lp-s/flow/1">b</a></figcaption>
+				</figure>
+			</div>
+			<div class="boxSupplement">
+				<aside>
+					<div id="p80" data-pid="80" class="boxTtl"><h2><strong>Question Box</strong></h2></div>
+					<div class="boxContent">
+						<p>Question box text cites <a href="/es/wol/pc/r4/lp-s/flow/2/0">Pub Ref</a>.</p>
+					</div>
+				</aside>
+			</div>
+			<div class="boxSupplement">
+				<aside>
+					<div id="p90" data-pid="90" class="boxTtl"><h2><strong>Paragraph Box</strong></h2></div>
+					<div class="boxContent">
+						<p>Paragraph box text links to <a href="https://example.com/resource">External resource</a> and <a href="https://www.jw.org/finder?lank=pub-test_VIDEO" data-video="webpubvid://test">Play video</a> <em>Video Title</em>.</p>
+					</div>
+				</aside>
+			</div>
+			<div class="blockTeach dc-ttClassStyle--unset"><h2>Teach block</h2><ul><li><p>Teach point</p></li></ul></div>
+			<div class="groupFootnote">
+				<div id="footnote1" data-fnid="1" class="fn-ref"><p><a href="#footnotesource1" class="fn-symbol">a</a> Footnote cites <a href="/es/wol/d/r4/lp-s/ref">Article Ref</a>.</p></div>
+				<div id="footnote2" data-fnid="2" class="fn-ref"><p><a href="#footnotesource2" class="fn-symbol">b</a> Image note links to <a href="https://www.jw.org/finder?lank=pub-note_VIDEO" data-video="webpubvid://note">Image Video</a>.</p></div>
+			</div>
+		</div>
+	</div>
+`;
+
+const currentWatchtowerTopicHtml = `
+	<div id="article">
+		<header>
+			<div id="tt2">
+				<p class="contextTtl"><strong>Study Article 3</strong></p>
+			</div>
+			<div id="tt4">
+				<p class="pubRefs"><a href="/es/wol/pc/r4/lp-s/topic/0/0"><strong>CANCIÓN 4</strong></a> Song title</p>
+			</div>
+			<h1><strong>Current topic article</strong></h1>
+		</header>
+		<div id="tt8">
+			<p class="themeScrp">Current theme scripture</p>
+		</div>
+		<div id="tt10">
+			<p class="pubRefs"><strong>TEMA</strong></p>
+			<p class="pubRefs">Current stencil article topic.</p>
+		</div>
+		<div class="bodyTxt"></div>
 	</div>
 `;
 
@@ -254,7 +318,7 @@ describe('v2 citation scraper contracts', () => {
 		expect(parsed[0].plainText).toBe(plainText);
 	});
 
-	it('keeps Watchtower v1 paragraphs stable while v2 uses canonical citation blocks', async () => {
+	it('keeps Watchtower v1 paragraphs stable while v2 exposes natural article flow and associations', async () => {
 		const v1 = await extractArticleContents({ html: watchtowerHtml });
 		const v1Paragraph = v1.contents[0].paragraphs[0];
 
@@ -267,27 +331,169 @@ describe('v2 citation scraper contracts', () => {
 			},
 		});
 
-		const v2 = await extractArticleContentsV2({ html: watchtowerHtml });
-		const v2Paragraph = v2.contents[0].paragraphs[0];
+		const v2 = await extractArticleContentsV2({ html: watchtowerFlowHtml });
 
-		expect(v2Paragraph).toEqual({
-			number: 1,
-			text: '1 Paragraph mentions Ref A before Ref A end.',
-			textWithCitations: '1 Paragraph mentions Ref A before [[cite:1]] end.',
-			citations: [
+		expect(v2).toMatchObject({
+			articleNumber: 'Study Article 2',
+			articleTitle: 'Flow article title',
+			articleThemeScrip: 'Flow theme scripture',
+			articleTopic: 'Flow article topic',
+		});
+		expect(v2).not.toHaveProperty('contents');
+		expect(v2).not.toHaveProperty('teachBlock');
+		expect(v2).not.toHaveProperty('questions');
+		expect(v2.content.map((item) => item.kind)).toEqual([
+			'sectionHeading',
+			'question',
+			'paragraph',
+			'illustration',
+			'boxSupplement',
+			'boxSupplement',
+			'teachBlock',
+			'footnote',
+			'footnote',
+		]);
+
+		expect(v2.content[0]).toEqual({
+			kind: 'sectionHeading',
+			payload: {
+				text: 'SECTION HEADING',
+			},
+		});
+		expect(v2.content[1]).toMatchObject({
+			kind: 'question',
+			payload: {
+				pNumbers: [1],
+				rawQuestionTxt: '1. What does the Question Box show?',
+				questionParts: [{ text: 'What does the Question Box show?' }],
+				questionTextIfSingle: 'What does the Question Box show?',
+			},
+		});
+		expect(v2.content[2]).toMatchObject({
+			kind: 'paragraph',
+			payload: {
+				number: 1,
+				text: '1 Paragraph cites Bible Ref and mentions the Paragraph Box.a',
+				textWithCitations: '1 Paragraph cites [[cite:1]] and mentions the Paragraph Box.a',
+				citations: [
+					expect.objectContaining({
+						id: 1,
+						marker: '[[cite:1]]',
+						mnemonic: 'Bible Ref',
+						contents: 'Parsed reference contents',
+					}),
+				],
+			},
+		});
+		expect(v2.content[3]).toEqual({
+			kind: 'illustration',
+			payload: {
+				src: 'https://wol.jw.org/flow.jpg',
+				alt: 'Flow illustration',
+				caption: 'Flow caption (mira el párrafo 1).b',
+				paragraphNumbers: [1],
+			},
+		});
+		expect(v2.content[4]).toMatchObject({
+			kind: 'boxSupplement',
+			payload: {
+				title: 'Question Box',
+				content: [
+					{
+						kind: 'text',
+						payload: expect.objectContaining({
+							text: 'Question box text cites Pub Ref.',
+							textWithCitations: 'Question box text cites [[cite:1]].',
+							citations: [expect.objectContaining({ mnemonic: 'Pub Ref' })],
+						}),
+					},
+				],
+			},
+		});
+		expect(v2.content[5]).toMatchObject({
+			kind: 'boxSupplement',
+			payload: {
+				title: 'Paragraph Box',
+				content: [
+					{
+						kind: 'text',
+						payload: expect.objectContaining({
+							externalLinks: [{ text: 'External resource', url: 'https://example.com/resource' }],
+							videos: [
+								{
+									text: 'Play video',
+									label: 'Play video',
+									title: 'Video Title',
+									url: 'https://www.jw.org/finder?lank=pub-test_VIDEO',
+								},
+							],
+						}),
+					},
+				],
+			},
+		});
+		expect(v2.content[7]).toMatchObject({
+			kind: 'footnote',
+			payload: {
+				marker: 'a',
+				text: 'Footnote cites Article Ref.',
+				textWithCitations: 'Footnote cites [[cite:1]].',
+				citations: [expect.objectContaining({ mnemonic: 'Article Ref' })],
+			},
+		});
+		expect(v2.content[8]).toMatchObject({
+			kind: 'footnote',
+			payload: {
+				marker: 'b',
+				videos: [
+					{
+						text: 'Image Video',
+						label: 'Image Video',
+						title: 'Image Video',
+						url: 'https://www.jw.org/finder?lank=pub-note_VIDEO',
+					},
+				],
+			},
+		});
+		expect(v2.indexReferences).toEqual({
+			questions: [
 				{
-					id: 1,
-					marker: '[[cite:1]]',
-					mnemonic: 'Ref A',
-					referenceType: 'pub-w',
-					issueName: 'Issue source',
-					itemTitle: 'Item title',
-					contents: 'Parsed reference contents',
+					questionIndex: 1,
+					sectionHeadingIndex: 0,
+					relevantParagraphIndexes: [2],
+					relevantIllustrationIndexes: [3],
+					relevantBoxSupplementIndexes: [4, 5],
+					relevantFootnoteIndexes: [7, 8],
 				},
 			],
+			footnotes: [
+				{ sourceIndex: 2, targetIndex: 7, marker: 'a' },
+				{ sourceIndex: 3, targetIndex: 8, marker: 'b' },
+			],
+			boxSupplements: [
+				{ sourceIndex: 1, targetIndex: 4, title: 'Question Box' },
+				{ sourceIndex: 2, targetIndex: 5, title: 'Paragraph Box' },
+			],
 		});
-		expect(v2Paragraph).not.toHaveProperty('originalContent');
-		expect(v2Paragraph).not.toHaveProperty('references');
+		expect(v2.content[1].payload).not.toHaveProperty('citations');
+		expect(v2.content[1].payload).not.toHaveProperty('externalLinks');
+		expect(v2.content[1].payload).not.toHaveProperty('videos');
+		expect(v2.content[1].payload).not.toHaveProperty('boxSupplementRefs');
+		expect(v2.content[2].payload).not.toHaveProperty('footnoteRefs');
+		expect(v2.content[2].payload).not.toHaveProperty('boxSupplementRefs');
+		expect(v2.content[2].payload).not.toHaveProperty('questionPids');
+		expect(v2.content[3].payload).not.toHaveProperty('footnoteRefs');
+		expect(v2.content[4].payload).not.toHaveProperty('pid');
+		expect(v2.content[5].payload).not.toHaveProperty('pid');
+		expect(v2.indexReferences.questions[0]).not.toHaveProperty('relevantVideoIndexes');
+	});
+
+	it('extracts Watchtower articleTopic from the current metadata block in v1 and v2', async () => {
+		const v1 = await extractArticleContents({ html: currentWatchtowerTopicHtml });
+		const v2 = await extractArticleContentsV2({ html: currentWatchtowerTopicHtml });
+
+		expect(v1.articleTopic).toBe('Current stencil article topic.');
+		expect(v2.articleTopic).toBe('Current stencil article topic.');
 	});
 
 	it('converts LFB quote and source references to canonical v2 citation blocks', async () => {

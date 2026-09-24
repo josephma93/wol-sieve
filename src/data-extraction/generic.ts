@@ -1,4 +1,4 @@
-import { logger } from '../kernel/index.js';
+import { CONSTANTS, logger } from '../kernel/index.js';
 import { CheerioAPI } from 'cheerio';
 
 const log = logger.child({ ...logger.bindings(), label: 'util' });
@@ -20,4 +20,16 @@ export function getCheerioSelectionOrThrow($: CheerioAPI, selector: string) {
 		throw new Error(`No selection found for selector [${selector}]`);
 	}
 	return $selection;
+}
+
+/**
+ * Checks whether a Cheerio selection points to a WOL video anchor.
+ *
+ * Use this helper when scraper logic must separate video links from article references or external links.
+ *
+ * @param $anchor - The Cheerio selection to check.
+ * @returns `true` when the selection matches the shared video anchor selector.
+ */
+export function isVideoAnchor($anchor: CheerioSelection): boolean {
+	return $anchor.is(CONSTANTS.GENERAL_CSS_SELECTOR_FOR_VIDEO_ANCHORS);
 }

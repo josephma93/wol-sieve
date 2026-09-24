@@ -82,3 +82,38 @@ export function normalizeWolUrl(url: string | undefined): string | undefined {
 	if (url.startsWith('/')) return `${CONSTANTS.WOL_URL}${url}`;
 	return url;
 }
+
+/**
+ * Checks whether an absolute URL belongs to the configured WOL host.
+ *
+ * Use this helper when code must apply the same host rule as the API validators.
+ * Relative paths are not valid input for this check.
+ *
+ * @param url - The URL to check.
+ * @returns `true` when the URL host is the configured WOL host.
+ */
+export function isWolUrl(url: string | undefined): boolean {
+	if (!url) return false;
+
+	try {
+		const parsed = new URL(url);
+		const wolHost = new URL(CONSTANTS.WOL_URL).hostname;
+		return parsed.hostname === wolHost;
+	} catch {
+		return false;
+	}
+}
+
+/**
+ * Checks whether an absolute HTTP(S) URL points outside the configured WOL host.
+ *
+ * Use this helper before adding scraper links to `externalLinks`.
+ * Relative paths, fragments, and non-HTTP protocols are not external HTTP URLs.
+ *
+ * @param url - The URL to check.
+ * @returns `true` when the URL uses HTTP(S) and does not belong to the configured WOL host.
+ */
+export function isExternalHttpUrl(url: string | undefined): boolean {
+	if (!url || !/^https?:\/\//i.test(url)) return false;
+	return !isWolUrl(url);
+}

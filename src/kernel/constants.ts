@@ -20,6 +20,8 @@ function normalizePort(val: string | number): PortNumber {
 }
 
 const GENERAL_CSS_SELECTOR_FOR_FIGURES = 'div[id^="f"]';
+const GENERAL_CSS_SELECTOR_FOR_VIDEO_ANCHORS = 'a[data-video]';
+const GENERAL_CSS_SELECTOR_FOR_NON_VIDEO_ANCHORS = 'a:not([data-video])';
 
 export const CONSTANTS = Object.freeze(
 	Object.seal({
@@ -31,6 +33,8 @@ export const CONSTANTS = Object.freeze(
 		CSS_SELECTOR_FOR_WEEKLY_BOOKLET_LINK: 'a.pub-mwb.cardLine1Prominent',
 		CSS_SELECTOR_FOR_WATCHTOWER_ARTICLE_LINK: 'a.pub-w.cardLine1Prominent',
 		GENERAL_CSS_SELECTOR_FOR_FIGURES,
+		GENERAL_CSS_SELECTOR_FOR_VIDEO_ANCHORS,
+		GENERAL_CSS_SELECTOR_FOR_NON_VIDEO_ANCHORS,
 
 		UNABLE_TO_EXTRACT_REFERENCE: 'UNEXPECTED_ERROR_UNABLE_TO_EXTRACT_REFERENCE',
 		PUB_CODE_WATCHTOWER: 'pub-w',
@@ -56,7 +60,7 @@ export const CONSTANTS = Object.freeze(
 		PUB_W_CSS_SELECTOR_ARTICLE_NUMBER: 'p.contextTtl strong',
 		PUB_W_CSS_SELECTOR_ARTICLE_TITLE: 'h1 strong:first-child',
 		PUB_W_CSS_SELECTOR_ARTICLE_THEME_SCRIP: 'p.themeScrp',
-		PUB_W_CSS_SELECTOR_ARTICLE_TOPIC: '#tt9 p:nth-of-type(2)',
+		PUB_W_CSS_SELECTOR_ARTICLE_TOPIC: '#tt10 p:nth-of-type(2)',
 		PUB_W_CSS_SELECTOR_TEACH_BLOCK: '.dc-ttClassStyle--unset',
 		PUB_W_CSS_SELECTOR_QUESTION: 'p.qu',
 		PUB_W_CSS_SELECTOR_FOR_SUPPLEMENT_BOX: '.boxSupplement',
@@ -69,7 +73,7 @@ export const CONSTANTS = Object.freeze(
 		PUB_W_REGEX_TEST_FOR_MENTIONS_BOX: () => freshRegExp(/\brecuadro\b/i),
 		PUB_W_REGEX_TEST_FOR_HREF_TO_BOX: () => freshRegExp(/h=(\d+)-(\d+)/i),
 		PUB_W_CSS_SELECTOR_RELATED_PARAGRAPH: (dataPid: string) => `p[data-rel-pid="[${dataPid}]"]`,
-		PUB_W_CSS_SELECTOR_RELATED_PARAGRAPH_LINK: 'p[data-rel-pid] a:not([data-video])',
+		PUB_W_CSS_SELECTOR_RELATED_PARAGRAPH_LINK: `p[data-rel-pid] ${GENERAL_CSS_SELECTOR_FOR_NON_VIDEO_ANCHORS}`,
 		PUB_W_CSS_SELECTOR_TEACH_BLOCK_HEADLINE: '.dc-ttClassStyle--unset h2',
 		PUB_W_CSS_SELECTOR_TEACH_BLOCK_POINTS: '.dc-ttClassStyle--unset ul li p',
 

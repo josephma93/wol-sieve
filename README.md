@@ -223,12 +223,82 @@ GET /v2/pub-wcg/?urls=url1&urls=url2
 Preserve v1 behavior when changing v2 routes. The two route families are intentionally different; do not treat v1-only
 patterns as aliases in v2 unless the v2 contract explicitly defines them.
 
+### `GET /v2/pub-w/` Response
+
+The v2 Watchtower response uses the natural article flow. It does not return the v1-style `contents` array.
+
+Top-level metadata fields identify the article:
+
+-   `articleNumber`
+-   `articleTitle`
+-   `articleThemeScrip`
+-   `articleTopic`
+
+The `content` array contains article items in published order. Each item has a `kind` and a `payload`.
+
+Supported item kinds:
+
+-   `sectionHeading`
+-   `question`
+-   `paragraph`
+-   `illustration`
+-   `boxSupplement`
+-   `footnote`
+-   `video`
+-   `teachBlock`
+
+The `indexReferences` object contains relation indexes. These indexes point to items in `content`.
+
+The `indexReferences.questions` array contains question association records.
+
+Question association fields:
+
+-   `questionIndex`
+-   `sectionHeadingIndex`
+-   `relevantParagraphIndexes`
+-   `relevantIllustrationIndexes`
+-   `relevantBoxSupplementIndexes`
+-   `relevantFootnoteIndexes`
+-   `relevantVideoIndexes`
+
+Each association index must point to an existing `content` item of the expected kind.
+
+The `indexReferences.footnotes` array contains footnote links. Each link has:
+
+-   `sourceIndex`
+-   `targetIndex`
+-   `marker`
+
+The `targetIndex` must point to a `footnote` item in `content`.
+
+The `indexReferences.boxSupplements` array contains box supplement links. Each link has:
+
+-   `sourceIndex`
+-   `targetIndex`
+-   `title`
+
+The `targetIndex` must point to a `boxSupplement` item in `content`.
+
+Optional arrays are omitted when they are empty. Consumers should use a default empty array when they process optional
+metadata:
+
+```js
+for (const index of question.relevantParagraphIndexes ?? []) {
+	const paragraph = response.content[index];
+}
+
+for (const ref of response.indexReferences.footnotes ?? []) {
+	const footnote = response.content[ref.targetIndex];
+}
+```
+
 ## Contract Design
 
 JSON contracts should favor semantic absence for optional simple values and structural stability for collections.
 
 -   Omit optional simple fields when no meaningful value exists.
--   Return empty arrays for collection fields when no elements exist.
+-   Return empty arrays for primary collection fields such as `content` and `indexReferences.questions`.
+-   Omit optional array fields when no elements exist.
 -   Use empty strings, empty objects, or placeholder values only when they represent a meaningful domain state rather
     than missing data.
 
