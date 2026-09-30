@@ -80,6 +80,41 @@ export interface DefaultPublicationRefResponse extends BasePublicationRefRespons
 }
 
 /**
+ * Checks whether WOL returned publication metadata without reference content.
+ *
+ * The `/pc/` endpoint can return a publication citation with an empty `content`
+ * field. The item URL points to the document, but this scraper intentionally
+ * skips the citation instead of following that URL.
+ *
+ * @param json The JSON content returned by WOL.
+ * @returns True when the response is a metadata-only publication citation.
+ */
+export function isMetadataOnlyPublicationReference(json: unknown): boolean {
+	if (typeof json !== 'object' || json === null || !Array.isArray((json as { items?: unknown }).items)) {
+		return false;
+	}
+
+	const [itemData] = (json as { items: unknown[] }).items;
+	if (typeof itemData !== 'object' || itemData === null) {
+		return false;
+	}
+
+	const item = itemData as {
+		articleClasses?: unknown;
+		content?: unknown;
+		url?: unknown;
+	};
+
+	return (
+		item.content === '' &&
+		typeof item.articleClasses === 'string' &&
+		/\bpublicationCitation\b/.test(item.articleClasses) &&
+		typeof item.url === 'string' &&
+		item.url.startsWith('/wol/d/')
+	);
+}
+
+/**
  * Represents the detection data for publication references.
  */
 export interface PublicationRefDetectionData {

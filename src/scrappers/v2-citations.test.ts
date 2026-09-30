@@ -976,6 +976,75 @@ describe('v2 citation scraper contracts', () => {
 		expect(result.errors[0].error).toContain('reference upstream failed');
 	});
 
+	it('skips NWTSTY publication citations that contain metadata without content', async () => {
+		const link = 'https://wol.jw.org/es/wol/b/r4/lp-s/nwtsty/19/70';
+		const html = `
+			<div id="article">
+				<div class="section"></div>
+				<div class="section" data-key="v1">
+					<h3 class="title">Psalm 70:1</h3>
+					<div id="v1"><span class="sz">Scripture text.</span></div>
+					<div class="group index collapsible">
+						<div class="sx">
+							<a href="/es/wol/pc/r4/lp-s/metadata">Metadata Ref</a>
+							<a href="/es/wol/d/r4/lp-s/healthy">Healthy Ref</a>
+						</div>
+					</div>
+				</div>
+				<div class="section" data-key="v2">
+					<h3 class="title">Psalm 70:2</h3>
+					<div id="v2"><span class="sz">Skipped scripture text.</span></div>
+					<div class="group index collapsible">
+						<div class="sx"><a href="/es/wol/pc/r4/lp-s/metadata">Metadata Ref</a></div>
+					</div>
+				</div>
+			</div>
+		`;
+		mocks.getHtmlContent.mockResolvedValueOnce({ err: null, res: html });
+		mocks.getJsonContent.mockImplementation(async (url: string) => {
+			if (url.endsWith('/metadata')) {
+				return {
+					err: null,
+					res: {
+						title: 'Metadata response',
+						items: [
+							{
+								title: 'Metadata title',
+								url: '/wol/d/r4/lp-s/1102010144#h=43:0-47:252',
+								content: '',
+								articleClasses: 'publicationCitation html5 pub-jr',
+							},
+						],
+					},
+				};
+			}
+
+			return referenceResponse();
+		});
+
+		const result = await extractReferencesFromLinksV2([link]);
+
+		expect(result.errors).toEqual([]);
+		expect(result.results[0].sharedReferences).toEqual({
+			'ref:1': {
+				mnemonic: 'Healthy Ref',
+				referenceType: 'pub-w',
+				issueName: 'Issue source',
+				itemTitle: 'Item title',
+				contents: 'Parsed reference contents',
+			},
+		});
+		expect(result.results[0].entries).toEqual([
+			{
+				mnemonic: 'Psalm 70:1',
+				scripture: 'Scripture text.',
+				citationTokenCount: expect.any(Number),
+				citations: [{ id: 1, referenceId: 'ref:1' }],
+			},
+		]);
+		expect(mocks.getJsonContent).toHaveBeenCalledTimes(2);
+	});
+
 	it('preserves NWTSTY sharedReferences while grouping only entries', async () => {
 		const link = 'https://wol.jw.org/es/wol/b/r4/lp-s/nwtsty/19/70';
 		const extractionResult = await extractReferencesFromLinksV2([link]);

@@ -1,6 +1,17 @@
 import { CONSTANTS, ErrorResult, logger, opErrored, wrapAsyncOp } from '../../kernel/index.js';
 import * as cheerio from 'cheerio';
-import { PublicationRefData, fetchAndParseAnchorReferenceOrThrow } from '../../data-fetching/reference-json.js';
+import {
+	buildPublicationRefData,
+	fetchAndParseAnchorReferenceOrThrow,
+	fetchAnchorData,
+	PublicationRefData,
+} from '../../data-fetching/reference-json.js';
+import {
+	BiblicalPassageRefResponse,
+	DefaultPublicationRefResponse,
+	isJsonContentAcceptableForReferenceExtraction,
+	isMetadataOnlyPublicationReference,
+} from '../../data-extraction/reference-json-commons.js';
 import { CheerioAPI } from 'cheerio';
 import { cleanText } from '../../kernel/util.js';
 import { extractPubNwtstyReferenceAsText } from '../../data-extraction/extractors-as-text.js';
@@ -123,6 +134,38 @@ interface MnemonicExtractionTrackingData {
 }
 
 declare type MnemonicDataFetchingPromises = MnemonicExtractionTrackingData['operationPromise'][];
+
+type NwtstyReferenceExtractionResult = PublicationRefData | null;
+
+/**
+ * Loads an NWTSTY reference and skips WOL publication citations without content.
+ *
+ * WOL returns metadata-only `/pc/` items for some index references. Those items
+ * do not provide extractable reference content, so they must behave as if their
+ * anchors were not present in the Bible page.
+ */
+async function _fetchAndParseNwtstyReferenceOrSkip(
+	$anchor: CheerioSelection,
+): Promise<NwtstyReferenceExtractionResult | Error> {
+	const opRes = await fetchAnchorData($anchor);
+	if (opRes.err) {
+		return opRes.err;
+	}
+
+	const referenceData = opRes.res as DefaultPublicationRefResponse | BiblicalPassageRefResponse;
+	if (isMetadataOnlyPublicationReference(referenceData)) {
+		log.info(`Skipping metadata-only NWTSTY reference [${$anchor.text()}].`);
+		return null;
+	}
+
+	if (!isJsonContentAcceptableForReferenceExtraction(referenceData)) {
+		return new Error(`JSON content for reference doesn't match the expected format.`);
+	}
+
+	return buildPublicationRefData(referenceData.items[0]);
+}
+
+const fetchAndParseNwtstyReferenceOrSkip = wrapAsyncOp(_fetchAndParseNwtstyReferenceOrSkip);
 
 /**
  * Compute how make AI tokes the given string has.
@@ -264,7 +307,7 @@ async function _extractBibleReferencesV2(html: string): Promise<BiblicalBookRefe
 	const $ = cheerio.load(html);
 	normalizeMnemonics($);
 	const dataInSectionsToProcess = pickRelevantDOMData($);
-	const referenceFetchesByMnemonic: Map<string, Promise<PublicationRefData>> = new Map();
+	const referenceFetchesByMnemonic: Map<string, Promise<NwtstyReferenceExtractionResult>> = new Map();
 
 	for (const { referenceDataInAnchors } of dataInSectionsToProcess) {
 		for (const { $anchor, mnemonic } of referenceDataInAnchors) {
@@ -274,11 +317,15 @@ async function _extractBibleReferencesV2(html: string): Promise<BiblicalBookRefe
 
 			referenceFetchesByMnemonic.set(
 				mnemonic,
-				fetchAndParseAnchorReferenceOrThrow($anchor).then((opRes) => {
+				fetchAndParseNwtstyReferenceOrSkip($anchor).then((opRes) => {
 					if (opErrored(opRes)) {
 						const errorMessage = `Unable to load reference data for mnemonic: [${mnemonic}] due to: [${opRes.err.message}]`;
 						log.warn(errorMessage);
 						throw new Error(errorMessage);
+					}
+
+					if (opRes.res === null) {
+						return null;
 					}
 
 					log.debug(`Finished extracting v2 data for mnemonic: [${mnemonic}]`);
@@ -291,14 +338,21 @@ async function _extractBibleReferencesV2(html: string): Promise<BiblicalBookRefe
 	const referencesByMnemonic: Map<string, PublicationRefData> = new Map();
 	await Promise.all(
 		[...referenceFetchesByMnemonic.entries()].map(async ([mnemonic, referenceFetch]) => {
-			referencesByMnemonic.set(mnemonic, await referenceFetch);
+			const fetchedReference = await referenceFetch;
+			if (fetchedReference !== null) {
+				referencesByMnemonic.set(mnemonic, fetchedReference);
+			}
 		}),
 	);
+
+	function getExtractableReferenceData(referenceDataInAnchors: AnchorDataForProcess[]): AnchorDataForProcess[] {
+		return referenceDataInAnchors.filter(({ mnemonic }) => referencesByMnemonic.has(mnemonic));
+	}
 
 	const referenceIdsByMnemonic: Map<string, string> = new Map();
 	const sharedReferences: Record<string, SharedReference> = {};
 	for (const { referenceDataInAnchors } of dataInSectionsToProcess) {
-		for (const { mnemonic } of referenceDataInAnchors) {
+		for (const { mnemonic } of getExtractableReferenceData(referenceDataInAnchors)) {
 			if (referenceIdsByMnemonic.has(mnemonic)) {
 				continue;
 			}
@@ -319,7 +373,9 @@ async function _extractBibleReferencesV2(html: string): Promise<BiblicalBookRefe
 			{ entries, sharedReferences },
 			{ sectionKey, sectionTitle, referenceDataInAnchors }: SectionDataForProcess,
 		) => {
-			if (referenceDataInAnchors.length === 0) {
+			const extractableReferenceDataInAnchors = getExtractableReferenceData(referenceDataInAnchors);
+
+			if (extractableReferenceDataInAnchors.length === 0) {
 				log.debug(`Skipping section with key [${sectionKey}] because it has no extracted references.`);
 				return { entries, sharedReferences };
 			}
@@ -330,7 +386,7 @@ async function _extractBibleReferencesV2(html: string): Promise<BiblicalBookRefe
 			const scripture = extractPubNwtstyReferenceAsText(matchingElements, $);
 			let citationTokenCount = 0;
 
-			const citations = referenceDataInAnchors.map(({ mnemonic }, index) => {
+			const citations = extractableReferenceDataInAnchors.map(({ mnemonic }, index) => {
 				const referenceId = referenceIdsByMnemonic.get(mnemonic)!;
 				const sharedReference = sharedReferences[referenceId];
 
