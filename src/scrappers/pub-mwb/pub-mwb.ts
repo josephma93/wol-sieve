@@ -4,6 +4,7 @@ import {
 	cleanText,
 	collapseConsecutiveLineBreaks,
 	isExternalHttpUrl,
+	isWolUrl,
 	normalizeWolUrl,
 	takeOutTimeBoxText,
 } from '../../kernel/index.js';
@@ -193,12 +194,37 @@ interface FieldMinistryAssignmentData {
 	studyPoint: StudyPoint | null;
 }
 
+type FieldMinistryAssignmentType =
+	| 'startingAConversation'
+	| 'followingUp'
+	| 'makingDisciples'
+	| 'explainingYourBeliefs'
+	| 'talk'
+	| 'whatWouldYouSay';
+
+type FieldMinistryTextBlock = CitationTextBlock;
+type FieldMinistryQuestion = FieldMinistryTextBlock;
+
+type FieldMinistryContentItem =
+	| {
+			kind: 'text';
+			payload: FieldMinistryTextBlock;
+	  }
+	| {
+			kind: 'illustration';
+			payload: TreasuresTalkIllustration;
+	  }
+	| {
+			kind: 'questionList';
+			payload: { questions: FieldMinistryQuestion[] };
+	  };
+
 interface FieldMinistryAssignmentDataV2 {
 	sectionNumber: number;
 	timeBox: number;
-	isStudentTask: boolean;
 	headline: string;
-	contents: CitationTextBlock;
+	type: FieldMinistryAssignmentType;
+	content: FieldMinistryContentItem[];
 }
 
 interface ChristianLivingSectionData {
@@ -1382,51 +1408,353 @@ export async function extractFieldMinistry(input: ExtractionContextOptions): Pro
 	return Promise.all(promises);
 }
 
+function makeFieldMinistryError(context: string, message: string, cause?: unknown): Error {
+	const fullMessage = `${context}: ${message}`;
+	log.error(fullMessage);
+	return cause === undefined ? new Error(fullMessage) : new Error(fullMessage, { cause });
+}
+
+function normalizeFieldMinistryHeadline(headline: string): string {
+	return cleanText(headline)
+		.normalize('NFD')
+		.replace(/[\u0300-\u036f]/g, '')
+		.replace(/[¿?¡!]/g, '')
+		.toLowerCase();
+}
+
+function detectFieldMinistryAssignmentType(headline: string, context: string): FieldMinistryAssignmentType {
+	const normalizedHeadline = normalizeFieldMinistryHeadline(headline);
+	const knownTypes: Record<string, FieldMinistryAssignmentType> = {
+		'empiece conversaciones': 'startingAConversation',
+		'empecemos conversaciones': 'startingAConversation',
+		'starting a conversation': 'startingAConversation',
+		'start conversations': 'startingAConversation',
+		'haga revisitas': 'followingUp',
+		'hagamos revisitas': 'followingUp',
+		'following up': 'followingUp',
+		'return visit': 'followingUp',
+		'haga discipulos': 'makingDisciples',
+		'hagamos discipulos': 'makingDisciples',
+		'making disciples': 'makingDisciples',
+		'make disciples': 'makingDisciples',
+		'explique sus creencias': 'explainingYourBeliefs',
+		'expliquemos nuestras creencias': 'explainingYourBeliefs',
+		'explaining your beliefs': 'explainingYourBeliefs',
+		'explain your beliefs': 'explainingYourBeliefs',
+		'que diria': 'whatWouldYouSay',
+		'que dirias': 'whatWouldYouSay',
+		'what would you say': 'whatWouldYouSay',
+		talk: 'talk',
+		discurso: 'talk',
+	};
+	const type = knownTypes[normalizedHeadline];
+	if (!type) {
+		throw makeFieldMinistryError(context, `Unsupported field ministry assignment type for headline "${headline}".`);
+	}
+	return type;
+}
+
+function getFieldMinistryContext(heading: CheerioSelection): string {
+	const rawHeading = cleanText(heading.text());
+	const match = rawHeading.match(/^(\d+)\./);
+	const headline = match ? cleanText(rawHeading.slice(match[0].length)) : rawHeading;
+	return match
+		? `Field ministry section ${match[1]} headline "${headline}"`
+		: `Field ministry heading "${rawHeading}"`;
+}
+
+function selectFieldMinistryReferenceAnchors(
+	$: CheerioAPI,
+	$element: CheerioSelection,
+	context: string,
+): CheerioSelection {
+	return $element.find(CONSTANTS.GENERAL_CSS_SELECTOR_FOR_NON_VIDEO_ANCHORS).filter((_, anchor) => {
+		const href = $(anchor).attr('href') ?? '';
+		if (!href) return false;
+		if ((href.startsWith('/') && href.includes('/wol/')) || isWolUrl(href)) return true;
+		throw makeFieldMinistryError(context, `Unsupported non-WOL link destination "${href}".`);
+	});
+}
+
+function removeFieldMinistryTimeBoxPrefix(text: string): string {
+	return cleanText(text.replace(/^\(\s*\d+\s*[^)]*\)\s*/, ''));
+}
+
+async function buildFieldMinistryCitationTextBlock(
+	$: CheerioAPI,
+	paragraphs: CheerioSelection[],
+	context: string,
+): Promise<FieldMinistryTextBlock> {
+	const textParts: string[] = [];
+	const textWithCitationParts: string[] = [];
+	const paragraphAnchors: CheerioSelection[] = [];
+	let nextCitationId = 1;
+
+	for (const $paragraph of paragraphs) {
+		const $paragraphWithMarkers = $paragraph.clone();
+		const $references = selectFieldMinistryReferenceAnchors($, $paragraph, context);
+		const $referencesWithMarkers = selectFieldMinistryReferenceAnchors($, $paragraphWithMarkers, context);
+		if ($references.length !== $referencesWithMarkers.length) {
+			throw makeFieldMinistryError(context, 'Unable to preserve WOL references while reading a text block.');
+		}
+
+		for (let i = 0; i < $referencesWithMarkers.length; i++) {
+			$referencesWithMarkers.eq(i).replaceWith(buildCitationMarker(nextCitationId));
+			nextCitationId++;
+		}
+
+		const isTimeBoxLine =
+			$paragraph.is(CONSTANTS.PUB_MWB_CSS_SELECTOR_LINE_WITH_TIME_BOX) ||
+			$paragraph.parents(CONSTANTS.PUB_MWB_CSS_SELECTOR_LINE_WITH_TIME_BOX).length > 0;
+		const text = cleanText($paragraph.text());
+		const textWithCitations = cleanText($paragraphWithMarkers.text());
+		textParts.push(isTimeBoxLine ? removeFieldMinistryTimeBoxPrefix(text) : text);
+		textWithCitationParts.push(
+			isTimeBoxLine ? removeFieldMinistryTimeBoxPrefix(textWithCitations) : textWithCitations,
+		);
+		paragraphAnchors.push($references);
+	}
+
+	let block = createCitationTextBlock(
+		textParts.filter(Boolean).join('\n'),
+		textWithCitationParts.filter(Boolean).join('\n'),
+	);
+	for (const $anchors of paragraphAnchors) {
+		try {
+			const resolvedReferences = await resolveAnchorReferencesInOrder($anchors);
+			for (const { mnemonic, parsedReference } of resolvedReferences) {
+				block = addParsedReferenceToCitationBlock(block, mnemonic, parsedReference);
+			}
+		} catch (error) {
+			throw makeFieldMinistryError(context, 'Unable to resolve a WOL citation in the assignment text.', error);
+		}
+	}
+
+	return block;
+}
+
+async function extractFieldMinistryQuestion(
+	$: CheerioAPI,
+	$listItem: CheerioSelection,
+	context: string,
+): Promise<FieldMinistryQuestion> {
+	const $children = $listItem.children();
+	const $paragraphs = $children.filter('p');
+	const $unexpectedChildren = $children.not('p, .gen-field');
+	if ($paragraphs.length !== 1 || $unexpectedChildren.length > 0) {
+		throw makeFieldMinistryError(
+			context,
+			`Expected each question list item to contain one paragraph and no unsupported siblings; found ${$paragraphs.length} paragraphs.`,
+		);
+	}
+
+	return buildFieldMinistryCitationTextBlock($, [$paragraphs.first()], context);
+}
+
+async function extractFieldMinistryQuestionList(
+	$: CheerioAPI,
+	$list: CheerioSelection,
+	context: string,
+): Promise<FieldMinistryContentItem> {
+	const $items = $list.children('li');
+	if ($items.length === 0 || $items.length !== $list.children().length) {
+		throw makeFieldMinistryError(context, 'Expected a non-empty list containing only direct list items.');
+	}
+
+	const questions = await Promise.all(
+		$items.toArray().map(($item) => extractFieldMinistryQuestion($, $($item), context)),
+	);
+	return {
+		kind: 'questionList',
+		payload: { questions },
+	};
+}
+
+async function extractFieldMinistryContentItems(
+	$: CheerioAPI,
+	contentElements: CheerioSelection[],
+	context: string,
+): Promise<FieldMinistryContentItem[]> {
+	const content: FieldMinistryContentItem[] = [];
+	let pendingTextParagraphs: CheerioSelection[] = [];
+
+	const flushText = async () => {
+		if (pendingTextParagraphs.length === 0) return;
+		const payload = await buildFieldMinistryCitationTextBlock($, pendingTextParagraphs, context);
+		pendingTextParagraphs = [];
+		if (payload.text) content.push({ kind: 'text', payload });
+	};
+
+	const visit = async ($element: CheerioSelection): Promise<void> => {
+		const unsupportedElementSelector = 'table, video, audio, iframe, object, embed';
+		const $unsupportedElement = $element.is(unsupportedElementSelector)
+			? $element
+			: $element.find(unsupportedElementSelector).first();
+		if ($unsupportedElement.length > 0) {
+			const unsupportedName =
+				($unsupportedElement[0] as { tagName?: string }).tagName?.toLowerCase() ?? 'element';
+			throw makeFieldMinistryError(
+				context,
+				`Unsupported <${unsupportedName}> element in field ministry content.`,
+			);
+		}
+
+		if ($element.is('figure')) {
+			await flushText();
+			if ($element.find('img').length !== 1) {
+				throw makeFieldMinistryError(context, 'Expected each field ministry figure to contain one image.');
+			}
+			if (selectFieldMinistryReferenceAnchors($, $element, context).length > 0) {
+				throw makeFieldMinistryError(context, 'WOL references in illustration captions are not supported.');
+			}
+			const illustration = extractIllustrationData($element);
+			if (!illustration) {
+				throw makeFieldMinistryError(context, 'Unable to extract the field ministry illustration.');
+			}
+			content.push({ kind: 'illustration', payload: illustration });
+			return;
+		}
+
+		if ($element.is('ul')) {
+			await flushText();
+			content.push(await extractFieldMinistryQuestionList($, $element, context));
+			return;
+		}
+
+		if ($element.is('ol')) {
+			throw makeFieldMinistryError(
+				context,
+				'Ordered lists are not part of the supported field ministry stencil.',
+			);
+		}
+
+		if ($element.is('p, blockquote')) {
+			if ($element.find(CONSTANTS.GENERAL_CSS_SELECTOR_FOR_VIDEO_ANCHORS).length > 0) {
+				throw makeFieldMinistryError(
+					context,
+					'Video links are not part of the supported field ministry content contract.',
+				);
+			}
+			pendingTextParagraphs.push($element);
+			return;
+		}
+
+		const node = $element[0];
+		const elementName = node && 'tagName' in node ? node.tagName : 'element';
+		if ($element.is('.gen-field, label, textarea, img')) {
+			throw makeFieldMinistryError(
+				context,
+				`Unexpected ${elementName} outside its expected field ministry structure.`,
+			);
+		}
+
+		if ($element.is('hr, script, style')) return;
+
+		const hasDirectText = $element
+			.contents()
+			.toArray()
+			.some((node) => {
+				return node.type === 'text' && cleanText((node as { data?: string }).data).length > 0;
+			});
+		if (hasDirectText) {
+			throw makeFieldMinistryError(
+				context,
+				`Unexpected direct text in <${elementName}>; expected paragraphs, figures, or question lists.`,
+			);
+		}
+
+		const children = $element.children().toArray();
+		for (const child of children) {
+			await visit($(child));
+		}
+	};
+
+	for (const $element of contentElements) {
+		await visit($element);
+	}
+	await flushText();
+	return content;
+}
+
+function getFieldMinistryTimeBox($: CheerioAPI, contentElements: CheerioSelection[], context: string): number {
+	const timeBoxSelections: CheerioSelection[] = [];
+	for (const $element of contentElements) {
+		if ($element.is(CONSTANTS.PUB_MWB_CSS_SELECTOR_LINE_WITH_TIME_BOX)) {
+			timeBoxSelections.push($element);
+		}
+		$element.find(CONSTANTS.PUB_MWB_CSS_SELECTOR_LINE_WITH_TIME_BOX).each((_, element) => {
+			timeBoxSelections.push($(element));
+		});
+	}
+
+	if (timeBoxSelections.length !== 1) {
+		throw makeFieldMinistryError(context, `Expected one time box element, found ${timeBoxSelections.length}.`);
+	}
+
+	try {
+		return getTimeBoxFromElement(timeBoxSelections[0]);
+	} catch (error) {
+		throw makeFieldMinistryError(context, 'Unable to read the assignment time box.', error);
+	}
+}
+
 export async function extractFieldMinistryV2(
 	input: ExtractionContextOptions,
 ): Promise<FieldMinistryAssignmentDataV2[]> {
 	log.info('Extracting v2 field ministry data');
 	input.selectionBuilder = ($) => buildFieldMinistrySelections($).fieldMinistry;
-	const { $, selection: $fieldMinistrySelection } = createExtractionContext(input);
-	const assignmentGroups = buildHeadlineToContentGroups($fieldMinistrySelection, $);
-
-	const promises = assignmentGroups.map(async ({ heading, contents: [assignmentContents] }) => {
-		const contentsText = cleanText(assignmentContents.text());
-		const headlineData = parseSectionHeadlineDataFromElement(heading);
-		const contentsWithoutTimeBox = takeOutTimeBoxText(contentsText);
-		const result: FieldMinistryAssignmentDataV2 = {
-			sectionNumber: headlineData.number,
-			timeBox: getTimeBoxFromElement(assignmentContents),
-			isStudentTask: /\(.*?\).*?\(.*?\)/.test(contentsText),
-			headline: headlineData.headline,
-			contents: createCitationTextBlock(contentsWithoutTimeBox),
-		};
-
-		log.debug(`Processing v2 assignment: [${result.headline}], isStudentTask=[${result.isStudentTask}]`);
-
-		if (!result.isStudentTask) {
-			log.info(`Extracted v2 field ministry assignment`);
-			return result;
-		}
-
-		const $studyPointAnchor = assignmentContents.find(`a`).slice(-1);
-		if ($studyPointAnchor.length !== 1) {
-			const msg = `Unable to find study point anchor.`;
-			log.error(msg);
-			throw new Error(msg);
-		}
-
-		const selectStudyPointAnchor = (selection: CheerioSelection) => selection.find('a').slice(-1);
-		result.contents = await buildRequiredCitationBlockFromAnchors(
-			$studyPointAnchor,
-			contentsWithoutTimeBox,
-			buildTextWithCitationMarkers(assignmentContents, selectStudyPointAnchor, takeOutTimeBoxText),
+	let $: CheerioAPI;
+	let $fieldMinistrySelection: CheerioSelection;
+	try {
+		({ $, selection: $fieldMinistrySelection } = createExtractionContext(input));
+	} catch (error) {
+		throw makeFieldMinistryError(
+			'Field ministry stencil between .dc-icon--wheat and .dc-icon--sheep',
+			'Unable to select the assignment section.',
+			error,
 		);
-		log.info(`Extracted v2 field ministry assignment`);
-		return result;
-	});
+	}
+	const assignmentGroups = buildHeadlineToContentGroups($fieldMinistrySelection, $);
+	if (assignmentGroups.length === 0) {
+		throw makeFieldMinistryError(
+			'Field ministry stencil between .dc-icon--wheat and .dc-icon--sheep',
+			'No assignment h3 headings were found.',
+		);
+	}
 
-	return Promise.all(promises);
+	const results: FieldMinistryAssignmentDataV2[] = [];
+	for (const { heading, contents } of assignmentGroups) {
+		const context = getFieldMinistryContext(heading);
+		let headlineData: SectionHeadlineData;
+		try {
+			headlineData = parseSectionHeadlineDataFromElement(heading);
+		} catch (error) {
+			throw makeFieldMinistryError(context, 'Unable to parse the assignment heading.', error);
+		}
+		if (contents.length === 0) {
+			throw makeFieldMinistryError(context, 'The assignment has no content siblings before the next h3.');
+		}
+
+		const type = detectFieldMinistryAssignmentType(headlineData.headline, context);
+		const timeBox = getFieldMinistryTimeBox($, contents, context);
+		const content = await extractFieldMinistryContentItems($, contents, context);
+		if (!content.some((item) => item.kind === 'text')) {
+			throw makeFieldMinistryError(context, 'Expected at least one text content item.');
+		}
+		if (type === 'whatWouldYouSay' && !content.some((item) => item.kind === 'questionList')) {
+			throw makeFieldMinistryError(context, 'Expected a question list for a "What would you say?" assignment.');
+		}
+
+		results.push({
+			sectionNumber: headlineData.number,
+			timeBox,
+			headline: headlineData.headline,
+			type,
+			content,
+		});
+	}
+
+	return results;
 }
 
 /**
