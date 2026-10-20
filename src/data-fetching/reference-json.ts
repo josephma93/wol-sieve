@@ -1,4 +1,6 @@
-import { logger } from '../kernel/index.js';
+import * as cheerio from 'cheerio';
+import { CONSTANTS, logger } from '../kernel/index.js';
+import { getJsonContent } from './raw.js';
 import {
 	BasePublicationItem,
 	BiblicalPassageRefResponse,
@@ -18,6 +20,48 @@ import { wrapAsyncOp } from '../kernel/index.js';
  * Logger instance for this module.
  */
 const log = logger.child({ ...logger.bindings(), label: 'tooltip-data-retriever' });
+
+/** Complete publication footnotes before converting reference HTML to text. */
+async function completePublicationFootnotes(item: BasePublicationItem): Promise<BasePublicationItem> {
+	// Bible references have a separate note extraction contract.
+	if (detectReferenceDataType(item).isPubNwtsty) return item;
+	const $ = cheerio.load(item.content, null, false);
+	const notes = new Set(
+		$('.fn-ref[data-fnid]')
+			.map((_, el) => $(el).attr('data-fnid')!)
+			.get(),
+	);
+	const attempted = new Set<string>();
+	for (const anchor of $('a.fn[data-fnid][href]').toArray()) {
+		const fnid = $(anchor).attr('data-fnid')!;
+		const href = $(anchor).attr('href')!;
+		if (notes.has(fnid) || attempted.has(href)) continue;
+		attempted.add(href);
+		// Follow only explicit WOL footnote endpoints, never arbitrary content links.
+		if (!/^\/(?:[a-z-]+\/)?wol\/fn\/[^/]+\/[^/]+\/\d+\/\d+$/.test(href)) {
+			log.warn({ href, fnid }, 'Unsupported publication footnote URL.');
+			continue;
+		}
+		const url = new URL(href, CONSTANTS.WOL_URL).href;
+		const result = await getJsonContent(url);
+		if (result.err) {
+			// Keep the available citation when a supplementary note cannot be fetched.
+			log.warn({ err: result.err, url, fnid }, 'Could not complete publication footnote.');
+			continue;
+		}
+		const response = result.res as { items?: { content?: unknown }[] } | null;
+		const content = Array.isArray(response?.items) ? response.items[0]?.content : undefined;
+		const $note = cheerio.load(typeof content === 'string' ? content : '', null, false);
+		const matchingNotes = $note('.fn-ref[data-fnid]').filter((_, el) => $note(el).attr('data-fnid') === fnid);
+		if (matchingNotes.length !== 1 || !matchingNotes.text().trim()) {
+			log.warn({ url, fnid }, 'Footnote response does not contain the expected note.');
+			continue;
+		}
+		$.root().append(matchingNotes.toString());
+		notes.add(fnid);
+	}
+	return { ...item, content: $.html() };
+}
 
 /**
  * Represents the parsed publication reference data.
@@ -63,14 +107,14 @@ export function buildPublicationRefData(rawReferenceData: BasePublicationItem): 
  * @returns The parsed publication information.
  * @throws {Error} If the JSON content doesn't match the expected format.
  */
-function parseAnchorRefDataOrThrow(
+async function parseAnchorRefDataOrThrow(
 	fetchedReferenceJson: any | DefaultPublicationRefResponse | BiblicalPassageRefResponse,
-): PublicationRefData {
+): Promise<PublicationRefData> {
 	if (!isJsonContentAcceptableForReferenceExtraction(fetchedReferenceJson)) {
 		throw new Error(`JSON content for reference doesn't match the expected format.`);
 	}
 	const [itemData] = fetchedReferenceJson.items;
-	return buildPublicationRefData(itemData);
+	return buildPublicationRefData(await completePublicationFootnotes(itemData));
 }
 
 /**
@@ -105,7 +149,9 @@ async function _fetchAndParseAnchorReferenceOrThrow($anchor: CheerioSelection): 
 	if (opRes.err) {
 		return opRes.err;
 	}
-	const parsed = parseAnchorRefDataOrThrow(opRes.res as DefaultPublicationRefResponse | BiblicalPassageRefResponse);
+	const parsed = await parseAnchorRefDataOrThrow(
+		opRes.res as DefaultPublicationRefResponse | BiblicalPassageRefResponse,
+	);
 	log.debug(
 		`Parsed anchor reference data for [${$anchor.text()}] and anchor reference [${$anchor.text()}]: ${JSON.stringify(
 			parsed,

@@ -47,7 +47,9 @@ function removeElements(selector: string): TextExtractionStep {
 
 function selectPubWReferenceParagraphs(context: TextExtractionContext): TextExtractionContext {
 	const $citationParagraphs = context.$('p.sb, p[data-rel-pid]');
-	const root = $citationParagraphs.length ? $citationParagraphs : context.$('.bodyTxt p');
+	const $paragraphs = $citationParagraphs.length ? $citationParagraphs : context.$('.bodyTxt p');
+	// Footnotes can be embedded by WOL or completed by the reference fetcher.
+	const root = $paragraphs.add(context.$('.fn-ref p'));
 	return { ...context, root };
 }
 
