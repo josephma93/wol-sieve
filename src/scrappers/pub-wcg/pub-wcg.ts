@@ -1,3 +1,4 @@
+import type { ImageData } from '../../data-extraction/media.js';
 import { CheerioAPI } from 'cheerio';
 import { markify } from 'markify-ts';
 import { fetchAndParseAnchorReferenceOrThrow } from '../../data-fetching/reference-json.js';
@@ -41,14 +42,8 @@ export const WCG_PAGE_TYPES = Object.freeze({
 
 export type WcgPageType = (typeof WCG_PAGE_TYPES)[keyof typeof WCG_PAGE_TYPES];
 
-export interface WcgImage {
-	src: string;
-	alt: string;
-}
-
-export interface WcgFigure extends WcgImage {
+export interface WcgFigure extends ImageData {
 	id: string;
-	caption?: string;
 	credit?: string;
 	href?: string;
 	video?: string;
@@ -72,7 +67,7 @@ export interface WcgLessonContents {
 	subject: string;
 	title: string;
 	narration: string;
-	narrationFigures: WcgImage[];
+	narrationFigures: ImageData[];
 	featuredQuote: string;
 	readTheBibleAccount: WcgBibleAccount[];
 	forDiscussion: string;
@@ -187,7 +182,7 @@ function parseWcgHeader($article: CheerioSelection): WcgHeader {
 	};
 }
 
-function parseWcgImage($img: CheerioSelection): WcgImage {
+function parseWcgImage($img: CheerioSelection): ImageData {
 	return {
 		src: normalizeWolUrl($img.attr('src')) ?? '',
 		alt: $img.attr('alt') ?? '',
@@ -359,7 +354,7 @@ function parseNarration(
 	$readHeading: CheerioSelection,
 ): Pick<WcgLessonContents, 'narration' | 'narrationFigures' | 'featuredQuote'> {
 	const paragraphs: string[] = [];
-	const narrationFigures: WcgImage[] = [];
+	const narrationFigures: ImageData[] = [];
 	let featuredQuote = '';
 
 	getChildrenBeforeElement($, $openingBlock, $readHeading).each((_, el) => {

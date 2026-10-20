@@ -1,3 +1,4 @@
+import type { ImageData, VideoData } from '../../data-extraction/media.js';
 import {
 	logger,
 	CONSTANTS,
@@ -111,6 +112,7 @@ interface TreasuresTalkDataV2 {
 	sectionNumber: number;
 	timeBox: number;
 	heading: string;
+	/** Items follow the WOL DOM order. */
 	content: TreasuresTalkContentItem[];
 }
 
@@ -121,15 +123,15 @@ type TreasuresTalkContentItem =
 	  }
 	| {
 			kind: 'illustration';
-			payload: TreasuresTalkIllustration;
+			payload: ImageData;
 	  }
 	| {
 			kind: 'callout';
-			payload: TreasuresTalkSpecialItem & CitationTextBlock;
+			payload: CitationTextBlock & { label: string };
 	  }
 	| {
 			kind: 'video';
-			payload: TreasuresTalkMediaItem;
+			payload: VideoData;
 	  };
 
 interface AnswerSource {
@@ -212,7 +214,7 @@ type FieldMinistryContentItem =
 	  }
 	| {
 			kind: 'illustration';
-			payload: TreasuresTalkIllustration;
+			payload: ImageData;
 	  }
 	| {
 			kind: 'questionList';
@@ -256,11 +258,11 @@ type ChristianLivingContentItem =
 	  }
 	| {
 			kind: 'illustration';
-			payload: TreasuresTalkIllustration;
+			payload: ImageData;
 	  }
 	| {
 			kind: 'video';
-			payload: TreasuresTalkMediaItem & ChristianLivingTextBlock;
+			payload: VideoData & ChristianLivingTextBlock;
 	  }
 	| {
 			kind: 'list';

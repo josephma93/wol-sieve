@@ -1,3 +1,4 @@
+import type { ImageData, VideoData } from '../../data-extraction/media.js';
 import {
 	CONSTANTS,
 	logger,
@@ -90,13 +91,6 @@ interface WatchtowerExternalLink {
 	url: string;
 }
 
-interface WatchtowerVideoData {
-	text: string;
-	label: string;
-	title: string;
-	url: string;
-}
-
 interface WatchtowerFootnoteRef {
 	marker: string;
 	fnid?: string;
@@ -112,7 +106,7 @@ interface WatchtowerRichTextBlock {
 	textWithCitations: string;
 	citations?: Citation[];
 	externalLinks?: WatchtowerExternalLink[];
-	videos?: WatchtowerVideoData[];
+	videos?: VideoData[];
 	footnoteRefs?: WatchtowerFootnoteRef[];
 	boxSupplementRefs?: WatchtowerBoxSupplementRef[];
 }
@@ -132,10 +126,7 @@ interface WatchtowerParagraphPayload extends WatchtowerRichTextBlock {
 	number: number;
 }
 
-interface WatchtowerIllustrationPayload {
-	src: string;
-	alt: string;
-	caption: string;
+interface WatchtowerIllustrationPayload extends ImageData {
 	paragraphNumbers?: number[];
 	footnoteRefs?: WatchtowerFootnoteRef[];
 }
@@ -156,7 +147,7 @@ type WatchtowerEmbeddedContentItem =
 	  }
 	| {
 			kind: 'video';
-			payload: WatchtowerVideoData;
+			payload: VideoData;
 	  };
 
 type WatchtowerArticleContentItem =
@@ -186,7 +177,7 @@ type WatchtowerArticleContentItem =
 	  }
 	| {
 			kind: 'video';
-			payload: WatchtowerVideoData;
+			payload: VideoData;
 	  }
 	| {
 			kind: 'teachBlock';
@@ -629,7 +620,7 @@ function isReferenceAnchor($: CheerioAPI, $anchor: CheerioSelection): boolean {
 	return href.startsWith('/') && href.includes('/wol/');
 }
 
-function buildVideoData($anchor: CheerioSelection, fallbackText = ''): WatchtowerVideoData {
+function buildVideoData($anchor: CheerioSelection, fallbackText = ''): VideoData {
 	const label = cleanText($anchor.text());
 	const title = cleanText($anchor.nextAll('em').first().text()) || label;
 	const url = normalizeWolUrl($anchor.attr('href')) ?? '';
@@ -674,7 +665,7 @@ function addBoxSupplementRefs(target: WatchtowerBoxSupplementRef[], refs: Watcht
 	}
 }
 
-function addVideos(target: WatchtowerVideoData[], videos: WatchtowerVideoData[]): void {
+function addVideos(target: VideoData[], videos: VideoData[]): void {
 	for (const video of videos) {
 		if (!target.some((item) => item.url === video.url && item.label === video.label)) {
 			target.push(video);
@@ -740,7 +731,7 @@ async function buildRichTextBlock($: CheerioAPI, $source: CheerioSelection): Pro
 		.map(({ targetPid, title }) => ({ title, targetPid }));
 
 	const uniqueExternalLinks: WatchtowerExternalLink[] = [];
-	const uniqueVideos: WatchtowerVideoData[] = [];
+	const uniqueVideos: VideoData[] = [];
 	const uniqueFootnoteRefs: WatchtowerFootnoteRef[] = [];
 	const uniqueBoxSupplementRefs: WatchtowerBoxSupplementRef[] = [];
 
