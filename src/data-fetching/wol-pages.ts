@@ -75,22 +75,10 @@ async function _fetchLanguageSpecificLandingHtml(): Promise<string | Error> {
 export const fetchLanguageSpecificLandingHtml = wrapAsyncOp(_fetchLanguageSpecificLandingHtml);
 
 async function _fetchThisWeeksMaterialPageHtml(): Promise<string | Error> {
-	let opRes = await fetchLanguageSpecificLandingHtml();
-	if (opErrored(opRes)) {
-		return opRes.err;
-	}
-
-	const todayHtmlUrl = extractHrefFromHtml(opRes.res, {
-		selector: CONSTANTS.CSS_SELECTOR_FOR_TODAYS_NAVIGATION_LINK,
-		selectionDescription: "today's navigation link",
-		missingHrefMessage: `No href found for today's navigation link, website structure may have changed`,
-	});
-	if (todayHtmlUrl instanceof Error) {
-		return todayHtmlUrl;
-	}
-
-	log.info(`Fetching today's HTML content from [${todayHtmlUrl}]`);
-	opRes = await getHtmlContent(todayHtmlUrl);
+	// WOL resolves the current week. Keep the Spanish locale used by the default sources.
+	const meetingsUrl = `${CONSTANTS.WOL_URL}/es/wol/meetings/r4/lp-s`;
+	log.info(`Fetching this week's material from [${meetingsUrl}]`);
+	const opRes = await getHtmlContent(meetingsUrl);
 	return opRes.err ?? opRes.res;
 }
 
