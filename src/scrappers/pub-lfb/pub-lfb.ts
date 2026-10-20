@@ -155,7 +155,7 @@ async function buildLessonMarkdown($article: CheerioSelection): Promise<string> 
 }
 
 async function parseLesson($: CheerioAPI, $article: CheerioSelection): Promise<LfbItem> {
-	const lessonNumberText = cleanText($article.find(CONSTANTS.PUB_LFB_CSS_SELECTOR_SECTION_INTRO_HEADLINE).text());
+	const lessonNumberText = cleanText($article.find(CONSTANTS.PUB_LFB_CSS_SELECTOR_LESSON_NUMBER_SELECTOR).text());
 	log.debug(`Parsing lesson number text: [${lessonNumberText}]`);
 	const number = parseInt(lessonNumberText.replace(/\D/g, ''), 10);
 	const title = cleanText($article.find(CONSTANTS.PUB_LFB_CSS_SELECTOR_LESSON_TITLE_SELECTOR).text());
@@ -217,7 +217,7 @@ async function parseLesson($: CheerioAPI, $article: CheerioSelection): Promise<L
 }
 
 async function parseLessonV2($: CheerioAPI, $article: CheerioSelection): Promise<LfbItemV2> {
-	const lessonNumberText = cleanText($article.find(CONSTANTS.PUB_LFB_CSS_SELECTOR_SECTION_INTRO_HEADLINE).text());
+	const lessonNumberText = cleanText($article.find(CONSTANTS.PUB_LFB_CSS_SELECTOR_LESSON_NUMBER_SELECTOR).text());
 	log.debug(`Parsing v2 lesson number text: [${lessonNumberText}]`);
 	const number = parseInt(lessonNumberText.replace(/\D/g, ''), 10);
 	const title = cleanText($article.find(CONSTANTS.PUB_LFB_CSS_SELECTOR_LESSON_TITLE_SELECTOR).text());

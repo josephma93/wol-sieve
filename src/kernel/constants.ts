@@ -41,7 +41,6 @@ export const CONSTANTS = Object.freeze(
 		PUB_CODE_AWAKE: 'pub-g',
 		PUB_CODE_WCG: 'pub-wcg',
 
-		PUB_MWB_CSS_SELECTOR_ARTICLE: '#article',
 		PUB_MWB_CSS_SELECTOR_INTRODUCTION: '#p3',
 		PUB_MWB_CSS_SELECTOR_TREASURES_TALK: '#tt9',
 		PUB_MWB_CSS_SELECTOR_LINE_WITH_TIME_BOX: '.du-color--textSubdued',
@@ -50,7 +49,6 @@ export const CONSTANTS = Object.freeze(
 		PUB_MWB_CSS_SELECTOR_MIDDLE_SONG: '.bodyTxt > .dc-icon--music:not(:first-child)',
 		PUB_MWB_CSS_SELECTOR_FINAL_SONG: '.bodyTxt > h3:last-child',
 		PUB_MWB_CSS_SELECTOR_FIELD_MINISTRY_HEADLINE: '.dc-icon--wheat',
-		PUB_MWB_CSS_SELECTOR_MIDWAY_SONG_HEADLINE: '.dc-icon--music',
 		PUB_MWB_CSS_SELECTOR_CHRISTIAN_LIVING_HEADLINE: '.dc-icon--sheep',
 		PUB_MWB_CSS_SELECTOR_BLEED_EDGE_GROUPS: '.dc-bleedToArticleEdge',
 
@@ -60,7 +58,6 @@ export const CONSTANTS = Object.freeze(
 		PUB_W_CSS_SELECTOR_ARTICLE_TITLE: 'h1 strong:first-child',
 		PUB_W_CSS_SELECTOR_ARTICLE_THEME_SCRIP: 'p.themeScrp',
 		PUB_W_CSS_SELECTOR_ARTICLE_TOPIC: '#tt10 p:nth-of-type(2)',
-		PUB_W_CSS_SELECTOR_TEACH_BLOCK: '.dc-ttClassStyle--unset',
 		PUB_W_CSS_SELECTOR_QUESTION: 'p.qu',
 		PUB_W_CSS_SELECTOR_FOR_SUPPLEMENT_BOX: '.boxSupplement',
 		PUB_W_CSS_SELECTOR_FOR_BOX_TITLE: '.boxTtl',
