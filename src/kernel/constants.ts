@@ -28,7 +28,6 @@ export const CONSTANTS = Object.freeze(
 		LOG_LEVEL: env.LOG_LEVEL,
 		NORMALIZED_PORT_NUMBER: normalizePort(String(env.PORT)),
 		WOL_URL: 'https://wol.jw.org',
-		CSS_SELECTOR_FOR_LINK_TO_LANG: 'link[hreflang="es"]',
 		CSS_SELECTOR_FOR_WEEKLY_BOOKLET_LINK: 'a.pub-mwb.cardLine1Prominent',
 		CSS_SELECTOR_FOR_WATCHTOWER_ARTICLE_LINK: 'a.pub-w.cardLine1Prominent',
 		GENERAL_CSS_SELECTOR_FOR_FIGURES,
@@ -66,10 +65,7 @@ export const CONSTANTS = Object.freeze(
 		PUB_W_CSS_SELECTOR_FOR_BOX_TITLES: function () {
 			return `${this.PUB_W_CSS_SELECTOR_FOR_SUPPLEMENT_BOX} ${this.PUB_W_CSS_SELECTOR_FOR_BOX_TITLE}`;
 		},
-		PUB_W_REGEX_TEST_FOR_MENTIONS_BOX: () => freshRegExp(/\brecuadro\b/i),
 		PUB_W_REGEX_TEST_FOR_HREF_TO_BOX: () => freshRegExp(/h=(\d+)-(\d+)/i),
-		PUB_W_CSS_SELECTOR_RELATED_PARAGRAPH: (dataPid: string) => `p[data-rel-pid="[${dataPid}]"]`,
-		PUB_W_CSS_SELECTOR_RELATED_PARAGRAPH_LINK: `p[data-rel-pid] ${GENERAL_CSS_SELECTOR_FOR_NON_VIDEO_ANCHORS}`,
 		PUB_W_CSS_SELECTOR_TEACH_BLOCK_HEADLINE: '.dc-ttClassStyle--unset h2',
 		PUB_W_CSS_SELECTOR_TEACH_BLOCK_POINTS: '.dc-ttClassStyle--unset ul li p',
 

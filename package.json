@@ -7,6 +7,7 @@
     "start": "./run.sh start",
     "start:debug": "./run.sh debug",
     "start:inspect": "./run.sh inspect",
+    "prebuild": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
     "build": "tsc",
     "serve": "./run.sh serve",
     "format": "prettier . --write",

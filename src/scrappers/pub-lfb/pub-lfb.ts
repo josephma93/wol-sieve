@@ -33,11 +33,6 @@ export const buildDefaultLinks = wrapAsyncOp(async function _buildDefaultLinks()
 	return bibleReadOpRes.references;
 });
 
-export interface LfbItem {
-	type: typeof GOVERNMENT_BODY_LETTER | typeof SECTION_INTRODUCTION | typeof LESSON;
-	contents: unknown;
-}
-
 export interface LfbItemV2 {
 	type: typeof GOVERNMENT_BODY_LETTER | typeof SECTION_INTRODUCTION | typeof LESSON;
 	contents: unknown;
@@ -55,12 +50,12 @@ function detectHasLessons($article: CheerioSelection): boolean {
 	return $article.is('.docClass-13');
 }
 
-function parseGbLetter($article: CheerioSelection): LfbItem {
+function parseGbLetter($article: CheerioSelection): LfbItemV2 {
 	const contents = cleanText($article.text());
 	return { type: GOVERNMENT_BODY_LETTER, contents: { contents } };
 }
 
-function parseSectionIntro($: CheerioAPI, $article: CheerioSelection): LfbItem {
+function parseSectionIntro($: CheerioAPI, $article: CheerioSelection): LfbItemV2 {
 	const title = cleanText($article.find(CONSTANTS.PUB_LFB_CSS_SELECTOR_SECTION_INTRO_HEADLINE).text());
 	const contents = cleanText($article.find(CONSTANTS.PUB_LFB_CSS_SELECTOR_BODY_SELECTOR).text());
 	const lessons = $article
@@ -81,34 +76,6 @@ function parseSectionIntro($: CheerioAPI, $article: CheerioSelection): LfbItem {
 			coverFigure,
 		},
 	};
-}
-
-function findAndBuildCitation($: CheerioAPI, foo: CheerioSelection, seedText: string) {
-	const citationPromises = foo
-		.find('a')
-		.map(async (index, aEl) => {
-			const $a = $(aEl);
-			const textRaw = cleanText($a.text());
-			log.debug(`Extracting reference: [${textRaw}]`);
-			seedText = seedText.replace(textRaw.replace(';', ''), `{{${index + 1}}}`);
-
-			const opRes = await fetchAndParseAnchorReferenceOrThrow($a);
-			if (opErrored(opRes)) {
-				log.warn(`Unable to load reference data for mnemonic: [${textRaw}] due to: [${opRes.err.message}]`);
-				return {
-					refNum: index + 1,
-					mnemonic: textRaw,
-					contents: CONSTANTS.UNABLE_TO_EXTRACT_REFERENCE,
-				};
-			}
-			return {
-				refNum: index + 1,
-				mnemonic: opRes.res.itemTitle,
-				contents: opRes.res.parsedContent,
-			};
-		})
-		.get();
-	return { citationPromises, processedText: seedText };
 }
 
 async function buildCitationBlockFromAnchors(foo: CheerioSelection, seedText: string): Promise<CitationTextBlock> {
@@ -152,68 +119,6 @@ async function buildLessonMarkdown($article: CheerioSelection): Promise<string> 
 	});
 
 	return fixLineContinuations(markdown);
-}
-
-async function parseLesson($: CheerioAPI, $article: CheerioSelection): Promise<LfbItem> {
-	const lessonNumberText = cleanText($article.find(CONSTANTS.PUB_LFB_CSS_SELECTOR_LESSON_NUMBER_SELECTOR).text());
-	log.debug(`Parsing lesson number text: [${lessonNumberText}]`);
-	const number = parseInt(lessonNumberText.replace(/\D/g, ''), 10);
-	const title = cleanText($article.find(CONSTANTS.PUB_LFB_CSS_SELECTOR_LESSON_TITLE_SELECTOR).text());
-	const lessonContentsAsMd = await buildLessonMarkdown($article);
-	const figures = $article
-		.find(CONSTANTS.PUB_LFB_CSS_SELECTOR_LESSON_FIGURE_SELECTOR)
-		// This selector matches the cover image too so we just skip it
-		.slice(1)
-		.map((_, imgEl) => {
-			const $figure = $(imgEl);
-			return {
-				imgURL: $figure.attr('src'),
-				altText: $figure.attr('alt'),
-			};
-		})
-		.get();
-	const $quoteEl = $article.find(CONSTANTS.PUB_LFB_CSS_SELECTOR_LESSON_HIGHLIGHT_QUOTE_SELECTOR);
-	const highlightQuoteTextRaw = cleanText($quoteEl.text());
-
-	log.debug('Extracting citations for highlight quote...');
-	const quoteSourceReferPromises = findAndBuildCitation($, $quoteEl, highlightQuoteTextRaw);
-	const quoteSourceCitations = await Promise.all(quoteSourceReferPromises.citationPromises);
-
-	const questions = cleanText($article.find(CONSTANTS.PUB_LFB_CSS_SELECTOR_LESSON_QUESTIONS_SELECTOR).text());
-
-	const $sourcesEls = $article.find(CONSTANTS.PUB_LFB_CSS_SELECTOR_LESSON_CITATIONS_SELECTOR);
-	log.debug('Extracting citations for bible sources...');
-	const bibleSourcesCitations = cleanText($sourcesEls.text());
-	const sourceCitationsWork = findAndBuildCitation($, $sourcesEls, bibleSourcesCitations);
-	const bibleSourceCitations = await Promise.all(sourceCitationsWork.citationPromises);
-
-	const coverImg = $article.find(CONSTANTS.PUB_LFB_CSS_SELECTOR_HEADLINE_FIGURE);
-	const coverFigure = {
-		imgURL: coverImg.attr('src'),
-		altText: coverImg.attr('alt'),
-	};
-
-	return {
-		type: LESSON,
-		contents: {
-			number,
-			title,
-			coverFigure,
-			contents: lessonContentsAsMd,
-			figures,
-			highlightQuote: {
-				textRaw: highlightQuoteTextRaw,
-				textProcessed: quoteSourceReferPromises.processedText,
-				citations: quoteSourceCitations,
-			},
-			questions,
-			bibleSources: {
-				textRaw: bibleSourcesCitations,
-				textProcessed: sourceCitationsWork.processedText,
-				citations: bibleSourceCitations,
-			},
-		},
-	};
 }
 
 async function parseLessonV2($: CheerioAPI, $article: CheerioSelection): Promise<LfbItemV2> {
@@ -266,27 +171,6 @@ async function parseLessonV2($: CheerioAPI, $article: CheerioSelection): Promise
 			bibleSources,
 		},
 	};
-}
-
-export async function extractLfbContents(input: ExtractionContextOptions): Promise<LfbItem> {
-	log.debug('Starting LFB content extraction...');
-	const cc = createExtractionContext({ ...input, selectionBuilder: ($) => $('#article') });
-	const $article = cc.selection;
-	let result: LfbItem;
-	if (detectHasGbLetter($article)) {
-		log.debug('Governing Body letter detected. Parsing...');
-		result = parseGbLetter($article);
-	}
-	if (detectHasSectionIntro($article)) {
-		log.debug('Section introduction detected. Parsing...');
-		result = parseSectionIntro(cc.$, cc.selection);
-	}
-	if (detectHasLessons($article)) {
-		log.debug('Lesson detected. Parsing...');
-		result = await parseLesson(cc.$, cc.selection);
-	}
-	log.debug('LFB content extraction finished.');
-	return result!;
 }
 
 export async function extractLfbContentsV2(input: ExtractionContextOptions): Promise<LfbItemV2> {

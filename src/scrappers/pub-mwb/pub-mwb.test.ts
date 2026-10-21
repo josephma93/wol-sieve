@@ -8,7 +8,7 @@ vi.mock('../../data-fetching/reference-json.js', () => ({
 	fetchAndParseAnchorReferenceOrThrow: referenceMocks.fetchAndParseAnchorReferenceOrThrow,
 }));
 
-import { extractFieldMinistry, extractFieldMinistryV2 } from './pub-mwb.js';
+import { extractFieldMinistryV2 } from './pub-mwb.js';
 
 interface TestAssignment {
 	headline: string;
@@ -318,33 +318,5 @@ describe('extractFieldMinistryV2', () => {
 		).rejects.toThrow(
 			'Field ministry section 4 headline "¿Qué diría?": Expected each question list item to contain one paragraph and no unsupported siblings',
 		);
-	});
-});
-
-describe('extractFieldMinistry', () => {
-	it('preserves the v1 student assignment shape', async () => {
-		const result = await extractFieldMinistry({
-			html: page([
-				{
-					headline: 'Empiece conversaciones',
-					content: timeBox(
-						3,
-						'Presente una idea bíblica (<a href="/es/wol/pc/r4/lp-s/lesson">Lección 5</a>).',
-					),
-				},
-			]),
-		});
-
-		expect(result[0]).toMatchObject({
-			sectionNumber: 4,
-			timeBox: 3,
-			isStudentTask: true,
-			headline: 'Empiece conversaciones',
-			contents: 'Presente una idea bíblica',
-			studyPoint: {
-				mnemonic: 'Lección 5',
-				contents: 'Parsed:Lección 5',
-			},
-		});
 	});
 });

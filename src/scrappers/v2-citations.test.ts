@@ -10,14 +10,9 @@ vi.mock('../data-fetching/raw.js', () => ({
 	getJsonContent: mocks.getJsonContent,
 }));
 
-import { extractArticleContents, extractArticleContentsV2 } from './pub-w/pub-w.js';
+import { extractArticleContentsV2 } from './pub-w/pub-w.js';
 import { extractLfbContentsV2 } from './pub-lfb/pub-lfb.js';
-import {
-	extractChristianLiving,
-	extractChristianLivingV2,
-	extractTreasuresTalk,
-	extractTreasuresTalkV2,
-} from './pub-mwb/pub-mwb.js';
+import { extractChristianLivingV2, extractTreasuresTalkV2 } from './pub-mwb/pub-mwb.js';
 import { extractReferencesFromLinksV2 } from './pub-nwtsty/pub-nwtsty.js';
 import { clusterBiblicalPassageEntriesV2 } from '../services/pub-nwtsty.js';
 
@@ -45,18 +40,6 @@ function referenceResponse(overrides: Record<string, unknown> = {}) {
 		},
 	};
 }
-
-const watchtowerHtml = `
-	<div id="article">
-		<p class="contextTtl"><strong>Study Article 1</strong></p>
-		<h1><strong>Article title</strong></h1>
-		<p class="themeScrp">Theme scripture</p>
-		<div id="tt10"><p>ignored</p><p>Article topic</p></div>
-		<p class="qu" data-pid="1">1. Question?</p>
-		<p data-rel-pid="[1]"><span class="parNum" data-pnum="1">1 </span>Paragraph mentions Ref A before <a href="/es/wol/d/r4/lp-s/123">Ref A</a> end.</p>
-		<div class="dc-ttClassStyle--unset"><h2>Teach block</h2><ul><li><p>Teach point</p></li></ul></div>
-	</div>
-`;
 
 const watchtowerFlowHtml = `
 	<div id="article">
@@ -247,7 +230,6 @@ describe('v2 citation scraper contracts', () => {
 		`;
 
 		const parsed = await extractChristianLivingV2({ html: christianLivingHtml });
-		const plainText = extractChristianLiving({ html: christianLivingHtml })[0].contents;
 
 		expect(parsed).toEqual([
 			{
@@ -327,22 +309,10 @@ describe('v2 citation scraper contracts', () => {
 				],
 			},
 		]);
-		expect(parsed[0].plainText).toBe(plainText);
+		expect(parsed[0].plainText).toContain('External resource');
 	});
 
-	it('keeps Watchtower v1 paragraphs stable while v2 exposes natural article flow and associations', async () => {
-		const v1 = await extractArticleContents({ html: watchtowerHtml });
-		const v1Paragraph = v1.contents[0].paragraphs[0];
-
-		expect(v1Paragraph).toEqual({
-			number: 1,
-			originalContent: '1 Paragraph mentions Ref A before Ref A end.',
-			content: '1 Paragraph mentions Ref A before Ref A [^1] end.',
-			references: {
-				1: 'Parsed reference contents',
-			},
-		});
-
+	it('exposes Watchtower natural article flow and associations', async () => {
 		const v2 = await extractArticleContentsV2({ html: watchtowerFlowHtml });
 
 		expect(v2).toMatchObject({
@@ -508,11 +478,9 @@ describe('v2 citation scraper contracts', () => {
 		expect(v2.indexReferences.questions[0]).not.toHaveProperty('relevantVideoIndexes');
 	});
 
-	it('extracts Watchtower articleTopic from the current metadata block in v1 and v2', async () => {
-		const v1 = await extractArticleContents({ html: currentWatchtowerTopicHtml });
+	it('extracts Watchtower articleTopic from the current metadata block', async () => {
 		const v2 = await extractArticleContentsV2({ html: currentWatchtowerTopicHtml });
 
-		expect(v1.articleTopic).toBe('Current stencil article topic.');
 		expect(v2.articleTopic).toBe('Current stencil article topic.');
 	});
 
@@ -673,7 +641,7 @@ describe('v2 citation scraper contracts', () => {
 		]);
 	});
 
-	it('preserves treasures talk ordering and v1 footnote numbering when references resolve out of order', async () => {
+	it('preserves treasures talk ordering when references resolve out of order', async () => {
 		const mwbParallelHtml = `
 			<div id="article">
 				<div id="tt9">
@@ -713,37 +681,6 @@ describe('v2 citation scraper contracts', () => {
 				content: `<p class="sb"><span class="parNum">1</span>${match.content}</p>`,
 			});
 		});
-
-		const v1 = await extractTreasuresTalk({ html: mwbParallelHtml });
-		expect(v1.points).toEqual([
-			{
-				text: 'Point starts with Slow Ref[^2] and then Fast Ref[^3].',
-				originalContent: 'Point starts with Slow Ref and then Fast Ref.',
-				footnotes: [2, 3],
-			},
-			{
-				text: 'Point closes with End Ref[^4].',
-				originalContent: 'Point closes with End Ref.',
-				footnotes: [4],
-			},
-		]);
-		expect(v1.callout).toEqual({
-			label: 'PREGÚNTESE',
-			text: 'PREGÚNTESE: Examine Mid Ref[^1].',
-			footnotes: [1],
-		});
-		expect(v1.footnotes).toEqual({
-			1: 'Mid contents',
-			2: 'Slow contents',
-			3: 'Fast contents',
-			4: 'End contents',
-		});
-		expect(v1.citations.map(({ mnemonic, footnoteNumber }) => ({ mnemonic, footnoteNumber }))).toEqual([
-			{ mnemonic: 'Mid Ref', footnoteNumber: 1 },
-			{ mnemonic: 'Slow Ref', footnoteNumber: 2 },
-			{ mnemonic: 'Fast Ref', footnoteNumber: 3 },
-			{ mnemonic: 'End Ref', footnoteNumber: 4 },
-		]);
 
 		const v2 = await extractTreasuresTalkV2({ html: mwbParallelHtml });
 		expect(v2.content).toEqual([

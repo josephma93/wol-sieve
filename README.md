@@ -19,8 +19,8 @@ redistribute WOL content, use it commercially, or post it to other sites unless 
 
 ## Architecture
 
-The application entry point is `src/index.ts`. It creates the Express app, installs request logging and body parsing,
-mounts feature routers, registers central error handling, adds `/ping`, and starts the HTTP server through the kernel
+The application entry point is `src/index.ts`. It creates the Express app, installs request logging,
+mounts the v2 router, registers central error handling, adds `/ping`, and starts the HTTP server through the kernel
 helpers.
 
 Main source areas:
@@ -31,8 +31,7 @@ Main source areas:
     `{ err, res }` results instead of handling thrown errors directly.
 -   `src/data-extraction/`: lower-level extraction utilities for article-related data.
 -   `src/scrappers/`: Cheerio-based scrapers for supported publication types.
--   `src/routers/`: Express routers that validate request inputs and expose scraper/fetcher behavior as HTTP endpoints.
-    Versioned v2 routers live under `src/routers/v2/`.
+-   `src/routers/v2/`: Express routers that validate request inputs and expose scraper results through GET endpoints.
 -   `src/services/`: service-level processing, including token-count clustering for extracted Bible references.
 -   `src/test-helpers/`: shared test-only helpers.
 
@@ -170,15 +169,7 @@ languages when WOL keeps the same stencil.
 
 ## API Versions
 
-The API has two supported route families with distinct contracts:
-
--   **v1, unversioned compatibility routes**: mounted at paths such as `/pub-w`, `/pub-mwb`, `/pub-nwtsty`, `/pub-lfb`,
-    and `/wol`. These routes preserve the original public surface, including mixed GET/POST support on some endpoints,
-    public HTML helper endpoints, `/from-url` routes, MWB `/scrappers/*` routes, and the `links` query parameter
-    convention.
--   **v2, versioned GET-only routes**: mounted under `/v2`. This is the preferred contract for new integrations. These
-    routes expose selected JSON-producing endpoints, reject POST by omission, do not expose public HTML fetch endpoints,
-    do not expose `/from-url`, and use canonical query parameters to select WOL source URLs.
+The API exposes GET-only routes under `/v2`. Unversioned API routes are not supported.
 
 `GET /v2/` returns a browser-friendly HTML index with clickable sample links for the available v2 endpoints.
 
@@ -220,12 +211,9 @@ GET /v2/pub-wcg/
 GET /v2/pub-wcg/?urls=url1&urls=url2
 ```
 
-Preserve v1 behavior when changing v2 routes. The two route families are intentionally different; do not treat v1-only
-patterns as aliases in v2 unless the v2 contract explicitly defines them.
-
 ### `GET /v2/pub-w/` Response
 
-The v2 Watchtower response uses the natural article flow. It does not return the v1-style `contents` array.
+The v2 Watchtower response uses the natural article flow. The `content` array contains the extracted article items.
 
 Top-level metadata fields identify the article:
 
@@ -364,6 +352,9 @@ formats the project, compiles TypeScript, and runs `dist/index.js` with `.env`.
 There is no `nodemon.json`; watch behavior is defined in `run.sh`.
 
 ## TypeScript and Formatting
+
+`npm run build` removes the previous `dist/` directory before compilation.
+This prevents deleted source files from remaining in build output.
 
 TypeScript configuration:
 

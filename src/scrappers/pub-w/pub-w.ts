@@ -1,19 +1,10 @@
 import type { ImageData, VideoData } from '../../data-extraction/media.js';
-import {
-	CONSTANTS,
-	logger,
-	opErrored,
-	cleanText,
-	fixLineContinuations,
-	normalizeWolUrl,
-	isExternalHttpUrl,
-} from '../../kernel/index.js';
+import { CONSTANTS, logger, opErrored, cleanText, normalizeWolUrl, isExternalHttpUrl } from '../../kernel/index.js';
 import { ExtractionContextOptions, createExtractionContext } from '../generics.js';
 import { CheerioAPI } from 'cheerio';
 import { fetchAndParseAnchorReferenceOrThrow } from '../../data-fetching/reference-json.js';
 import { getCheerioSelectionOrThrow, isVideoAnchor } from '../../data-extraction/generic.js';
 import type { CheerioSelection } from '../../data-extraction/generic.js';
-import { markify } from 'markify-ts';
 import {
 	Citation,
 	CitationTextBlock,
@@ -30,13 +21,6 @@ interface TeachBlock {
 	points: string[];
 }
 
-interface ParagraphData {
-	number: number;
-	originalContent: string;
-	content: string;
-	references: Record<number, string>;
-}
-
 export interface QuestionPartData {
 	label?: string;
 	text: string;
@@ -46,36 +30,7 @@ export type QuestionData = {
 	pNumbers: number[];
 	rawQuestionTxt: string;
 	parts: QuestionPartData[];
-	doMentionsSupplementBox: boolean;
-	anchorsFound: CheerioSelection;
 };
-
-interface QuestionReferencedFigureData {
-	imgURL: string;
-	altText: string;
-	caption: string;
-}
-
-interface ContentData {
-	pNumbers: number[];
-	rawQuestionTxt: QuestionData['rawQuestionTxt'];
-	questionParts: QuestionData['parts'];
-	questionTextIfSingle?: QuestionPartData['text'];
-	paragraphs: ParagraphData[];
-	questionReferencedData: {
-		figures: QuestionReferencedFigureData[];
-		boxSupplements: QuestionReferencedBoxSupplementData[];
-	};
-}
-
-interface WatchtowerArticleData {
-	articleNumber: string;
-	articleTitle: string;
-	articleThemeScrip: string;
-	articleTopic: string;
-	contents: ContentData[];
-	teachBlock: TeachBlock;
-}
 
 interface WatchtowerArticleDataV2 {
 	articleNumber: string;
@@ -400,168 +355,6 @@ export function extractQuestionData(question: CheerioSelection): QuestionData {
 		pNumbers,
 		rawQuestionTxt,
 		parts: parsedQuestions,
-		doMentionsSupplementBox: CONSTANTS.PUB_W_REGEX_TEST_FOR_MENTIONS_BOX().test(rawQuestionTxt),
-		anchorsFound: question.find('a'),
-	};
-}
-
-/**
- * Fetches and replaces references for a paragraph in parallel.
- * Returns an array of [footnoteIndex, referenceText].
- */
-async function extractReferences(
-	$: CheerioAPI,
-	para: CheerioSelection,
-	footnoteIndexRef: { value: number },
-): Promise<[number, string][]> {
-	const anchorElems = para.find(CONSTANTS.PUB_W_CSS_SELECTOR_RELATED_PARAGRAPH_LINK);
-
-	const referencePromises = anchorElems.map(async (_, anchor) => {
-		const anchorRef = $(anchor);
-		const mnemonic = anchorRef.text();
-		log.debug(`Extracting reference: [${mnemonic}]`);
-
-		const currentIndex = footnoteIndexRef.value;
-		footnoteIndexRef.value += 1; // increment for the next footnote
-
-		// Mutates the DOM: replace the anchor with footnote marker
-		anchorRef.replaceWith(`${mnemonic} [^${currentIndex}]`);
-
-		const opRes = await fetchAndParseAnchorReferenceOrThrow(anchorRef);
-		let refContents = CONSTANTS.UNABLE_TO_EXTRACT_REFERENCE;
-		if (opErrored(opRes)) {
-			log.warn(`Unable to load reference data for mnemonic: [${mnemonic}] due to: [${opRes.err.message}]`);
-		} else {
-			refContents = opRes.res.parsedContent;
-		}
-		return [currentIndex, refContents] as [number, string];
-	});
-
-	return Promise.all(referencePromises.get());
-}
-
-/**
- * Extracts all paragraphs for a given question in parallel.
- */
-async function extractParagraphs(
-	$: CheerioAPI,
-	questionPid: string,
-	footnoteIndexRef: { value: number },
-): Promise<ParagraphData[]> {
-	const relatedParagraphs = $(CONSTANTS.PUB_W_CSS_SELECTOR_RELATED_PARAGRAPH(questionPid));
-
-	const paragraphPromises = relatedParagraphs.map(async (_, paraElem) => {
-		const para = $(paraElem);
-		log.debug(`Extracting paragraph related to question [${questionPid}]`);
-
-		const originalParagraphText = para.text();
-		const paragraphNumber = parseFloat(para.find('.parNum').attr('data-pnum') || 'NaN');
-
-		const referenceTuples = await extractReferences($, para, footnoteIndexRef);
-
-		const references: Record<number, string> = referenceTuples.reduce(
-			(accum, [num, txt]) => {
-				accum[num] = txt;
-				return accum;
-			},
-			{} as Record<number, string>,
-		);
-
-		const mutatedParagraphText = para.text();
-
-		return {
-			number: paragraphNumber,
-			originalContent: cleanText(originalParagraphText),
-			content: cleanText(mutatedParagraphText),
-			references,
-		};
-	});
-
-	return Promise.all(paragraphPromises.get());
-}
-
-interface QuestionReferencedBoxSupplementData {
-	title: string;
-	content: string;
-}
-
-async function buildQuestionReferencedBoxSupplement(
-	$boxSupplement: CheerioSelection,
-): Promise<QuestionReferencedBoxSupplementData> {
-	const title = cleanText($boxSupplement.find(CONSTANTS.PUB_W_CSS_SELECTOR_FOR_BOX_TITLE).text());
-	const markedContent = await markify({
-		htmlContent: $boxSupplement.find(CONSTANTS.PUB_W_CSS_SELECTOR_FOR_BOX_CONTENT).html() ?? '',
-		ignoreSelectors: CONSTANTS.MARKIFY_GENERAL_CSS_SELECTORS_TO_IGNORE,
-		ignoreHiddenElements: true,
-	});
-
-	return {
-		title,
-		content: fixLineContinuations(markedContent.markdown),
-	};
-}
-
-function extractFigures($: CheerioAPI, questionPid: string) {
-	const figures: QuestionReferencedFigureData[] = [];
-	$(CONSTANTS.GENERAL_CSS_SELECTOR_FOR_FIGURES).each((_, fig) => {
-		const $fig = $(fig);
-		const captionText = $fig.find('figcaption').text();
-		let pnums = extractPnumsFromCaptionStrict(captionText);
-
-		// Fallback: nearest previous paragraph with a number
-		if (pnums.length === 0) {
-			const $prev = $fig
-				.closest(`${CONSTANTS.GENERAL_CSS_SELECTOR_FOR_FIGURES}, figure`)
-				.prevAll(`[data-pid]`)
-				.find('.parNum[data-pnum]')
-				.first();
-			const p = $prev.attr('data-pnum');
-			if (p) pnums = [p];
-		}
-
-		// Check if this figure relates to the current question
-		let isRelated = false;
-		for (const pnum of pnums) {
-			const $paras = $(`.parNum[data-pnum="${pnum}"]`).closest('[data-pid]');
-			$paras.each((_, p) => {
-				const relPids = extractQpidsFromRelPid($(p).attr('data-rel-pid'));
-				if (relPids.includes(questionPid)) {
-					isRelated = true;
-					return false; // break inner loop
-				}
-			});
-			if (isRelated) break;
-		}
-
-		if (isRelated) {
-			let $img = $fig.find('img');
-			figures.push({
-				imgURL: $img.attr('src') ?? '',
-				altText: $img.attr('alt') ?? '',
-				caption: cleanText(captionText),
-			});
-		}
-	});
-	return figures;
-}
-
-async function extractQuestionReferencedData($: CheerioAPI, questionData: QuestionData, questionPid: string) {
-	let boxSupplements: QuestionReferencedBoxSupplementData[] = [];
-	if (questionData.doMentionsSupplementBox) {
-		const $boxSupplements = questionData.anchorsFound
-			.filter('.it') // Filter for elements with class 'it'
-			.map((_, el) => resolveHrefTargetForBox($, $(el))) // Resolve href target for each filtered anchor
-			.get(); // Convert Cheerio object to a plain array of Cheerio elements
-
-		boxSupplements = await Promise.all(
-			$boxSupplements.map(($boxSupplement) => buildQuestionReferencedBoxSupplement($boxSupplement)),
-		);
-	}
-
-	const figures = extractFigures($, questionPid);
-	return {
-		figures,
-		boxSupplements,
 	};
 }
 
@@ -1306,77 +1099,6 @@ async function extractArticleFlow($: CheerioAPI): Promise<WatchtowerFlowExtracti
 	return {
 		content,
 		indexReferences,
-	};
-}
-
-/**
- * Extracts the contents from the soup, returning an array of ContentData objects.
- * This function remains the orchestrator, but now each paragraph has two versions.
- * @param $ - Cheerio API instance.
- * @returns Promise of an array of ContentData objects.
- */
-async function extractContents($: CheerioAPI): Promise<ContentData[]> {
-	// Keep a single footnote counter that we pass by reference
-	const footnoteIndexRef = { value: 1 };
-
-	const questionElems = $(CONSTANTS.PUB_W_CSS_SELECTOR_QUESTION);
-
-	// For each question, extract its data and related paragraphs in parallel
-	const contentPromises = questionElems.map(async (_, elem) => {
-		const question = $(elem);
-		const qText = cleanText(question.text());
-		const questionData = extractQuestionData(question);
-
-		const dataPid = question.attr('data-pid');
-		if (!dataPid) {
-			const msg = `Missing data-pid for question ${qText}`;
-			log.error(msg);
-			throw new Error(msg);
-		}
-
-		log.debug(`Processing question [${dataPid}]`);
-
-		// Extract all paragraphs associated with this question
-		const paragraphs = await extractParagraphs($, dataPid, footnoteIndexRef);
-		const questionReferencedData = await extractQuestionReferencedData($, questionData, dataPid);
-
-		return {
-			pNumbers: questionData.pNumbers,
-			questionParts: questionData.parts,
-			questionTextIfSingle: questionData.parts.length === 1 ? questionData.parts[0].text : undefined,
-			rawQuestionTxt: questionData.rawQuestionTxt,
-			paragraphs,
-			questionReferencedData,
-		};
-	});
-
-	return Promise.all(contentPromises.get());
-}
-
-/**
- * Extracts article contents
- * @param input The input object necessary values for correct extraction.
- * @returns The extracted data.
- * @throws {Error} If the extraction fails.
- */
-export async function extractArticleContents(input: ExtractionContextOptions): Promise<WatchtowerArticleData> {
-	const { $ } = createExtractionContext(input);
-
-	const articleNumber = cleanText($(CONSTANTS.PUB_W_CSS_SELECTOR_ARTICLE_NUMBER).text());
-	const articleTitle = cleanText($(CONSTANTS.PUB_W_CSS_SELECTOR_ARTICLE_TITLE).text());
-	const articleThemeScrip = cleanText($(CONSTANTS.PUB_W_CSS_SELECTOR_ARTICLE_THEME_SCRIP).text());
-	const articleTopic = cleanText($(CONSTANTS.PUB_W_CSS_SELECTOR_ARTICLE_TOPIC).text());
-
-	const contents = await extractContents($);
-	const teachBlock = extractTeachBlock($);
-
-	return {
-		articleNumber,
-		articleTitle,
-		articleThemeScrip,
-		articleTopic,
-		contents,
-		teachBlock,
 	};
 }
 

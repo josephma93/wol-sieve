@@ -1,11 +1,6 @@
-import { CONSTANTS, ErrorResult, logger, opErrored, wrapAsyncOp } from '../../kernel/index.js';
+import { ErrorResult, logger, opErrored, wrapAsyncOp } from '../../kernel/index.js';
 import * as cheerio from 'cheerio';
-import {
-	buildPublicationRefData,
-	fetchAndParseAnchorReferenceOrThrow,
-	fetchAnchorData,
-	PublicationRefData,
-} from '../../data-fetching/reference-json.js';
+import { buildPublicationRefData, fetchAnchorData, PublicationRefData } from '../../data-fetching/reference-json.js';
 import {
 	BiblicalPassageRefResponse,
 	DefaultPublicationRefResponse,
@@ -80,23 +75,6 @@ function pickRelevantDOMData($: CheerioAPI): SectionDataForProcess[] {
 	return sections.map(sectionReducer);
 }
 
-interface RefEntry {
-	mnemonic: string;
-	refContents: string | null;
-}
-
-export interface BiblicalPassageRefEntry {
-	citation: string;
-	scripture: string;
-	references: RefEntry[];
-	referenceTokenCount: number;
-}
-
-export interface BiblicalBookReferenceData {
-	entries: BiblicalPassageRefEntry[];
-	sharedMnemonicReferences: Record<string, string>;
-}
-
 export interface BibleCitationOccurrence {
 	id: number;
 	referenceId: string;
@@ -121,19 +99,6 @@ export interface BiblicalBookReferenceDataV2 {
 	entries: BiblicalPassageRefEntryV2[];
 	sharedReferences: Record<string, SharedReference>;
 }
-
-declare type SectionIndex = number;
-declare type AnchorIndexes = Set<number[]>;
-
-interface MnemonicExtractionTrackingData {
-	mnemonic: string;
-	refContents: string;
-	seenCounter: number;
-	operationPromise: Promise<void>;
-	relatedDataTracking: Map<SectionIndex, AnchorIndexes>;
-}
-
-declare type MnemonicDataFetchingPromises = MnemonicExtractionTrackingData['operationPromise'][];
 
 type NwtstyReferenceExtractionResult = PublicationRefData | null;
 
@@ -193,114 +158,6 @@ function buildSharedReferenceFromFetchedReference(
 		contents: citation.contents,
 	};
 }
-
-/**
- * Parses the Bible reference from the provided HTML content.
- * @param html - The HTML content to parse.
- * @returns - An object containing entries and sharedMnemonicReferences.
- */
-async function _extractBibleReferences(html: string): Promise<BiblicalBookReferenceData> {
-	log.info('Starting to parse Bible reference');
-	const $ = cheerio.load(html);
-	normalizeMnemonics($);
-	const dataInSectionsToProcess = pickRelevantDOMData($);
-	const mnemonicExtractionTracking: Map<string, MnemonicExtractionTrackingData> = new Map();
-
-	function sectionDataMapper(sectionData: SectionDataForProcess, sectionIndex: number) {
-		function getTrackingObj(mnemonic: string, anchorIndex: number) {
-			const trackingObj = mnemonicExtractionTracking.get(mnemonic) ?? {
-				mnemonic,
-				refContents: '',
-				seenCounter: 0,
-				operationPromise: Promise.resolve(),
-				relatedDataTracking: new Map(),
-			};
-
-			const relatedDataTracking = trackingObj.relatedDataTracking.get(sectionIndex) ?? new Set();
-			relatedDataTracking.add(anchorIndex);
-			trackingObj.relatedDataTracking.set(anchorIndex, relatedDataTracking);
-			mnemonicExtractionTracking.set(mnemonic, trackingObj);
-			return trackingObj;
-		}
-
-		const { sectionKey, referenceDataInAnchors } = sectionData;
-		log.debug(`Processing section with key: [${sectionKey}]`);
-
-		let mnemonicDataFetchingPromises: MnemonicDataFetchingPromises = [];
-		for (let anchorIndex = 0; anchorIndex < referenceDataInAnchors.length; anchorIndex++) {
-			const { $anchor, mnemonic } = referenceDataInAnchors[anchorIndex];
-
-			const trackingObj = getTrackingObj(mnemonic, anchorIndex);
-			if (trackingObj.seenCounter === 0) {
-				trackingObj.operationPromise = fetchAndParseAnchorReferenceOrThrow($anchor).then((opRes) => {
-					let refContents;
-					if (opErrored(opRes)) {
-						log.warn(
-							`Unable to load reference data for mnemonic: [${mnemonic}] due to: [${opRes.err.message}]`,
-						);
-						refContents = CONSTANTS.UNABLE_TO_EXTRACT_REFERENCE;
-					} else {
-						refContents = opRes.res.parsedContent;
-					}
-					log.debug(`Finished extracting data for mnemonic: [${mnemonic}]`);
-					trackingObj.refContents = refContents;
-				});
-				mnemonicDataFetchingPromises.push(trackingObj.operationPromise);
-			}
-			trackingObj.seenCounter += 1;
-		}
-
-		return Promise.all(mnemonicDataFetchingPromises);
-	}
-
-	await Promise.all(dataInSectionsToProcess.map(sectionDataMapper));
-
-	return dataInSectionsToProcess.reduce(
-		(
-			{ entries, sharedMnemonicReferences },
-			{ sectionKey, sectionTitle, referenceDataInAnchors }: SectionDataForProcess,
-		) => {
-			const matchingElements = $(`#article [id*="${sectionKey}"]`).filter((_, el) => {
-				return new RegExp(`^[^\d-]*${sectionKey}(?!\\d)`).test($(el).attr('id') ?? '');
-			});
-			const scripture = extractPubNwtstyReferenceAsText(matchingElements, $);
-			let referenceTokenCount = 0;
-
-			const references = referenceDataInAnchors.map(({ mnemonic }) => {
-				const trackingObj = mnemonicExtractionTracking.get(mnemonic)!;
-				referenceTokenCount += computeNumberOfTokensForString(trackingObj.refContents);
-
-				if (trackingObj.seenCounter > 1) {
-					sharedMnemonicReferences[mnemonic] = trackingObj.refContents;
-					return {
-						mnemonic,
-						refContents: null,
-					};
-				} else {
-					return {
-						mnemonic,
-						refContents: trackingObj.refContents,
-					};
-				}
-			});
-
-			entries.push({
-				citation: sectionTitle,
-				scripture,
-				references,
-				referenceTokenCount,
-			});
-
-			return { entries, sharedMnemonicReferences };
-		},
-		{
-			entries: [],
-			sharedMnemonicReferences: {},
-		} as BiblicalBookReferenceData,
-	);
-}
-
-const extractBibleReferences = wrapAsyncOp(_extractBibleReferences);
 
 async function _extractBibleReferencesV2(html: string): Promise<BiblicalBookReferenceDataV2> {
 	log.info('Starting to parse v2 Bible reference');
@@ -415,10 +272,6 @@ async function _extractBibleReferencesV2(html: string): Promise<BiblicalBookRefe
 
 const extractBibleReferencesV2 = wrapAsyncOp(_extractBibleReferencesV2);
 
-export interface NwtstyReferenceDataResult extends BiblicalBookReferenceData {
-	link: string;
-}
-
 export interface NwtstyReferenceDataResultV2 extends BiblicalBookReferenceDataV2 {
 	link: string;
 }
@@ -428,70 +281,9 @@ interface NwtstyReferenceDataError {
 	error: string;
 }
 
-interface NwtstyReferenceData {
-	results: NwtstyReferenceDataResult[];
-	errors: NwtstyReferenceDataError[];
-}
-
 interface NwtstyReferenceDataV2 {
 	results: NwtstyReferenceDataResultV2[];
 	errors: NwtstyReferenceDataError[];
-}
-
-/**
- * Extracts Bible references from the provided list of links.
- * @param {string[]} links - Array of Bible book URLs.
- * @returns - An object containing results and errors.
- */
-export async function extractReferencesFromLinks(links: string[]): Promise<NwtstyReferenceData> {
-	log.info('Starting to extract references from links');
-
-	const opResults = await Promise.all(
-		links.map(async (link) => {
-			const opRes = await getHtmlContent(link);
-			return {
-				link,
-				opRes,
-			};
-		}),
-	);
-
-	const result: NwtstyReferenceData = {
-		errors: [],
-		results: [],
-	};
-
-	function registerOpWithErr({ link, opRes }: { link: string; opRes: ErrorResult }) {
-		const errorMsg = `Error processing link [${link}] due to: [${opRes.err.message}]`;
-		log.warn(errorMsg);
-		result.errors.push({
-			link: link,
-			error: errorMsg,
-		});
-	}
-
-	for (const { link, opRes } of opResults) {
-		if (opErrored(opRes)) {
-			registerOpWithErr({ link, opRes });
-			continue;
-		}
-		const extractRes = await extractBibleReferences(opRes.res);
-		if (opErrored(extractRes)) {
-			registerOpWithErr({ link, opRes: extractRes });
-			continue;
-		}
-		log.debug(`Reference extraction for link [${link}] was successful.`);
-		const extracted = extractRes.res;
-
-		result.results.push({
-			link,
-			entries: extracted.entries,
-			sharedMnemonicReferences: extracted.sharedMnemonicReferences,
-		});
-	}
-
-	log.info('Finished processing all reference links.');
-	return result;
 }
 
 export async function extractReferencesFromLinksV2(links: string[]): Promise<NwtstyReferenceDataV2> {

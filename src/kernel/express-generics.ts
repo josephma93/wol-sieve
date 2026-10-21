@@ -1,9 +1,7 @@
 import { CONSTANTS } from './constants.js';
 import { logger } from './logger.js';
 import http, { Server } from 'http';
-import { Application, Express, NextFunction, Request, Response, Router } from 'express';
-import { AsyncOperationResult, opErrored } from './async-ops.js';
-import { AppError } from './app-error.js';
+import { Application, Express, Request, Response } from 'express';
 import { ExtractionContextOptions } from '../scrappers/generics.js';
 
 const log = logger.child({ ...logger.bindings(), label: 'express-generics' });
@@ -98,61 +96,3 @@ export function addPingEndpoint(app: Application): void {
 }
 
 export declare type ScrapperMethod = (input: ExtractionContextOptions) => Promise<any> | any;
-
-export declare type GetAndPostRouteSettings = {
-	router: Router;
-	path: string;
-	defaultHtmlGenerator: () => Promise<AsyncOperationResult<string>>;
-	scrapperOperation: ScrapperMethod;
-};
-
-/**
- * Adds a route to the given router that accepts GET and POST requests, where:
- * - GET requests fetch the HTML content using the provided defaultHtmlGenerator and then invoke the scrapperOperation with the fetched HTML.
- * - POST requests take the HTML as the body of the request and invoke the scrapperOperation with the provided HTML.
- * @param router - The Express router to add the route to.
- * @param path - The path of the route.
- * @param defaultHtmlGenerator - A function that returns a Promise that resolves to the default HTML content to use for GET requests.
- * @param scrapperOperation - A function that takes an ExtractionInput and returns a Promise that resolves to the result of the scrapper operation.
- */
-export function addGetAndPostScrappingRoute({
-	router,
-	path,
-	defaultHtmlGenerator,
-	scrapperOperation,
-}: GetAndPostRouteSettings) {
-	async function fillHtmlContentMiddleware(req: Request, res: Response, next: NextFunction) {
-		let html = req.body?.html;
-		if (!html) {
-			log.info(`Using default HTML generator for request at path: [${path}]`);
-			const opRes = await defaultHtmlGenerator();
-			if (opErrored(opRes)) {
-				log.error(`Error occurred while generating default HTML content for path: [${path}].`, opRes.err);
-				return next(new AppError(opRes.err.message, 500, opRes.err));
-			}
-			html = opRes.res;
-		} else {
-			log.debug(`Using user-provided HTML content for POST request at path: [${path}]`);
-		}
-		res.locals.html = html;
-		next();
-	}
-
-	async function scrapperMiddleware(_: Request, res: Response, next: NextFunction) {
-		try {
-			log.debug(`Invoking scrapper operation for path: [${path}]`);
-			const result = scrapperOperation({ html: res.locals.html });
-			const data = result instanceof Promise ? await result : result;
-			log.info(`Scrapper operation completed for path: [${path}]`);
-			res.json(data);
-		} catch (error: any) {
-			log.error(`Error occurred while running scrapper operation for path: [${path}].`, error);
-			next(new AppError(`Scrapper operation failed for path: [${path}]: ${error.message}`, 500, error));
-		}
-	}
-
-	router
-		.route(path)
-		.post(fillHtmlContentMiddleware, scrapperMiddleware)
-		.get(fillHtmlContentMiddleware, scrapperMiddleware);
-}

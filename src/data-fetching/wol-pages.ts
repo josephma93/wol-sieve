@@ -1,4 +1,4 @@
-import { CONSTANTS, opErrored, logger, wrapAsyncOp } from '../kernel/index.js';
+import { CONSTANTS, logger, wrapAsyncOp } from '../kernel/index.js';
 import { getHtmlContent } from './raw.js';
 import { getCheerioSelectionOrThrow } from '../data-extraction/generic.js';
 import * as cheerio from 'cheerio';
@@ -39,40 +39,6 @@ function extractHrefFromHtml(html: string, options: HrefExtractionOptions): stri
 	log.debug(`Resolved URL for ${selectionDescription}: [${resolvedHref}]`);
 	return resolvedHref;
 }
-
-/**
- * Fetches the landing HTML from the WOL website.
- * @returns A promise that resolves to an HTML string or an Error.
- * 		The string is the HTML content of fetching the URL `BASE_URL`.
- * @throws If document structure has changed.
- * @see CONSTANTS.WOL_URL
- */
-async function _fetchLanguageSpecificLandingHtml(): Promise<string | Error> {
-	log.info(`Fetching landing HTML from [${CONSTANTS.WOL_URL}]`);
-	let opRes = await getHtmlContent(CONSTANTS.WOL_URL);
-	if (opErrored(opRes)) {
-		return opRes.err;
-	}
-
-	const landingForLanguage = extractHrefFromHtml(opRes.res, {
-		selector: CONSTANTS.CSS_SELECTOR_FOR_LINK_TO_LANG,
-		selectionDescription: 'language-specific link',
-		missingHrefMessage: `No href found for language selection link, website structure may have changed`,
-	});
-	if (landingForLanguage instanceof Error) {
-		return landingForLanguage;
-	}
-	log.info(`Fetching HTML content from [${landingForLanguage}]`);
-	opRes = await getHtmlContent(landingForLanguage);
-	return opRes.err ?? opRes.res;
-}
-
-/**
- * Fetches the landing HTML from the WOL website with error handling.
- * @returns A promise that resolves to an SuccessResult or an ErrorResult. The SuccessResult contains the HTML content as a string.
- * @see _fetchLanguageSpecificLandingHtml
- */
-export const fetchLanguageSpecificLandingHtml = wrapAsyncOp(_fetchLanguageSpecificLandingHtml);
 
 async function _fetchThisWeeksMaterialPageHtml(): Promise<string | Error> {
 	// WOL resolves the current week. Keep the Spanish locale used by the default sources.
