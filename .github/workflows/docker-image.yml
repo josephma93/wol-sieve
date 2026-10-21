@@ -1,20 +1,45 @@
 name: Build and Push Docker Image
 
 on:
+  pull_request:
+    branches: [main]
   push:
     branches: [main]
 
 permissions:
   contents: read
-  packages: write
 
 concurrency:
   group: docker-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  build:
+  sanity:
     runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Live Postman sanity
+        env:
+          SANITY_REPORT_DIR: ${{ runner.temp }}/wol-sieve-sanity
+        run: ./scripts/sanity.sh
+
+      - name: Upload sanity reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: postman-sanity
+          path: ${{ runner.temp }}/wol-sieve-sanity
+          if-no-files-found: ignore
+
+  build:
+    if: github.event_name == 'push'
+    needs: sanity
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     env:
       REGISTRY_USER: ${{ secrets.DOCKER_USERNAME }}
     steps:

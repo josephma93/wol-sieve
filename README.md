@@ -376,13 +376,21 @@ Prettier configuration:
 
 ## Testing and Quality
 
-Run the local quality checks before submitting changes:
+Run these local checks before submitting changes:
 
 ```bash
 npm run format
 npm run build
 npm run test:run
+./scripts/sanity.sh
 ```
+
+Run `./scripts/sanity.sh` for scraper, fetcher, contract, route, or dependency changes. It runs curated live Postman
+scenarios against a temporary local API in Docker. See [Postman coverage and reports](postman/README.md) for the risk
+matrix and report guidance.
+
+GitHub Actions runs sanity checks on pull requests and pushes to `main`. The image build and publish job runs only on
+pushes to `main`, after sanity passes. Repository branch protection must require the sanity status check to block merges.
 
 Testing practices:
 
