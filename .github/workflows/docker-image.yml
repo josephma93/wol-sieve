@@ -32,6 +32,7 @@ jobs:
           name: postman-sanity
           path: ${{ runner.temp }}/wol-sieve-sanity
           if-no-files-found: ignore
+          retention-days: 7
 
   build:
     if: github.event_name == 'push'
