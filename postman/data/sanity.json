@@ -1,0 +1,28 @@
+[
+  {
+    "id": "v2_risk_sanity",
+    "sources": {
+      "watchtowerUrl": "https://wol.jw.org/es/wol/d/r4/lp-s/2025521",
+      "lfbUrl": "https://wol.jw.org/es/wol/d/r4/lp-s/1102016021",
+      "lfbSecondUrl": "https://wol.jw.org/es/wol/d/r4/lp-s/1102016022",
+      "bibleUrl": "https://wol.jw.org/es/wol/b/r4/lp-s/nwtsty/19/70",
+      "footnoteLessonUrl": "https://wol.jw.org/es/wol/d/r4/lp-s/1102025913"
+    },
+    "expected": {
+      "lfbNumber": 11,
+      "lfbTitle": "Una prueba de fe",
+      "footnoteText": "Seguramente, los únicos escritos inspirados disponibles en ese tiempo eran los que se atribuyen a Moisés: Génesis, Éxodo, Levítico, Números, Deuteronomio, Job y uno o dos salmos.",
+      "watchtowerTitle": "Convéncete de que Jehová te quiere",
+      "watchtowerRequiredKinds": [
+        "question",
+        "paragraph",
+        "illustration",
+        "sectionHeading",
+        "boxSupplement",
+        "teachBlock",
+        "footnote"
+      ],
+      "watchtowerFootnoteSourceNumber": 7
+    }
+  }
+]

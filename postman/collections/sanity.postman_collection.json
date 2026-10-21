@@ -1,0 +1,717 @@
+{
+  "info": {
+    "name": "v2 risk-based sanity",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "Object.entries(pm.iterationData.get('sources')).forEach(([key, value]) => pm.variables.set(key, value));"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "Watchtower curated article associations",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/v2/pub-w/?url={{watchtowerUrl}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200 and JSON', function () {",
+              "    pm.response.to.have.status(200);",
+              "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+              "});",
+              "const body = pm.response.json();",
+              "pm.test('No reference extraction placeholders', function () {",
+              "    pm.expect(JSON.stringify(body)).not.to.include('UNEXPECTED_ERROR_UNABLE_TO_EXTRACT_REFERENCE');",
+              "});",
+              "",
+              "pm.test('Article flow and index relations are consistent', function () {",
+              "    const content = body.content;",
+              "    pm.expect(body.articleTitle).to.be.a('string').that.is.not.empty;",
+              "    pm.expect(content).to.be.an('array').that.is.not.empty;",
+              "    function target(index, kind) {",
+              "        pm.expect(Number.isInteger(index)).to.equal(true);",
+              "        pm.expect(index).to.be.within(0, content.length - 1);",
+              "        pm.expect(content[index].kind).to.equal(kind);",
+              "    }",
+              "    target(body.indexReferences.teachBlockIndex, 'teachBlock');",
+              "    pm.expect(body.indexReferences.questions).to.be.an('array').that.is.not.empty;",
+              "    body.indexReferences.questions.forEach(question => {",
+              "        target(question.questionIndex, 'question');",
+              "        if (question.sectionHeadingIndex !== undefined) target(question.sectionHeadingIndex, 'sectionHeading');",
+              "        const kinds = { relevantParagraphIndexes: 'paragraph', relevantIllustrationIndexes: 'illustration', relevantBoxSupplementIndexes: 'boxSupplement', relevantFootnoteIndexes: 'footnote', relevantVideoIndexes: 'video' };",
+              "        Object.entries(kinds).forEach(([key, kind]) => (question[key] || []).forEach(index => target(index, kind)));",
+              "    });",
+              "    ['footnotes', 'boxSupplements'].forEach(key => (body.indexReferences[key] || []).forEach(ref => {",
+              "        pm.expect(Number.isInteger(ref.sourceIndex)).to.equal(true);",
+              "        pm.expect(ref.sourceIndex).to.be.within(0, content.length - 1);",
+              "        target(ref.targetIndex, key === 'footnotes' ? 'footnote' : 'boxSupplement');",
+              "        const targetItem = content[ref.targetIndex];",
+              "        if (key === 'footnotes') {",
+              "            pm.expect(targetItem.payload.marker).to.equal(ref.marker);",
+              "        } else {",
+              "            pm.expect(targetItem.payload.title).to.equal(ref.title);",
+              "            pm.expect(content[ref.sourceIndex].payload.text).to.include(ref.title);",
+              "        }",
+              "    }));",
+              "});",
+              "",
+              "pm.test('Citation markers resolve within their text block', function () {",
+              "    let blocks = 0;",
+              "    function visit(value) {",
+              "        if (!value || typeof value !== 'object') return;",
+              "        if (typeof value.textWithCitations === 'string') {",
+              "            blocks++;",
+              "            const citations = value.citations || [];",
+              "            citations.forEach(citation => {",
+              "                pm.expect(Number.isInteger(citation.id) && citation.id > 0).to.equal(true);",
+              "                const expectedMarker = '[[cite:' + citation.id + ']]';",
+              "                if (citation.marker !== undefined) pm.expect(citation.marker).to.equal(expectedMarker);",
+              "                pm.expect(value.textWithCitations).to.include(expectedMarker);",
+              "            });",
+              "            const ids = citations.map(citation => citation.id);",
+              "            pm.expect(new Set(ids).size).to.equal(ids.length);",
+              "            for (const match of value.textWithCitations.matchAll(/\\[\\[cite:(\\d+)\\]\\]/g)) {",
+              "                pm.expect(ids).to.include(Number(match[1]));",
+              "            }",
+              "            citations.forEach(citation => {",
+              "                pm.expect(citation.contents).to.be.a('string').that.is.not.empty;",
+              "                pm.expect(citation.referenceType).to.be.a('string').that.is.not.empty;",
+              "            });",
+              "        }",
+              "        Object.values(value).forEach(visit);",
+              "    }",
+              "    visit(body);",
+              "    pm.expect(blocks).to.be.above(0);",
+              "});",
+              "pm.test('Curated article retains its title and challenging content kinds', function () {",
+              "    const expected = pm.iterationData.get('expected');",
+              "    pm.expect(body.articleTitle).to.equal(expected.watchtowerTitle);",
+              "    const kinds = body.content.map(item => item.kind);",
+              "    expected.watchtowerRequiredKinds.forEach(kind => pm.expect(kinds).to.include(kind));",
+              "    const footnote = body.indexReferences.footnotes.find(ref => ref.marker === 'a');",
+              "    pm.expect(footnote).to.exist;",
+              "    pm.expect(body.content[footnote.sourceIndex].payload.number).to.equal(expected.watchtowerFootnoteSourceNumber);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Watchtower current week discovery",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/v2/pub-w/"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200 and JSON', function () {",
+              "    pm.response.to.have.status(200);",
+              "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+              "});",
+              "const body = pm.response.json();",
+              "pm.test('No reference extraction placeholders', function () {",
+              "    pm.expect(JSON.stringify(body)).not.to.include('UNEXPECTED_ERROR_UNABLE_TO_EXTRACT_REFERENCE');",
+              "});",
+              "",
+              "pm.test('Article flow and index relations are consistent', function () {",
+              "    const content = body.content;",
+              "    pm.expect(body.articleTitle).to.be.a('string').that.is.not.empty;",
+              "    pm.expect(content).to.be.an('array').that.is.not.empty;",
+              "    function target(index, kind) {",
+              "        pm.expect(Number.isInteger(index)).to.equal(true);",
+              "        pm.expect(index).to.be.within(0, content.length - 1);",
+              "        pm.expect(content[index].kind).to.equal(kind);",
+              "    }",
+              "    target(body.indexReferences.teachBlockIndex, 'teachBlock');",
+              "    pm.expect(body.indexReferences.questions).to.be.an('array').that.is.not.empty;",
+              "    body.indexReferences.questions.forEach(question => {",
+              "        target(question.questionIndex, 'question');",
+              "        if (question.sectionHeadingIndex !== undefined) target(question.sectionHeadingIndex, 'sectionHeading');",
+              "        const kinds = { relevantParagraphIndexes: 'paragraph', relevantIllustrationIndexes: 'illustration', relevantBoxSupplementIndexes: 'boxSupplement', relevantFootnoteIndexes: 'footnote', relevantVideoIndexes: 'video' };",
+              "        Object.entries(kinds).forEach(([key, kind]) => (question[key] || []).forEach(index => target(index, kind)));",
+              "    });",
+              "    ['footnotes', 'boxSupplements'].forEach(key => (body.indexReferences[key] || []).forEach(ref => {",
+              "        pm.expect(Number.isInteger(ref.sourceIndex)).to.equal(true);",
+              "        pm.expect(ref.sourceIndex).to.be.within(0, content.length - 1);",
+              "        target(ref.targetIndex, key === 'footnotes' ? 'footnote' : 'boxSupplement');",
+              "        const targetItem = content[ref.targetIndex];",
+              "        if (key === 'footnotes') {",
+              "            pm.expect(targetItem.payload.marker).to.equal(ref.marker);",
+              "        } else {",
+              "            pm.expect(targetItem.payload.title).to.equal(ref.title);",
+              "            pm.expect(content[ref.sourceIndex].payload.text).to.include(ref.title);",
+              "        }",
+              "    }));",
+              "});",
+              "",
+              "pm.test('Citation markers resolve within their text block', function () {",
+              "    let blocks = 0;",
+              "    function visit(value) {",
+              "        if (!value || typeof value !== 'object') return;",
+              "        if (typeof value.textWithCitations === 'string') {",
+              "            blocks++;",
+              "            const citations = value.citations || [];",
+              "            citations.forEach(citation => {",
+              "                pm.expect(Number.isInteger(citation.id) && citation.id > 0).to.equal(true);",
+              "                const expectedMarker = '[[cite:' + citation.id + ']]';",
+              "                if (citation.marker !== undefined) pm.expect(citation.marker).to.equal(expectedMarker);",
+              "                pm.expect(value.textWithCitations).to.include(expectedMarker);",
+              "            });",
+              "            const ids = citations.map(citation => citation.id);",
+              "            pm.expect(new Set(ids).size).to.equal(ids.length);",
+              "            for (const match of value.textWithCitations.matchAll(/\\[\\[cite:(\\d+)\\]\\]/g)) {",
+              "                pm.expect(ids).to.include(Number(match[1]));",
+              "            }",
+              "            citations.forEach(citation => {",
+              "                pm.expect(citation.contents).to.be.a('string').that.is.not.empty;",
+              "                pm.expect(citation.referenceType).to.be.a('string').that.is.not.empty;",
+              "            });",
+              "        }",
+              "        Object.values(value).forEach(visit);",
+              "    }",
+              "    visit(body);",
+              "    pm.expect(blocks).to.be.above(0);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "MWB current week discovery",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/v2/pub-mwb/"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200 and JSON', function () {",
+              "    pm.response.to.have.status(200);",
+              "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+              "});",
+              "const body = pm.response.json();",
+              "pm.test('No reference extraction placeholders', function () {",
+              "    pm.expect(JSON.stringify(body)).not.to.include('UNEXPECTED_ERROR_UNABLE_TO_EXTRACT_REFERENCE');",
+              "});",
+              "",
+              "pm.test('Complete current program', function () {",
+              "    pm.expect(body.weekDateSpan).to.be.a('string').that.is.not.empty;",
+              "    pm.expect(body.treasuresTalk.content).to.be.an('array').that.is.not.empty;",
+              "    pm.expect(body.bibleStudy.references).to.be.an('array').that.is.not.empty;",
+              "    ['startingSong', 'middleSong', 'closingSong'].forEach(key => pm.expect(body[key].songNumber).to.be.above(0));",
+              "});",
+              "",
+              "pm.test('Citation markers resolve within their text block', function () {",
+              "    let blocks = 0;",
+              "    function visit(value) {",
+              "        if (!value || typeof value !== 'object') return;",
+              "        if (typeof value.textWithCitations === 'string') {",
+              "            blocks++;",
+              "            const citations = value.citations || [];",
+              "            citations.forEach(citation => {",
+              "                pm.expect(Number.isInteger(citation.id) && citation.id > 0).to.equal(true);",
+              "                const expectedMarker = '[[cite:' + citation.id + ']]';",
+              "                if (citation.marker !== undefined) pm.expect(citation.marker).to.equal(expectedMarker);",
+              "                pm.expect(value.textWithCitations).to.include(expectedMarker);",
+              "            });",
+              "            const ids = citations.map(citation => citation.id);",
+              "            pm.expect(new Set(ids).size).to.equal(ids.length);",
+              "            for (const match of value.textWithCitations.matchAll(/\\[\\[cite:(\\d+)\\]\\]/g)) {",
+              "                pm.expect(ids).to.include(Number(match[1]));",
+              "            }",
+              "            citations.forEach(citation => {",
+              "                pm.expect(citation.contents).to.be.a('string').that.is.not.empty;",
+              "                pm.expect(citation.referenceType).to.be.a('string').that.is.not.empty;",
+              "            });",
+              "        }",
+              "        Object.values(value).forEach(visit);",
+              "    }",
+              "    visit(body);",
+              "    pm.expect(blocks).to.be.above(0);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "LFB batch preserves source order and canonical citations",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/v2/pub-lfb/?urls={{lfbUrl}}&urls={{lfbSecondUrl}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200 and JSON', function () {",
+              "    pm.response.to.have.status(200);",
+              "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+              "});",
+              "const body = pm.response.json();",
+              "pm.test('No reference extraction placeholders', function () {",
+              "    pm.expect(JSON.stringify(body)).not.to.include('UNEXPECTED_ERROR_UNABLE_TO_EXTRACT_REFERENCE');",
+              "});",
+              "",
+              "pm.test('Lessons match selected sources', function () {",
+              "    pm.expect(body.map(item => item.link)).to.eql([pm.variables.get('lfbUrl'), pm.variables.get('lfbSecondUrl')]);",
+              "    body.forEach(item => {",
+              "        pm.expect(item.type).to.equal('LESSON');",
+              "        pm.expect(item.contents.contents).to.be.a('string').that.is.not.empty;",
+              "    });",
+              "    const expected = pm.iterationData.get('expected');",
+              "    pm.expect(body[0].contents.number).to.equal(expected.lfbNumber);",
+              "    pm.expect(body[0].contents.title).to.equal(expected.lfbTitle);",
+              "});",
+              "",
+              "pm.test('Citation markers resolve within their text block', function () {",
+              "    let blocks = 0;",
+              "    function visit(value) {",
+              "        if (!value || typeof value !== 'object') return;",
+              "        if (typeof value.textWithCitations === 'string') {",
+              "            blocks++;",
+              "            const citations = value.citations || [];",
+              "            citations.forEach(citation => {",
+              "                pm.expect(Number.isInteger(citation.id) && citation.id > 0).to.equal(true);",
+              "                const expectedMarker = '[[cite:' + citation.id + ']]';",
+              "                if (citation.marker !== undefined) pm.expect(citation.marker).to.equal(expectedMarker);",
+              "                pm.expect(value.textWithCitations).to.include(expectedMarker);",
+              "            });",
+              "            const ids = citations.map(citation => citation.id);",
+              "            pm.expect(new Set(ids).size).to.equal(ids.length);",
+              "            for (const match of value.textWithCitations.matchAll(/\\[\\[cite:(\\d+)\\]\\]/g)) {",
+              "                pm.expect(ids).to.include(Number(match[1]));",
+              "            }",
+              "            citations.forEach(citation => {",
+              "                pm.expect(citation.contents).to.be.a('string').that.is.not.empty;",
+              "                pm.expect(citation.referenceType).to.be.a('string').that.is.not.empty;",
+              "            });",
+              "        }",
+              "        Object.values(value).forEach(visit);",
+              "    }",
+              "    visit(body);",
+              "    pm.expect(blocks).to.be.above(0);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Bible shared reference integrity",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/v2/pub-nwtsty/?urls={{bibleUrl}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200 and JSON', function () {",
+              "    pm.response.to.have.status(200);",
+              "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+              "});",
+              "const body = pm.response.json();",
+              "pm.test('No reference extraction placeholders', function () {",
+              "    pm.expect(JSON.stringify(body)).not.to.include('UNEXPECTED_ERROR_UNABLE_TO_EXTRACT_REFERENCE');",
+              "});",
+              "",
+              "pm.test('Every citation resolves to a shared reference', function () {",
+              "    pm.expect(body).to.have.lengthOf(1);",
+              "    pm.expect(body[0].link).to.equal(pm.variables.get('bibleUrl'));",
+              "    pm.expect(body[0].entries).to.be.an('array').that.is.not.empty;",
+              "    body[0].entries.forEach(entry => {",
+              "        pm.expect(entry.citations).to.be.an('array').that.is.not.empty;",
+              "        pm.expect(entry.citationTokenCount).to.be.above(0);",
+              "        entry.citations.forEach(citation => {",
+              "            pm.expect(body[0].sharedReferences).to.have.property(citation.referenceId);",
+              "            pm.expect(body[0].sharedReferences[citation.referenceId].contents).to.be.a('string').that.is.not.empty;",
+              "        });",
+              "    });",
+              "    pm.collectionVariables.set('observedBible', JSON.stringify(body[0]));",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Bible grouping preserves entries and handles oversized entries",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/v2/pub-nwtsty/grouped?urls={{bibleUrl}}&tokenLimit=1000"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200 and JSON', function () {",
+              "    pm.response.to.have.status(200);",
+              "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+              "});",
+              "const body = pm.response.json();",
+              "pm.test('No reference extraction placeholders', function () {",
+              "    pm.expect(JSON.stringify(body)).not.to.include('UNEXPECTED_ERROR_UNABLE_TO_EXTRACT_REFERENCE');",
+              "});",
+              "",
+              "pm.test('Grouping loses no data and honors the token boundary', function () {",
+              "    const original = JSON.parse(pm.collectionVariables.get('observedBible'));",
+              "    pm.expect(body).to.have.lengthOf(1);",
+              "    pm.expect(body[0].link).to.equal(original.link);",
+              "    pm.expect(body[0].sharedReferences).to.eql(original.sharedReferences);",
+              "    pm.expect(body[0].clusters).to.be.an('array').that.is.not.empty;",
+              "    pm.expect(body[0].clusters.flat()).to.eql(original.entries);",
+              "    body[0].clusters.forEach(cluster => {",
+              "        pm.expect(cluster).to.be.an('array').that.is.not.empty;",
+              "        const total = cluster.reduce((sum, entry) => sum + entry.citationTokenCount, 0);",
+              "        if (total > 1000) pm.expect(cluster).to.have.lengthOf(1);",
+              "    });",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "WCG publication footnote answer appears exactly once",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/v2/pub-wcg/?urls={{footnoteLessonUrl}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200 and JSON', function () {",
+              "    pm.response.to.have.status(200);",
+              "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+              "});",
+              "const body = pm.response.json();",
+              "pm.test('No reference extraction placeholders', function () {",
+              "    pm.expect(JSON.stringify(body)).not.to.include('UNEXPECTED_ERROR_UNABLE_TO_EXTRACT_REFERENCE');",
+              "});",
+              "",
+              "pm.test('Missing publication footnote is included once', function () {",
+              "    pm.expect(body).to.have.lengthOf(1);",
+              "    const citation = body[0].contents.digDeeper[0].citations[0];",
+              "    const note = pm.iterationData.get('expected').footnoteText;",
+              "    pm.expect(citation.contents).to.include('Josué podría encontrar fuerza y valor');",
+              "    pm.expect(citation.contents.split(note)).to.have.lengthOf(2);",
+              "});",
+              "",
+              "pm.test('Citation markers resolve within their text block', function () {",
+              "    let blocks = 0;",
+              "    function visit(value) {",
+              "        if (!value || typeof value !== 'object') return;",
+              "        if (typeof value.textWithCitations === 'string') {",
+              "            blocks++;",
+              "            const citations = value.citations || [];",
+              "            citations.forEach(citation => {",
+              "                pm.expect(Number.isInteger(citation.id) && citation.id > 0).to.equal(true);",
+              "                const expectedMarker = '[[cite:' + citation.id + ']]';",
+              "                if (citation.marker !== undefined) pm.expect(citation.marker).to.equal(expectedMarker);",
+              "                pm.expect(value.textWithCitations).to.include(expectedMarker);",
+              "            });",
+              "            const ids = citations.map(citation => citation.id);",
+              "            pm.expect(new Set(ids).size).to.equal(ids.length);",
+              "            for (const match of value.textWithCitations.matchAll(/\\[\\[cite:(\\d+)\\]\\]/g)) {",
+              "                pm.expect(ids).to.include(Number(match[1]));",
+              "            }",
+              "            citations.forEach(citation => {",
+              "                pm.expect(citation.contents).to.be.a('string').that.is.not.empty;",
+              "                pm.expect(citation.referenceType).to.be.a('string').that.is.not.empty;",
+              "            });",
+              "        }",
+              "        Object.values(value).forEach(visit);",
+              "    }",
+              "    visit(body);",
+              "    pm.expect(blocks).to.be.above(0);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Pretty JSON preserves the lesson response",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/v2/pub-lfb/?urls={{lfbUrl}}&pretty=1"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200 and JSON', function () {",
+              "    pm.response.to.have.status(200);",
+              "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+              "});",
+              "const body = pm.response.json();",
+              "pm.test('No reference extraction placeholders', function () {",
+              "    pm.expect(JSON.stringify(body)).not.to.include('UNEXPECTED_ERROR_UNABLE_TO_EXTRACT_REFERENCE');",
+              "});",
+              "",
+              "pm.test('Pretty response remains usable JSON', function () {",
+              "    pm.expect(body).to.have.lengthOf(1);",
+              "    pm.expect(body[0].contents.title).to.equal(pm.iterationData.get('expected').lfbTitle);",
+              "    pm.expect(pm.response.text()).to.include('\\n');",
+              "});",
+              "",
+              "pm.test('Citation markers resolve within their text block', function () {",
+              "    let blocks = 0;",
+              "    function visit(value) {",
+              "        if (!value || typeof value !== 'object') return;",
+              "        if (typeof value.textWithCitations === 'string') {",
+              "            blocks++;",
+              "            const citations = value.citations || [];",
+              "            citations.forEach(citation => {",
+              "                pm.expect(Number.isInteger(citation.id) && citation.id > 0).to.equal(true);",
+              "                const expectedMarker = '[[cite:' + citation.id + ']]';",
+              "                if (citation.marker !== undefined) pm.expect(citation.marker).to.equal(expectedMarker);",
+              "                pm.expect(value.textWithCitations).to.include(expectedMarker);",
+              "            });",
+              "            const ids = citations.map(citation => citation.id);",
+              "            pm.expect(new Set(ids).size).to.equal(ids.length);",
+              "            for (const match of value.textWithCitations.matchAll(/\\[\\[cite:(\\d+)\\]\\]/g)) {",
+              "                pm.expect(ids).to.include(Number(match[1]));",
+              "            }",
+              "            citations.forEach(citation => {",
+              "                pm.expect(citation.contents).to.be.a('string').that.is.not.empty;",
+              "                pm.expect(citation.referenceType).to.be.a('string').that.is.not.empty;",
+              "            });",
+              "        }",
+              "        Object.values(value).forEach(visit);",
+              "    }",
+              "    visit(body);",
+              "    pm.expect(blocks).to.be.above(0);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "External source rejected",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/v2/pub-w/?url=https://example.com/"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Invalid input returns 400 with an error message', function () { pm.response.to.have.status(400); const error = pm.response.json(); pm.expect(error.message).to.be.a('string').that.is.not.empty; });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Duplicate single source rejected",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/v2/pub-w/?url={{watchtowerUrl}}&url={{watchtowerUrl}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Invalid input returns 400 with an error message', function () { pm.response.to.have.status(400); const error = pm.response.json(); pm.expect(error.message).to.be.a('string').that.is.not.empty; });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Mixed batch with external source rejected",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/v2/pub-lfb/?urls={{lfbUrl}}&urls=https://example.com/"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Invalid input returns 400 with an error message', function () { pm.response.to.have.status(400); const error = pm.response.json(); pm.expect(error.message).to.be.a('string').that.is.not.empty; });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Non-Bible source rejected",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/v2/pub-nwtsty/?urls={{lfbUrl}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Invalid input returns 400 with an error message', function () { pm.response.to.have.status(400); const error = pm.response.json(); pm.expect(error.message).to.be.a('string').that.is.not.empty; });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Zero token limit rejected",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/v2/pub-nwtsty/grouped?urls={{bibleUrl}}&tokenLimit=0"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Invalid input returns 400 with an error message', function () { pm.response.to.have.status(400); const error = pm.response.json(); pm.expect(error.message).to.be.a('string').that.is.not.empty; });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Excessive token limit rejected",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/v2/pub-nwtsty/grouped?urls={{bibleUrl}}&tokenLimit=128001"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Invalid input returns 400 with an error message', function () { pm.response.to.have.status(400); const error = pm.response.json(); pm.expect(error.message).to.be.a('string').that.is.not.empty; });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Noninteger token limit rejected",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/v2/pub-nwtsty/grouped?urls={{bibleUrl}}&tokenLimit=1.5"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Invalid input returns 400 with an error message', function () { pm.response.to.have.status(400); const error = pm.response.json(); pm.expect(error.message).to.be.a('string').that.is.not.empty; });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Invalid pretty rejected",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/v2/pub-w/?pretty=false"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Invalid input returns 400 with an error message', function () { pm.response.to.have.status(400); const error = pm.response.json(); pm.expect(error.message).to.be.a('string').that.is.not.empty; });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST is not exposed",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/v2/pub-mwb/"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": ["pm.test('Unsupported route returns 404', function () { pm.response.to.have.status(404); });"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Legacy routes are absent",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/pub-mwb/"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": ["pm.test('Unsupported route returns 404', function () { pm.response.to.have.status(404); });"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "From-url alias is absent",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/v2/pub-w/from-url"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": ["pm.test('Unsupported route returns 404', function () { pm.response.to.have.status(404); });"]
+          }
+        }
+      ]
+    }
+  ]
+}

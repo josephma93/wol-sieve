@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
@@ -9,6 +9,11 @@ const repoRoot = path.resolve(__dirname, '..');
 const newmanBin = path.join(repoRoot, 'node_modules', 'newman', 'bin', 'newman.js');
 
 const RUNNERS = {
+	sanity: {
+		label: 'Risk-based v2 sanity',
+		data: 'postman/data/sanity.json',
+		collection: 'postman/collections/sanity.postman_collection.json',
+	},
 	'mwb-treasures': {
 		label: 'MWB treasures talk',
 		collection: 'postman/collections/mwb.postman_collection.json',
@@ -29,7 +34,8 @@ const RUNNERS = {
 };
 
 const TARGETS = {
-	all: ['mwb-treasures', 'mwb-program', 'wcg'],
+	all: ['mwb-treasures', 'mwb-program', 'wcg', 'sanity'],
+	sanity: ['sanity'],
 	mwb: ['mwb-treasures', 'mwb-program'],
 	'mwb-treasures': ['mwb-treasures'],
 	'mwb-program': ['mwb-program'],
@@ -41,7 +47,8 @@ function printHelp() {
   npm run e2e -- [target] [--base-url URL] [--skip-ping]
 
 Targets:
-  all            Run every positive Postman/Newman suite (default)
+  all            Run all curated and risk-based Postman suites (default)
+  sanity         Run cross-route contracts and boundary checks
   mwb            Run all MWB positive suites
   mwb-treasures  Run only MWB treasures-talk positive suite
   mwb-program    Run only MWB full-program positive suite
@@ -49,6 +56,7 @@ Targets:
 
 Options:
   --base-url URL  Override the API base URL
+  --report-dir DIR Save Newman JSON reports
   --skip-ping     Skip the preflight GET /ping check
   --help          Show this help
 
@@ -62,6 +70,7 @@ function parseArgs(argv) {
 	let target = 'all';
 	let baseUrl;
 	let skipPing = false;
+	let reportDir;
 
 	for (let i = 0; i < argv.length; i++) {
 		const arg = argv[i];
@@ -75,12 +84,13 @@ function parseArgs(argv) {
 			continue;
 		}
 
-		if (arg === '--base-url') {
+		if (arg === '--base-url' || arg === '--report-dir') {
 			const next = argv[i + 1];
 			if (!next) {
-				throw new Error('Missing value for --base-url');
+				throw new Error(`Missing value for ${arg}`);
 			}
-			baseUrl = next;
+			if (arg === '--base-url') baseUrl = next;
+			else reportDir = path.resolve(next);
 			i += 1;
 			continue;
 		}
@@ -97,7 +107,7 @@ function parseArgs(argv) {
 		target = arg;
 	}
 
-	return { help: false, target, baseUrl, skipPing };
+	return { help: false, target, baseUrl, skipPing, reportDir };
 }
 
 function normalizeBaseUrl(baseUrl) {
@@ -133,16 +143,29 @@ function ensureFileExists(relativePath) {
 	return absolutePath;
 }
 
-function runNewmanSuite(suiteKey, baseUrl) {
+function runNewmanSuite(suiteKey, baseUrl, reportDir) {
 	const suite = RUNNERS[suiteKey];
 	if (!suite) {
 		throw new Error(`Unknown suite: ${suiteKey}`);
 	}
 
 	const collectionPath = ensureFileExists(suite.collection);
-	const dataPath = ensureFileExists(suite.data);
+	const dataPath = suite.data ? ensureFileExists(suite.data) : undefined;
 
-	const args = [newmanBin, 'run', collectionPath, '--iteration-data', dataPath, '--env-var', `baseUrl=${baseUrl}`];
+	const args = [
+		newmanBin,
+		'run',
+		collectionPath,
+		'--env-var',
+		`baseUrl=${baseUrl}`,
+		'--timeout-request',
+		'60000',
+		'--timeout',
+		'180000',
+	];
+	if (dataPath) args.push('--iteration-data', dataPath);
+	if (reportDir)
+		args.push('--reporters', 'cli,json', '--reporter-json-export', path.join(reportDir, `${suiteKey}.json`));
 
 	if (suite.folder) {
 		args.push('--folder', suite.folder);
@@ -159,9 +182,7 @@ function runNewmanSuite(suiteKey, baseUrl) {
 		throw result.error;
 	}
 
-	if ((result.status ?? 1) !== 0) {
-		process.exit(result.status ?? 1);
-	}
+	return result.status ?? 1;
 }
 
 async function main() {
@@ -190,9 +211,10 @@ async function main() {
 		await pingServer(baseUrl);
 	}
 
-	for (const suiteKey of suites) {
-		runNewmanSuite(suiteKey, baseUrl);
-	}
+	if (parsed.reportDir) mkdirSync(parsed.reportDir, { recursive: true });
+	const results = suites.map((suite) => ({ suite, exitCode: runNewmanSuite(suite, baseUrl, parsed.reportDir) }));
+	if (parsed.reportDir) writeFileSync(path.join(parsed.reportDir, 'summary.json'), JSON.stringify(results, null, 2));
+	if (results.some((result) => result.exitCode !== 0)) process.exitCode = 1;
 }
 
 await main().catch((error) => {

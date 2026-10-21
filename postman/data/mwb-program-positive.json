@@ -46,18 +46,18 @@
       "fieldMinistry": [
         {
           "headline": "Empiece conversaciones",
-          "isStudentTask": true,
-          "contentsText": "DE CASA EN CASA. Use un tratado para empezar una conversación (lmd lección 1 punto 5)."
+          "contentsText": "DE CASA EN CASA. Use un tratado para empezar una conversación (lmd lección 1 punto 5).",
+          "type": "startingAConversation"
         },
         {
           "headline": "Haga revisitas",
-          "isStudentTask": true,
-          "contentsText": "PREDICACIÓN INFORMAL. Muéstrele a la persona un artículo de jw.org relacionado con el tema del que hablaron en la conversación anterior (lmd lección 9 punto 4)."
+          "contentsText": "PREDICACIÓN INFORMAL. Muéstrele a la persona un artículo de jw.org relacionado con el tema del que hablaron en la conversación anterior (lmd lección 9 punto 4).",
+          "type": "followingUp"
         },
         {
           "headline": "Discurso",
-          "isStudentTask": true,
-          "contentsText": "lmd apéndice A punto 18. Título: Jesús predijo los acontecimientos que vemos hoy (th lección 7)."
+          "contentsText": "lmd apéndice A punto 18. Título: Jesús predijo los acontecimientos que vemos hoy (th lección 7).",
+          "type": "talk"
         }
       ],
       "christianLiving": [
@@ -119,18 +119,18 @@
       "fieldMinistry": [
         {
           "headline": "Empiece conversaciones",
-          "isStudentTask": true,
-          "contentsText": "DE CASA EN CASA. Use un tratado para empezar una conversación (lmd lección 1 punto 5)."
+          "contentsText": "DE CASA EN CASA. Use un tratado para empezar una conversación (lmd lección 1 punto 5).",
+          "type": "startingAConversation"
         },
         {
           "headline": "Empiece conversaciones",
-          "isStudentTask": true,
-          "contentsText": "PREDICACIÓN INFORMAL. Utilice una de las verdades del apéndice A del folleto Una obra de amor (lmd lección 2 punto 4)."
+          "contentsText": "PREDICACIÓN INFORMAL. Utilice una de las verdades del apéndice A del folleto Una obra de amor (lmd lección 2 punto 4).",
+          "type": "startingAConversation"
         },
         {
           "headline": "Discurso",
-          "isStudentTask": true,
-          "contentsText": "lmd apéndice A punto 16. Título: Deberíamos orar con frecuencia (th lección 8)."
+          "contentsText": "lmd apéndice A punto 16. Título: Deberíamos orar con frecuencia (th lección 8).",
+          "type": "talk"
         }
       ],
       "christianLiving": [
@@ -193,18 +193,18 @@
       "fieldMinistry": [
         {
           "headline": "Empiece conversaciones",
-          "isStudentTask": true,
-          "contentsText": "DE CASA EN CASA. Empiece hablando de un tema de actualidad, pero luego muéstrele a la persona lo que dice la Biblia sobre un tema que a ella le interese más (lmd lección 2 punto 5)."
+          "contentsText": "DE CASA EN CASA. Empiece hablando de un tema de actualidad, pero luego muéstrele a la persona lo que dice la Biblia sobre un tema que a ella le interese más (lmd lección 2 punto 5).",
+          "type": "startingAConversation"
         },
         {
           "headline": "Haga revisitas",
-          "isStudentTask": true,
-          "contentsText": "DE CASA EN CASA. Ofrezca un curso de la Biblia (lmd lección 8 punto 3)."
+          "contentsText": "DE CASA EN CASA. Ofrezca un curso de la Biblia (lmd lección 8 punto 3).",
+          "type": "followingUp"
         },
         {
           "headline": "Haga discípulos",
-          "isStudentTask": true,
-          "contentsText": "Converse con alguien que estudia la Biblia con usted pero no progresa (lmd lección 12 punto 5)."
+          "contentsText": "Converse con alguien que estudia la Biblia con usted pero no progresa (lmd lección 12 punto 5).",
+          "type": "makingDisciples"
         }
       ],
       "christianLiving": [
