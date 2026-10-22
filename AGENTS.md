@@ -8,7 +8,13 @@ changes. Keep that context in code, tests, pull request notes, or the relevant r
 Before completing scraper, fetcher, contract, route, or dependency changes, run `./scripts/sanity.sh`.
 This command builds and tests the current source against WOL in a temporary Docker container.
 Use `postman/README.md` to select risk coverage and interpret reports.
-Preserve curated development scenarios. Add a focused regression case for each newly supported source variation or fixed defect.
+Maintain Postman as a risk-based regression suite for the public API.
+Focus coverage on known risks and edge cases discovered during development.
+When a change affects a covered risk, review and update the corresponding scenarios and assertions.
+Preserve curated development scenarios while the corresponding behavior remains supported.
+Add a focused regression case when a defect or source variation exposes a concrete risk that needs persistent coverage.
+Do not add tests without a concrete risk to protect against.
+Verify changed expectations against the WOL source and the intended public contract.
 Do not regenerate expected values from the API under test. Report any incomplete live verification explicitly.
 
 ## Responsibility and Dependency Boundaries
