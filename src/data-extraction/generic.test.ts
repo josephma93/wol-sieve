@@ -8,7 +8,7 @@ import {
 	takeOutTimeBoxText,
 } from '../kernel/index.js';
 import * as cheerio from 'cheerio';
-import { isVideoAnchor } from './generic.js';
+import { isVideoAnchor, isWolReferenceHref } from './generic.js';
 
 describe('data-extraction/generic utilities', () => {
 	it('cleanText removes NBSP and trims', () => {
@@ -44,6 +44,14 @@ describe('data-extraction/generic utilities', () => {
 		expect(isExternalHttpUrl('/es/wol/d/r4/lp-s/2025521')).toBe(false);
 		expect(isExternalHttpUrl('mailto:person@example.com')).toBe(false);
 		expect(isExternalHttpUrl('not a url')).toBe(false);
+	});
+
+	it('isWolReferenceHref recognizes relative and absolute WOL destinations', () => {
+		expect(isWolReferenceHref('/es/wol/d/r4/lp-s/2025521')).toBe(true);
+		expect(isWolReferenceHref('https://wol.jw.org/es/wol/d/r4/lp-s/2025521')).toBe(true);
+		expect(isWolReferenceHref('https://example.com/es/wol/d/r4/lp-s/2025521')).toBe(false);
+		expect(isWolReferenceHref('/es/not-wol/d/r4/lp-s/2025521')).toBe(false);
+		expect(isWolReferenceHref(undefined)).toBe(false);
 	});
 
 	it('isVideoAnchor detects anchors with WOL video metadata', () => {

@@ -5,7 +5,6 @@ import {
 	cleanText,
 	collapseConsecutiveLineBreaks,
 	isExternalHttpUrl,
-	isWolUrl,
 	normalizeWolUrl,
 	takeOutTimeBoxText,
 } from '../../kernel/index.js';
@@ -14,7 +13,7 @@ import { CheerioAPI } from 'cheerio';
 import { ExtractionContextOptions, createExtractionContext } from '../generics.js';
 import { parsePubSjj, PubSjjParsedData } from '../../data-extraction/extractors-as-obj.js';
 import { opErrored } from '../../kernel/index.js';
-import { getCheerioSelectionOrThrow, isVideoAnchor } from '../../data-extraction/generic.js';
+import { getCheerioSelectionOrThrow, isVideoAnchor, isWolReferenceHref } from '../../data-extraction/generic.js';
 import type { CheerioSelection } from '../../data-extraction/generic.js';
 import {
 	buildChristianLivingSelections,
@@ -116,7 +115,14 @@ type FieldMinistryAssignmentType =
 	| 'talk'
 	| 'whatWouldYouSay';
 
-type FieldMinistryTextBlock = CitationTextBlock;
+interface FieldMinistryExternalLink {
+	text: string;
+	url: string;
+}
+
+interface FieldMinistryTextBlock extends CitationTextBlock {
+	externalLinks?: FieldMinistryExternalLink[];
+}
 type FieldMinistryQuestion = FieldMinistryTextBlock;
 
 type FieldMinistryContentItem =
@@ -935,16 +941,27 @@ function getFieldMinistryContext(heading: CheerioSelection): string {
 		: `Field ministry heading "${rawHeading}"`;
 }
 
-function selectFieldMinistryReferenceAnchors(
-	$: CheerioAPI,
-	$element: CheerioSelection,
-	context: string,
-): CheerioSelection {
+function getFieldMinistryExternalLinks($: CheerioAPI, $element: CheerioSelection): FieldMinistryExternalLink[] {
+	return $element
+		.find(CONSTANTS.GENERAL_CSS_SELECTOR_FOR_NON_VIDEO_ANCHORS)
+		.map((_, anchor) => {
+			const $anchor = $(anchor);
+			const href = $anchor.attr('href') ?? '';
+			if (!href || isWolReferenceHref(href)) return null;
+
+			return {
+				text: cleanText($anchor.text()),
+				url: href,
+			};
+		})
+		.get()
+		.filter((link): link is FieldMinistryExternalLink => link !== null);
+}
+
+function selectFieldMinistryReferenceAnchors($: CheerioAPI, $element: CheerioSelection): CheerioSelection {
 	return $element.find(CONSTANTS.GENERAL_CSS_SELECTOR_FOR_NON_VIDEO_ANCHORS).filter((_, anchor) => {
 		const href = $(anchor).attr('href') ?? '';
-		if (!href) return false;
-		if ((href.startsWith('/') && href.includes('/wol/')) || isWolUrl(href)) return true;
-		throw makeFieldMinistryError(context, `Unsupported non-WOL link destination "${href}".`);
+		return isWolReferenceHref(href);
 	});
 }
 
@@ -964,8 +981,8 @@ async function buildFieldMinistryCitationTextBlock(
 
 	for (const $paragraph of paragraphs) {
 		const $paragraphWithMarkers = $paragraph.clone();
-		const $references = selectFieldMinistryReferenceAnchors($, $paragraph, context);
-		const $referencesWithMarkers = selectFieldMinistryReferenceAnchors($, $paragraphWithMarkers, context);
+		const $references = selectFieldMinistryReferenceAnchors($, $paragraph);
+		const $referencesWithMarkers = selectFieldMinistryReferenceAnchors($, $paragraphWithMarkers);
 		if ($references.length !== $referencesWithMarkers.length) {
 			throw makeFieldMinistryError(context, 'Unable to preserve WOL references while reading a text block.');
 		}
@@ -987,7 +1004,7 @@ async function buildFieldMinistryCitationTextBlock(
 		paragraphAnchors.push($references);
 	}
 
-	let block = createCitationTextBlock(
+	let block: FieldMinistryTextBlock = createCitationTextBlock(
 		textParts.filter(Boolean).join('\n'),
 		textWithCitationParts.filter(Boolean).join('\n'),
 	);
@@ -1000,6 +1017,10 @@ async function buildFieldMinistryCitationTextBlock(
 		} catch (error) {
 			throw makeFieldMinistryError(context, 'Unable to resolve a WOL citation in the assignment text.', error);
 		}
+	}
+	const externalLinks = paragraphs.flatMap(($paragraph) => getFieldMinistryExternalLinks($, $paragraph));
+	if (externalLinks.length > 0) {
+		block = { ...block, externalLinks };
 	}
 
 	return block;
@@ -1076,7 +1097,7 @@ async function extractFieldMinistryContentItems(
 			if ($element.find('img').length !== 1) {
 				throw makeFieldMinistryError(context, 'Expected each field ministry figure to contain one image.');
 			}
-			if (selectFieldMinistryReferenceAnchors($, $element, context).length > 0) {
+			if (selectFieldMinistryReferenceAnchors($, $element).length > 0) {
 				throw makeFieldMinistryError(context, 'WOL references in illustration captions are not supported.');
 			}
 			const illustration = extractIllustrationData($element);

@@ -129,6 +129,37 @@ describe('extractFieldMinistryV2', () => {
 		]);
 	});
 
+	it('preserves non-WOL links as external links without treating them as WOL citations', async () => {
+		const result = await extractFieldMinistryV2({
+			html: page([
+				{
+					headline: 'Expliquemos nuestras creencias',
+					content: timeBox(
+						5,
+						'Presente el video <a href="https://www.jw.org/finder?prefer=content&amp;wtlocale=S&amp;pub=ijwwd">¿Lo diseñó alguien?</a>.',
+					),
+				},
+			]),
+		});
+
+		expect(result[0].content).toEqual([
+			{
+				kind: 'text',
+				payload: {
+					text: 'Presente el video ¿Lo diseñó alguien?.',
+					textWithCitations: 'Presente el video ¿Lo diseñó alguien?.',
+					citations: [],
+					externalLinks: [
+						{
+							text: '¿Lo diseñó alguien?',
+							url: 'https://www.jw.org/finder?prefer=content&wtlocale=S&pub=ijwwd',
+						},
+					],
+				},
+			},
+		]);
+	});
+
 	it.each([
 		['Empiece conversaciones', 'startingAConversation'],
 		['Empecemos conversaciones', 'startingAConversation'],
@@ -166,20 +197,34 @@ describe('extractFieldMinistryV2', () => {
 			'assignment text',
 			'Empiece conversaciones',
 			timeBox(3, 'Use este recurso: <a href="https://example.com/resource">recurso externo</a>.'),
+			'https://example.com/resource',
+			'recurso externo',
 		],
 		[
 			'question text',
 			'What Would You Say?',
 			`${timeBox(6, 'Analysis with the audience.')}<ul>${question('What resource would you show? <a href="https://example.com/tract">sample resource</a>')}</ul>`,
+			'https://example.com/tract',
+			'sample resource',
 		],
-	] as const)('rejects non-WOL external links in %s with assignment context', async (_, headline, content) => {
-		await expect(
-			extractFieldMinistryV2({
-				html: page([{ headline, content }]),
-			}),
-		).rejects.toThrow(
-			`Field ministry section 4 headline "${headline}": Unsupported non-WOL link destination "https://example.com/`,
-		);
+		[
+			'assignment text with a non-HTTP link',
+			'Empiece conversaciones',
+			timeBox(3, 'Contact us: <a href="mailto:help@example.com">email</a>.'),
+			'mailto:help@example.com',
+			'email',
+		],
+	] as const)('records non-WOL links in %s as external links', async (_, headline, content, url, linkText) => {
+		const result = await extractFieldMinistryV2({
+			html: page([{ headline, content }]),
+		});
+		const textBlocks = result[0].content.flatMap((item) => {
+			if (item.kind === 'text') return [item.payload];
+			if (item.kind === 'questionList') return item.payload.questions;
+			return [];
+		});
+
+		expect(textBlocks.flatMap((block) => block.externalLinks ?? [])).toContainEqual({ text: linkText, url });
 	});
 
 	it.each(['¿Qué diría?', '¿Qué dirías?'])(

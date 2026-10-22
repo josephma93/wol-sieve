@@ -220,5 +220,17 @@
         ]
       }
     }
+  },
+  {
+    "id": "mwb_program_202026409_external_field_ministry_link",
+    "url": "https://wol.jw.org/es/wol/d/r4/lp-s/202026409",
+    "why": "Programa completo con un enlace a jw.org en la asignación 6. El endpoint conserva el texto y el destino en externalLinks.",
+    "expected": {
+      "fieldMinistryExternalLink": {
+        "sectionNumber": 6,
+        "text": "¿Lo diseñó alguien?",
+        "url": "https://www.jw.org/finder?prefer=content&wtlocale=S&pub=ijwwd"
+      }
+    }
   }
 ]

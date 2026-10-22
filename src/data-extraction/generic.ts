@@ -1,4 +1,4 @@
-import { CONSTANTS, logger } from '../kernel/index.js';
+import { CONSTANTS, isWolUrl, logger } from '../kernel/index.js';
 import { CheerioAPI } from 'cheerio';
 
 const log = logger.child({ ...logger.bindings(), label: 'util' });
@@ -32,4 +32,17 @@ export function getCheerioSelectionOrThrow($: CheerioAPI, selector: string) {
  */
 export function isVideoAnchor($anchor: CheerioSelection): boolean {
 	return $anchor.is(CONSTANTS.GENERAL_CSS_SELECTOR_FOR_VIDEO_ANCHORS);
+}
+
+/**
+ * Checks whether an anchor destination identifies a WOL reference.
+ *
+ * WOL pages use relative paths for article references. Other sources can use absolute WOL URLs.
+ *
+ * @param href - The anchor destination to check.
+ * @returns `true` when the destination is a relative WOL path or an absolute URL on the WOL host.
+ */
+export function isWolReferenceHref(href: string | undefined): boolean {
+	if (!href) return false;
+	return (href.startsWith('/') && href.includes('/wol/')) || isWolUrl(href);
 }
