@@ -47,6 +47,8 @@ Use supplied URLs and existing curated samples. Ask for missing samples when req
 Prefer document structure over localized text. Validate changed selectors against the affected samples.
 Check another language when samples are available. Do not invent missing source content or add unrequested publication support.
 
+For the structural model, investigation workflow, and classification examples, see [WOL stencils](docs/wol-stencils.md).
+
 ## Unit Tests and Local Checks
 
 -   Cover changed behavior, boundaries, and failures with focused Vitest tests beside the affected code. Mock network calls.

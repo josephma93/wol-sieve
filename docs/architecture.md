@@ -27,10 +27,10 @@ Code placement and dependency rules are defined in the
 
 A stencil is a recurring HTML structure used to render a publication page.
 WOL pages share stencils across languages while their visible text changes.
-The [scraper investigation rules](../AGENTS.md#investigate-wol-structures) describe how to compare source variants before changing selectors.
+The [WOL stencils chapter](wol-stencils.md) explains the model, structural signals, investigation workflow, and WCG classification examples.
 [Testing](testing.md) explains how unit fixtures and live regression scenarios verify extraction behavior.
 
 The [WOL highlight fragment note](notes/wol-h-fragment.md) describes observed browser behavior for `#h=` links.
 This service does not currently parse or generate those fragments.
 
-Previous: [API](api.md). Next: [Testing](testing.md).
+Previous: [API](api.md). Next: [WOL stencils](wol-stencils.md).
