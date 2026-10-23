@@ -1,5 +1,7 @@
 # Postman sanity checks
 
+[Contents](../README.md#documentation) · [Testing](../docs/testing.md)
+
 Postman is the risk-based live regression check for the public v2 API. Newman runs curated scenarios against real WOL
 responses. The scenarios target known extraction risks, such as DOM order, optional media, references, batch ordering,
 and route boundaries. They are a safety net, not an exhaustive survey of WOL pages or languages. Unit tests cover

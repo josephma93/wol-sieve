@@ -1,5 +1,7 @@
 # WOL URL `#h=` Fragment
 
+[Contents](../../README.md#documentation) · [Architecture](../architecture.md#wol-page-structures)
+
 ## Purpose
 
 Use this note when you inspect or build a WOL URL that contains `#h=`.
@@ -248,7 +250,7 @@ This repository does not parse or generate `#h=` fragments today.
 
 Current box resolution in `pub-w` uses `href` fragments such as `#p123` and a title fallback.
 
-See [src/scrappers/pub-w/pub-w.ts](/Users/joseph.montero/learning/wol-sieve/src/scrappers/pub-w/pub-w.ts:120).
+See [the Watchtower scraper](../../src/scrappers/pub-w/pub-w.ts).
 
 Use this note as research context for future work.
 
