@@ -463,10 +463,10 @@ async function parseDigDeeper($: CheerioAPI, $article: CheerioSelection): Promis
 	return Promise.all(questionsToParse.map(($question) => parseQuestionBlockFromParagraph($question, figuresByLabel)));
 }
 
-function getTopLevelList($: CheerioAPI, $scope: CheerioSelection, selector: 'ol' | 'ul'): CheerioSelection {
-	return getSelectionWithDescendants($scope, selector)
-		.filter((_, listEl) => $(listEl).parents(selector).length === 0)
-		.first();
+function getTopLevelLists($: CheerioAPI, $scope: CheerioSelection, selector: 'ol' | 'ul'): CheerioSelection {
+	return getSelectionWithDescendants($scope, selector).filter(
+		(_, listEl) => $(listEl).parents(selector).length === 0,
+	);
 }
 
 async function parseReflectOnLessons($: CheerioAPI, $article: CheerioSelection): Promise<WcgReflectQuestionBlock[]> {
@@ -475,8 +475,8 @@ async function parseReflectOnLessons($: CheerioAPI, $article: CheerioSelection):
 
 	const $section = getSectionSiblingsUntilHeading($, $heading, /^Vea el cuadro completo$/i);
 	const figuresByLabel = buildFigureLabelMap($, $section);
-	const $list = getTopLevelList($, $section, 'ul');
-	const listItems = $list.children('li').toArray();
+	const $lists = getTopLevelLists($, $section, 'ul');
+	const listItems = $lists.children('li').toArray();
 	const blocks = await Promise.all(
 		listItems.map(async (listItem) => {
 			const $li = $(listItem);
@@ -516,7 +516,7 @@ function parseMeditateOnBiggerPicture($: CheerioAPI, $article: CheerioSelection)
 	if ($heading.length === 0) return [];
 
 	const $section = getSectionSiblingsUntilHeading($, $heading, /^Para saber más$/i);
-	const $list = getTopLevelList($, $section, 'ul');
+	const $list = getTopLevelLists($, $section, 'ul').first();
 
 	return $list
 		.children('li')

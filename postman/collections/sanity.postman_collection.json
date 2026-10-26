@@ -462,6 +462,76 @@
       ]
     },
     {
+      "name": "WCG Rahab reflection with faded-image composition",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/v2/pub-wcg/?urls={{rahabLessonUrl}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200 and JSON', function () {",
+              "    pm.response.to.have.status(200);",
+              "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+              "});",
+              "const body = pm.response.json();",
+              "pm.test('No reference extraction placeholders', function () {",
+              "    pm.expect(JSON.stringify(body)).not.to.include('UNEXPECTED_ERROR_UNABLE_TO_EXTRACT_REFERENCE');",
+              "});",
+              "",
+              "pm.test('Faded-image reflection preserves questions, citations, and figure association', function () {",
+              "    pm.expect(body).to.have.lengthOf(1);",
+              "    pm.expect(body[0].type).to.equal('LESSON');",
+              "    pm.expect(body[0].contents.number).to.equal(14);",
+              "    const expected = pm.iterationData.get('expected').rahabReflection;",
+              "    const questions = body[0].contents.reflectOnTheLessons;",
+              "    pm.expect(questions.map(question => question.text)).to.eql(expected.questions);",
+              "    pm.expect(questions[0].figure).to.equal(null);",
+              "    pm.expect(questions[2].figure).to.equal(null);",
+              "    pm.expect(questions[0].citations).to.eql([]);",
+              "    pm.expect(questions[2].citations).to.eql([]);",
+              "    questions.forEach(question => pm.expect(question).not.to.have.property('subPoints'));",
+              "    pm.expect(questions[1].figure).to.deep.include(expected.figure);",
+              "    pm.expect(questions[1].citations.map(citation => citation.mnemonic.replace(/[;.]$/, '').trim())).to.eql(expected.citationMnemonics);",
+              "});",
+              "",
+              "pm.test('Citation markers resolve within their text block', function () {",
+              "    let blocks = 0;",
+              "    function visit(value) {",
+              "        if (!value || typeof value !== 'object') return;",
+              "        if (typeof value.textWithCitations === 'string') {",
+              "            blocks++;",
+              "            const citations = value.citations || [];",
+              "            citations.forEach(citation => {",
+              "                pm.expect(Number.isInteger(citation.id) && citation.id > 0).to.equal(true);",
+              "                const expectedMarker = '[[cite:' + citation.id + ']]';",
+              "                if (citation.marker !== undefined) pm.expect(citation.marker).to.equal(expectedMarker);",
+              "                pm.expect(value.textWithCitations).to.include(expectedMarker);",
+              "            });",
+              "            const ids = citations.map(citation => citation.id);",
+              "            pm.expect(new Set(ids).size).to.equal(ids.length);",
+              "            for (const match of value.textWithCitations.matchAll(/\\[\\[cite:(\\d+)\\]\\]/g)) {",
+              "                pm.expect(ids).to.include(Number(match[1]));",
+              "            }",
+              "            citations.forEach(citation => {",
+              "                pm.expect(citation.contents).to.be.a('string').that.is.not.empty;",
+              "                pm.expect(citation.referenceType).to.be.a('string').that.is.not.empty;",
+              "            });",
+              "        }",
+              "        Object.values(value).forEach(visit);",
+              "    }",
+              "    visit(body);",
+              "    pm.expect(blocks).to.be.above(0);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
       "name": "Pretty JSON preserves the lesson response",
       "request": {
         "method": "GET",

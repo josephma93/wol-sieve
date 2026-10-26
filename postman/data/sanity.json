@@ -6,7 +6,8 @@
       "lfbUrl": "https://wol.jw.org/es/wol/d/r4/lp-s/1102016021",
       "lfbSecondUrl": "https://wol.jw.org/es/wol/d/r4/lp-s/1102016022",
       "bibleUrl": "https://wol.jw.org/es/wol/b/r4/lp-s/nwtsty/19/70",
-      "footnoteLessonUrl": "https://wol.jw.org/es/wol/d/r4/lp-s/1102025913"
+      "footnoteLessonUrl": "https://wol.jw.org/es/wol/d/r4/lp-s/1102025913",
+      "rahabLessonUrl": "https://wol.jw.org/es/wol/d/r4/lp-s/1102025914"
     },
     "expected": {
       "lfbNumber": 11,
@@ -22,7 +23,20 @@
         "teachBlock",
         "footnote"
       ],
-      "watchtowerFootnoteSourceNumber": 7
+      "watchtowerFootnoteSourceNumber": 7,
+      "rahabReflection": {
+        "questions": [
+          "¿Por qué necesitaba valor Rahab para dejar su estilo de vida inmoral y adorar a Jehová con los israelitas? ¿Qué pueden aprender de su ejemplo quienes están estudiando la Biblia?",
+          "La Biblia nos dice que no debemos mentir. Ahora bien, puede que haya enemigos del pueblo de Dios que nos presionen para que revelemos información confidencial sobre nuestros hermanos. En casos como esos, ¿qué podemos aprender del ejemplo de Rahab? (Prov. 11:13; Ecl. 3:7; Efes. 4:25). C",
+          "¿De qué otras maneras puede usted copiar el ejemplo de valor de Rahab?"
+        ],
+        "figure": {
+          "id": "f5",
+          "src": "https://wol.jw.org/es/wol/mp/r4/lp-s/wcg/2025/350",
+          "caption": "Imagen C"
+        },
+        "citationMnemonics": ["Prov. 11:13", "Ecl. 3:7", "Efes. 4:25"]
+      }
     }
   }
 ]

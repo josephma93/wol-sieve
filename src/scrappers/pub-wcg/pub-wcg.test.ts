@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const referenceMocks = vi.hoisted(() => ({
@@ -286,6 +287,42 @@ describe('extractWcgContents', () => {
 				}),
 			],
 		});
+	});
+
+	it('preserves reflection questions around the Rahab faded-image composition', async () => {
+		const reflectionHtml = readFileSync(new URL('./fixtures/rahab-reflection.html', import.meta.url), 'utf8');
+		const parsed = await extractWcgContents({
+			html: article({
+				docClass: '13',
+				header: '<p class="contextTtl">14 RAHAB</p><h1>Puso a Jehová por encima de su propio pueblo</h1>',
+				body: `<div class="stdPullQuote"><p>Featured quote.</p></div>
+					${reflectionHtml}
+					<h2>Vea el cuadro completo</h2>
+					<ul><li><p>Following section question.</p></li></ul>`,
+			}),
+		});
+		const contents = parsed.contents as any;
+		const questions = contents.reflectOnTheLessons;
+
+		expect(questions.map((question: { text: string }) => question.text)).toEqual([
+			'¿Por qué necesitaba valor Rahab para dejar su estilo de vida inmoral y adorar a Jehová con los israelitas? ¿Qué pueden aprender de su ejemplo quienes están estudiando la Biblia?',
+			'La Biblia nos dice que no debemos mentir. Ahora bien, puede que haya enemigos del pueblo de Dios que nos presionen para que revelemos información confidencial sobre nuestros hermanos. En casos como esos, ¿qué podemos aprender del ejemplo de Rahab? (Prov. 11:13; Ecl. 3:7; Efes. 4:25). C',
+			'¿De qué otras maneras puede usted copiar el ejemplo de valor de Rahab?',
+		]);
+		expect(questions[0].figure).toBeNull();
+		expect(questions[2].figure).toBeNull();
+		expect(questions.every((question: { subPoints?: unknown }) => question.subPoints === undefined)).toBe(true);
+		expect(questions[1].figure).toMatchObject({
+			id: 'f5',
+			src: 'https://wol.jw.org/es/wol/mp/r4/lp-s/wcg/2025/350',
+			caption: 'Imagen C',
+		});
+		expect(questions[1].citations).toHaveLength(3);
+		for (const citation of questions[1].citations) {
+			expect(questions[1].textWithCitations).toContain(citation.marker);
+			expect(citation.contents).toBeTruthy();
+		}
+		expect(contents.meditateOnTheBiggerPicture).toEqual(['Following section question.']);
 	});
 
 	it('matches localized figure markers from the WOL stencil', async () => {
