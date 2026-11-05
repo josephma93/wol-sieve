@@ -9,7 +9,7 @@ vi.mock('../../data-fetching/reference-json.js', () => ({
 	fetchAndParseAnchorReferenceOrThrow: referenceMocks.fetchAndParseAnchorReferenceOrThrow,
 }));
 
-import { extractWcgContents } from './pub-wcg.js';
+import { extractWcgContents, type WcgLessonContents } from './pub-wcg.js';
 
 function normalizeTestText(text: string): string {
 	return text.trim().replaceAll(' ', ' ').replace(/\s+/g, ' ');
@@ -323,6 +323,34 @@ describe('extractWcgContents', () => {
 			expect(citation.contents).toBeTruthy();
 		}
 		expect(contents.meditateOnTheBiggerPicture).toEqual(['Following section question.']);
+	});
+
+	it.each([
+		{ lesson: 14, figures: [null, null, 'f3', 'f4'], reflectionFigures: [null, 'f5', null] },
+		{ lesson: 15, figures: ['f3', null, null, 'f4'], reflectionFigures: ['f5', null, null] },
+		{ lesson: 16, figures: [null, null, 'f3', null], reflectionFigures: ['f4', null, null] },
+		{ lesson: 17, figures: [null, null, null, 'f3'], reflectionFigures: [null, 'f4', null] },
+		{ lesson: 18, figures: [null, 'f3', 'f4', null], reflectionFigures: [null, 'f5', null] },
+	])('extracts the complete study stencil of lesson $lesson', async ({ lesson, figures, reflectionFigures }) => {
+		const studyHtml = readFileSync(new URL(`./fixtures/lesson-${lesson}-study.html`, import.meta.url), 'utf8');
+		const parsed = await extractWcgContents({
+			html: article({
+				docClass: '13',
+				header: `<p class="contextTtl">${lesson} TEST</p><h1>Study stencil</h1>`,
+				body: `<div class="stdPullQuote"><p>Featured quote.</p></div>${studyHtml}`,
+			}),
+		});
+		const contents = parsed.contents as WcgLessonContents;
+		expect(contents.digDeeper.map((question) => question.text.match(/^\d+/)?.[0])).toEqual(['1', '2', '3', '4']);
+		expect(contents.digDeeper.map((question) => question.figure?.id ?? null)).toEqual(figures);
+		expect(contents.reflectOnTheLessons.map((question) => question.figure?.id ?? null)).toEqual(reflectionFigures);
+		expect(contents.meditateOnTheBiggerPicture).toHaveLength(3);
+		for (const question of [...contents.digDeeper, ...contents.reflectOnTheLessons]) {
+			for (const citation of question.citations) {
+				expect(question.textWithCitations).toContain(citation.marker);
+				expect(citation.contents).toBeTruthy();
+			}
+		}
 	});
 
 	it('matches localized figure markers from the WOL stencil', async () => {

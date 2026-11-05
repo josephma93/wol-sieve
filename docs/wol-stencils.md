@@ -150,6 +150,33 @@ See `detectWcgPageType` in the [WCG scraper](../src/scrappers/pub-wcg/pub-wcg.ts
 [WCG tests](../src/scrappers/pub-wcg/pub-wcg.test.ts) for the implementation and representative fixtures.
 [Curated WCG scenarios](../postman/data/wcg-positive.json) provide source URLs and expected results for live regression.
 
+### WCG study sections with background compositions
+
+Study sections use two layout variants. The heading can be a sibling of the questions or inside a background composition.
+A direct parent with `data-bg-image` identifies the second variant. This attribute also occurs around questions inside a section.
+
+For a heading inside a background composition, use that composition as the section start.
+Include the composition and its following siblings until the next section heading.
+For an ordinary heading, use the following siblings until the next section heading.
+Both variants retain question order and use labeled figures to associate images with questions.
+Background fragments do not become additional figures.
+
+The following source cases cover these variations:
+
+| Lesson       | Structural variation                                                                                     | Required result                                                       |
+| ------------ | -------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| `1102025914` | Reflection lists surround a background composition.                                                      | Preserve three reflection points and image C on the middle point.     |
+| `1102025915` | The study heading and question 1 share a background composition.                                         | Preserve questions 1–4 and images A and B on their labeled questions. |
+| `1102025916` | Study question 3 is inside a background composition between ordinary lists.                              | Preserve questions 1–4 and image A on question 3.                     |
+| `1102025917` | The study heading and questions share a background composition. Figures follow outside that composition. | Preserve questions 1–4 and image A on question 4.                     |
+| `1102025918` | Study questions use an ordinary list with inline figures.                                                | Preserve questions 1–4 and images A and B on their labeled questions. |
+
+The English pages for lessons 15–17 expose the same background layout signals.
+This comparison verifies the stencil signal. It does not add English lesson extraction support.
+
+The WCG Postman suite checks exact question arrays, source order, reference labels, figure descriptions, and captions.
+Run this suite before changing extraction to reproduce the failure. Run the complete sanity check after the change.
+
 These selectors describe WCG. Inspect the relevant publication before applying them to another scraper.
 
 Previous: [Architecture](architecture.md). Next: [Testing](testing.md).

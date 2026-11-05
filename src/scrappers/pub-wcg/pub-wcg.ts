@@ -260,8 +260,12 @@ function getSectionSiblingsUntilHeading(
 	$heading: CheerioSelection,
 	stopPattern?: RegExp,
 ): CheerioSelection {
-	const sectionElements: any[] = [];
-	let $current = $heading.next();
+	// Background compositions can wrap the heading and only part of its section.
+	// Start at that layout block so sibling questions and figures stay in scope.
+	const $backgroundLayout = $heading.parent('[data-bg-image]');
+	const sectionElements: any[] = $backgroundLayout.length > 0 ? [$backgroundLayout[0]] : [];
+	const $sectionStart = $backgroundLayout.length > 0 ? $backgroundLayout : $heading;
+	let $current = $sectionStart.next();
 
 	while ($current.length > 0) {
 		const headingText = $current.is('h2, h3')

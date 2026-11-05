@@ -326,5 +326,354 @@
         }
       }
     ]
+  },
+  {
+    "id": "wcg_lesson_14_study_stencil",
+    "why": "Reflection questions span a faded-image composition.",
+    "urls": ["https://wol.jw.org/es/wol/d/r4/lp-s/1102025914"],
+    "expectedOrder": ["https://wol.jw.org/es/wol/d/r4/lp-s/1102025914"],
+    "expectedItems": [
+      {
+        "link": "https://wol.jw.org/es/wol/d/r4/lp-s/1102025914",
+        "type": "LESSON",
+        "expected": {
+          "number": 14,
+          "digDeeper": [
+            {
+              "text": "1. Describa cómo debió ser la vida de Rahab en Jericó (w13 1/11 12, 13).",
+              "figure": null,
+              "citationMnemonics": ["w13 1/11 12, 13"]
+            },
+            {
+              "text": "2. ¿Cómo sabemos que los espías no fueron a la casa de Rahab con intenciones inmorales? (it “Prostituta” párr. 16).",
+              "figure": null,
+              "citationMnemonics": ["it “Prostituta” párr. 16"]
+            },
+            {
+              "text": "3. ¿Por qué tenía Rahab en el techo tallos de lino puestos en hileras, y para qué se usaba el lino? (it “Lino, I” párrs. 2-4). A",
+              "figure": {
+                "alt": "",
+                "caption": "Imagen A: Un campo de lino."
+              },
+              "citationMnemonics": ["it “Lino, I” párrs. 2-4"]
+            },
+            {
+              "text": "4. ¿Por qué no estuvo mal que Rahab engañara a los hombres del rey? (w04 1/12 9 párr. 1). B",
+              "figure": {
+                "alt": "Rahab dándoles indicaciones a dos hombres enviados por el rey.",
+                "caption": "Imagen B"
+              },
+              "citationMnemonics": ["w04 1/12 9 párr. 1"]
+            }
+          ],
+          "reflectOnTheLessons": [
+            {
+              "text": "¿Por qué necesitaba valor Rahab para dejar su estilo de vida inmoral y adorar a Jehová con los israelitas? ¿Qué pueden aprender de su ejemplo quienes están estudiando la Biblia?",
+              "figure": null,
+              "citationMnemonics": [],
+              "subPoints": []
+            },
+            {
+              "text": "La Biblia nos dice que no debemos mentir. Ahora bien, puede que haya enemigos del pueblo de Dios que nos presionen para que revelemos información confidencial sobre nuestros hermanos. En casos como esos, ¿qué podemos aprender del ejemplo de Rahab? (Prov. 11:13; Ecl. 3:7; Efes. 4:25). C",
+              "figure": {
+                "alt": "Una hermana esposada se queda callada mientras un oficial de una prisión la interroga. Él está de pie delante de ella señalando unos documentos que hay sobre una mesa. Detrás, hay un guardia armado.",
+                "caption": "Imagen C"
+              },
+              "citationMnemonics": ["Prov. 11:13;", "Ecl. 3:7;", "Efes. 4:25"],
+              "subPoints": []
+            },
+            {
+              "text": "¿De qué otras maneras puede usted copiar el ejemplo de valor de Rahab?",
+              "figure": null,
+              "citationMnemonics": [],
+              "subPoints": []
+            }
+          ],
+          "meditateOnTheBiggerPicture": [
+            "¿Qué me enseña este relato sobre Jehová?",
+            "¿Cómo se relaciona este relato con el propósito de Jehová y el tema principal de la Biblia?",
+            "¿Qué me gustaría preguntarle a Rahab cuando resucite?"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "wcg_lesson_15_study_stencil",
+    "why": "The study heading and first question share a background wrapper; questions 2–4 continue outside it.",
+    "urls": ["https://wol.jw.org/es/wol/d/r4/lp-s/1102025915"],
+    "expectedOrder": ["https://wol.jw.org/es/wol/d/r4/lp-s/1102025915"],
+    "expectedItems": [
+      {
+        "link": "https://wol.jw.org/es/wol/d/r4/lp-s/1102025915",
+        "type": "LESSON",
+        "expected": {
+          "number": 15,
+          "digDeeper": [
+            {
+              "text": "1. ¿Por qué podemos decir que la rebusca que se hacía en Israel era algo único en el antiguo Oriente Medio? (ia 39 párr. 23, nota). A",
+              "figure": {
+                "alt": "En un campo de cebada, Rut haciendo la rebusca detrás de los trabajadores de Boaz.",
+                "caption": "Imagen A"
+              },
+              "citationMnemonics": ["ia 39 párr. 23, nota"]
+            },
+            {
+              "text": "2. ¿Cómo sabemos que Rut no se acercó a Boaz con motivos impropios? (ia 47 párrs. 17, 18).",
+              "figure": null,
+              "citationMnemonics": ["ia 47 párrs. 17, 18"]
+            },
+            {
+              "text": "3. ¿Por qué es significativo que Boaz le dijera a Rut “hija mía”? (Rut 2:8; w16.11 3).",
+              "figure": null,
+              "citationMnemonics": ["Rut 2:8", "w16.11 3"]
+            },
+            {
+              "text": "4. A diferencia de Fulano, ¿cómo demostró Boaz generosidad cuando aceptó casarse con Rut? (w23.03 14). B",
+              "figure": {
+                "alt": "Fulano entregando su sandalia.",
+                "caption": "Imagen B"
+              },
+              "citationMnemonics": ["w23.03 14"]
+            }
+          ],
+          "reflectOnTheLessons": [
+            {
+              "text": "Rut era trabajadora y agradecida, ¿cómo puede ayudarnos su ejemplo cuando pasamos por apuros económicos? C",
+              "figure": {
+                "alt": "Serie de imágenes: Una mujer que cría sola a su hijo lucha por llegar a fin de mes. Las siguientes tres imágenes muestran cada escena por separado.",
+                "caption": "Imagen C"
+              },
+              "citationMnemonics": [],
+              "subPoints": []
+            },
+            {
+              "text": "Cuando Noemí se sintió destrozada, Rut estuvo allí para ayudarla y le dio ánimo. Por su parte, Noemí fue humilde y aceptó la ayuda. ¿Qué aprendemos de cada una de ellas?",
+              "figure": null,
+              "citationMnemonics": [],
+              "subPoints": []
+            },
+            {
+              "text": "¿De qué otras maneras puede usted copiar el ejemplo de valor de Noemí y Rut?",
+              "figure": null,
+              "citationMnemonics": [],
+              "subPoints": []
+            }
+          ],
+          "meditateOnTheBiggerPicture": [
+            "¿Qué me enseña este relato sobre Jehová?",
+            "¿Cómo se relaciona este relato con el propósito de Jehová y el tema principal de la Biblia?",
+            "¿Qué me gustaría preguntarles a Noemí y a Rut cuando resuciten?"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "wcg_lesson_16_study_stencil",
+    "why": "Study question 3 is inside a background composition between ordinary lists.",
+    "urls": ["https://wol.jw.org/es/wol/d/r4/lp-s/1102025916"],
+    "expectedOrder": ["https://wol.jw.org/es/wol/d/r4/lp-s/1102025916"],
+    "expectedItems": [
+      {
+        "link": "https://wol.jw.org/es/wol/d/r4/lp-s/1102025916",
+        "type": "LESSON",
+        "expected": {
+          "number": 16,
+          "digDeeper": [
+            {
+              "text": "1. ¿Cómo era la vida para los israelitas cuando Sísara los dominaba? (w15 1/8 12 párr. 6).",
+              "figure": null,
+              "citationMnemonics": ["w15 1/8 12 párr. 6"]
+            },
+            {
+              "text": "2. ¿Por qué normalmente no se incluye a Débora entre los 12 jueces que sirvieron en Israel antes de que Samuel llegara a ser profeta? (w86 1/6 31 párrs. 6-8).",
+              "figure": null,
+              "citationMnemonics": ["w86 1/6 31 párrs. 6-8"]
+            },
+            {
+              "text": "3. ¿En qué sentido fue Débora “una madre para Israel”? (Juec. 4:4, 5; 5:7; w15 1/8 13 párr. 1). A",
+              "figure": {
+                "alt": "Bajo una palmera, Débora resolviendo un problema entre dos hombres que tienen ovejas. Un matrimonio israelita va por un camino que los lleva hacia ella.",
+                "caption": "Imagen A"
+              },
+              "citationMnemonics": ["Juec. 4:4, 5;", "5:7", "w15 1/8 13 párr. 1"]
+            },
+            {
+              "text": "4. ¿A qué se referían Débora y Barac cuando cantaron que las estrellas “pelearon contra Sísara”? (Juec. 5:20; w05 15/1 25 párr. 5).",
+              "figure": null,
+              "citationMnemonics": ["Juec. 5:20", "w05 15/1 25 párr. 5"]
+            }
+          ],
+          "reflectOnTheLessons": [
+            {
+              "text": "¿En qué situaciones podría un hermano imitar la actitud humilde de Barac cuando aceptó la ayuda de una sierva de Dios? B",
+              "figure": {
+                "alt": "Una hermana capacitando a tres hermanos sobre cómo manejar el sistema de calefacción y aire acondicionado. Ellos escuchan con atención y toman notas.",
+                "caption": "Imagen B"
+              },
+              "citationMnemonics": [],
+              "subPoints": []
+            },
+            {
+              "text": "¿Por qué tuvo que ser valiente Débora para acompañar a Barac? ¿En qué situaciones debemos ser igual de valientes que ella?",
+              "figure": null,
+              "citationMnemonics": [],
+              "subPoints": []
+            },
+            {
+              "text": "¿De qué otras maneras puede usted copiar el ejemplo de valor de Barac y Débora?",
+              "figure": null,
+              "citationMnemonics": [],
+              "subPoints": []
+            }
+          ],
+          "meditateOnTheBiggerPicture": [
+            "¿Qué me enseña este relato sobre Jehová?",
+            "¿Cómo se relaciona este relato con el propósito de Jehová y el tema principal de la Biblia?",
+            "¿Qué me gustaría preguntarles a Barac y a Débora cuando resuciten?"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "wcg_lesson_17_study_stencil",
+    "why": "The study heading and questions share a background wrapper; labeled figures follow outside it.",
+    "urls": ["https://wol.jw.org/es/wol/d/r4/lp-s/1102025917"],
+    "expectedOrder": ["https://wol.jw.org/es/wol/d/r4/lp-s/1102025917"],
+    "expectedItems": [
+      {
+        "link": "https://wol.jw.org/es/wol/d/r4/lp-s/1102025917",
+        "type": "LESSON",
+        "expected": {
+          "number": 17,
+          "digDeeper": [
+            {
+              "text": "1. ¿Qué relación hay entre la batalla de Sísara y la guerra de Armagedón? (w19.09 8, 9 párrs. 3-6).",
+              "figure": null,
+              "citationMnemonics": ["w19.09 8, 9 párrs. 3-6"]
+            },
+            {
+              "text": "2. Héber, el esposo de Jael, se había aliado con los cananeos —que eran enemigos de Israel— a pesar de que había un vínculo entre él y los israelitas. ¿Cuál era ese vínculo? (it “Héber” núm. 2).",
+              "figure": null,
+              "citationMnemonics": ["it “Héber” núm. 2"]
+            },
+            {
+              "text": "3. La victoria de Israel sobre Sísara y Jabín fortaleció al pueblo de Dios muchos años después. ¿De qué manera? (w08 15/10 14, 15 párrs. 12-15).",
+              "figure": null,
+              "citationMnemonics": ["w08 15/10 14, 15 párrs. 12-15"]
+            },
+            {
+              "text": "4. ¿Qué podemos destacar de la manera en que Débora honró a Jael, y qué aprendemos de ello? (w15 1/8 15 párr. 2). A",
+              "figure": {
+                "alt": "Débora y Barac cantando su canción de victoria mientras los demás israelitas bailan y tocan la pandereta.",
+                "caption": "Imagen A"
+              },
+              "citationMnemonics": ["w15 1/8 15 párr. 2"]
+            }
+          ],
+          "reflectOnTheLessons": [
+            {
+              "text": "Así como Jael necesitó valor, ¿en qué situaciones podría necesitar valor una hermana que tiene un esposo no Testigo?",
+              "figure": null,
+              "citationMnemonics": [],
+              "subPoints": []
+            },
+            {
+              "text": "Jael no era profetisa como Débora ni soldado como Barac. Pero aun así hizo lo que estaba a su alcance. ¿Qué nos enseña su ejemplo sobre nuestra forma de ver las limitaciones que tengamos? B",
+              "figure": {
+                "alt": "Serie de imágenes: 1. Una hermana mayor en silla de ruedas escribiendo una tarjeta y poniendo algo de dinero en un sobre. 2. Una pareja leyendo la tarjeta con una sonrisa en la cara.",
+                "caption": "Imagen B"
+              },
+              "citationMnemonics": [],
+              "subPoints": []
+            },
+            {
+              "text": "¿De qué otras maneras puede usted copiar el ejemplo de valor de Jael?",
+              "figure": null,
+              "citationMnemonics": [],
+              "subPoints": []
+            }
+          ],
+          "meditateOnTheBiggerPicture": [
+            "¿Qué me enseña este relato sobre Jehová?",
+            "¿Cómo se relaciona este relato con el propósito de Jehová y el tema principal de la Biblia?",
+            "¿Qué me gustaría preguntarle a Jael cuando resucite?"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "wcg_lesson_18_study_stencil",
+    "why": "Ordinary study lists and inline figures remain unchanged.",
+    "urls": ["https://wol.jw.org/es/wol/d/r4/lp-s/1102025918"],
+    "expectedOrder": ["https://wol.jw.org/es/wol/d/r4/lp-s/1102025918"],
+    "expectedItems": [
+      {
+        "link": "https://wol.jw.org/es/wol/d/r4/lp-s/1102025918",
+        "type": "LESSON",
+        "expected": {
+          "number": 18,
+          "digDeeper": [
+            {
+              "text": "1. En su sueño, el soldado vio “un pan redondo de cebada”. ¿Por qué podría ser este un símbolo adecuado del ejército de Gedeón? (Juec. 7:13; it “Cebada” párr. 7).",
+              "figure": null,
+              "citationMnemonics": ["Juec. 7:13", "it “Cebada” párr. 7"]
+            },
+            {
+              "text": "2. ¿Por qué confundió y asustó a los madianitas el sonido de 300 cuernos? (it “Cuerno” párr. 3). A",
+              "figure": {
+                "alt": "Un cuerno de carnero.",
+                "caption": "Imagen A: Los cuernos de carnero se usaban para emitir señales sonoras."
+              },
+              "citationMnemonics": ["it “Cuerno” párr. 3"]
+            },
+            {
+              "text": "3. ¿Qué tuvieron que hacer Gedeón y su ejército para derrotar a los madianitas? (w04 15/10 16 párrs. 9, 10). B",
+              "figure": {
+                "alt": "Un mapa que muestra el terreno irregular y la distancia que atravesaron Gedeón y sus hombres cuando persiguieron a los madianitas desde el valle de Jezreel hasta Jogbehá.",
+                "caption": "Imagen B: Gedeón persiguió a los madianitas unos 80 kilómetros (50 millas) hasta Jogbehá (no se sabe la ruta exacta)."
+              },
+              "citationMnemonics": ["w04 15/10 16 párrs. 9, 10"]
+            },
+            {
+              "text": "4. ¿Qué detalles confirman la exactitud de este relato bíblico? (w05 15/4 32).",
+              "figure": null,
+              "citationMnemonics": ["w05 15/4 32"]
+            }
+          ],
+          "reflectOnTheLessons": [
+            {
+              "text": "Gedeón llevó al pueblo de Dios a la victoria. Pero, aun así, siguió siendo humilde y se esforzó por mantener la paz al hablar con los demás (Juec. 8:1-3). ¿Cómo pueden los cabezas de familia y los ancianos imitar a Gedeón cuando alguien se molesta con ellos?",
+              "figure": null,
+              "citationMnemonics": ["Juec. 8:1-3"],
+              "subPoints": []
+            },
+            {
+              "text": "¿En qué situaciones puede que tengamos que ser tanto valientes como prudentes? C",
+              "figure": {
+                "alt": "Serie de imágenes: Una hermana joven enfrentándose a la presión de sus compañeros en la escuela. Las siguientes dos imágenes muestran cada escena por separado.",
+                "caption": "Imagen C"
+              },
+              "citationMnemonics": [],
+              "subPoints": []
+            },
+            {
+              "text": "¿De qué maneras puede usted copiar el ejemplo de valor de Gedeón?",
+              "figure": null,
+              "citationMnemonics": [],
+              "subPoints": []
+            }
+          ],
+          "meditateOnTheBiggerPicture": [
+            "¿Qué me enseña este relato sobre Jehová?",
+            "¿Cómo se relaciona este relato con el propósito de Jehová y el tema principal de la Biblia?",
+            "¿Qué me gustaría preguntarle a Gedeón cuando resucite?"
+          ]
+        }
+      }
+    ]
   }
 ]
