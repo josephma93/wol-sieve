@@ -116,67 +116,25 @@ This keeps investigation aligned with actual requirements and avoids expanding s
 The [Postman risk matrix](../postman/README.md#coverage-by-risk) identifies existing coverage and known gaps.
 [Testing](testing.md) explains how unit fixtures and live scenarios protect extraction behavior.
 
-## Example: WCG page classification
+## Layout variants within a stencil
 
-The Courage book scraper uses the publication code `wcg`.
-In WCG, `docClass-13` is shared by lessons, the introduction, and the conclusion.
-The page title depends on the language, so it is a poor discriminator.
-The document class alone also cannot distinguish those page types.
+A stencil can have layout variants without changing the meaning or order of its content.
+Image compositions can place text over a background or blend an image into the surrounding background.
+These compositions can introduce containers around a heading, some questions, or an entire group of content blocks.
+Related content can continue outside the visual container.
 
-The stencil provides more specific signals.
-The detector checks these conditions in order:
+A visual container does not necessarily define a section boundary.
+A section heading can be inside that container while later questions or associated figures remain outside it.
+Extract the complete logical section and preserve source order across those containers.
+Use structural signals to identify the layout variant before selecting the extraction scope.
+Verify those signals against the affected samples before applying them elsewhere.
 
-| Structural signal                                         | Page shape   |
-| --------------------------------------------------------- | ------------ |
-| `.bodyTxt .stdPullQuote` exists                           | lesson       |
-| No `.bodyTxt .stdPullQuote`, but `.bodyTxt h3` exists     | conclusion   |
-| Neither `.bodyTxt .stdPullQuote` nor `.bodyTxt h3` exists | introduction |
+Distinguish content images from background fragments that complete a visual composition.
+Preserve the association between each content image and its related question or paragraph.
+Do not return decorative fragments as additional content images.
 
-Checking only for `h3` would be insufficient because lessons can also contain those headings.
-The pull quote check takes precedence.
-
-For `docClass-15`, the detector uses another ordered set of checks:
-
-| Structural signal                                  | Page shape           |
-| -------------------------------------------------- | -------------------- |
-| `header #f2 img` exists                            | section introduction |
-| No `header #f2 img`, but `.bodyTxt > table` exists | timeline             |
-| Neither signal exists                              | unknown              |
-
-These selectors describe the rendering stencil.
-They do not depend on Spanish labels, so they can work across languages when WOL preserves the same structure.
-
-See `detectWcgPageType` in the [WCG scraper](../src/scrappers/pub-wcg/pub-wcg.ts) and the
-[WCG tests](../src/scrappers/pub-wcg/pub-wcg.test.ts) for the implementation and representative fixtures.
-[Curated WCG scenarios](../postman/data/wcg-positive.json) provide source URLs and expected results for live regression.
-
-### WCG study sections with background compositions
-
-Study sections use two layout variants. The heading can be a sibling of the questions or inside a background composition.
-A direct parent with `data-bg-image` identifies the second variant. This attribute also occurs around questions inside a section.
-
-For a heading inside a background composition, use that composition as the section start.
-Include the composition and its following siblings until the next section heading.
-For an ordinary heading, use the following siblings until the next section heading.
-Both variants retain question order and use labeled figures to associate images with questions.
-Background fragments do not become additional figures.
-
-The following source cases cover these variations:
-
-| Lesson       | Structural variation                                                                                     | Required result                                                       |
-| ------------ | -------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| `1102025914` | Reflection lists surround a background composition.                                                      | Preserve three reflection points and image C on the middle point.     |
-| `1102025915` | The study heading and question 1 share a background composition.                                         | Preserve questions 1–4 and images A and B on their labeled questions. |
-| `1102025916` | Study question 3 is inside a background composition between ordinary lists.                              | Preserve questions 1–4 and image A on question 3.                     |
-| `1102025917` | The study heading and questions share a background composition. Figures follow outside that composition. | Preserve questions 1–4 and image A on question 4.                     |
-| `1102025918` | Study questions use an ordinary list with inline figures.                                                | Preserve questions 1–4 and images A and B on their labeled questions. |
-
-The English pages for lessons 15–17 expose the same background layout signals.
-This comparison verifies the stencil signal. It does not add English lesson extraction support.
-
-The WCG Postman suite checks exact question arrays, source order, reference labels, figure descriptions, and captions.
-Run this suite before changing extraction to reproduce the failure. Run the complete sanity check after the change.
-
-These selectors describe WCG. Inspect the relevant publication before applying them to another scraper.
+Document publication-specific selectors, source cases, and expected results beside the relevant implementation, fixtures, or tests.
+Keep regression scenarios for both layout variants and ordinary layouts.
+Tests must verify complete sections, content order, image associations, and nested content when present.
 
 Previous: [Architecture](architecture.md). Next: [Testing](testing.md).

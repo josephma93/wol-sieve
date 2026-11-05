@@ -325,6 +325,10 @@ describe('extractWcgContents', () => {
 		expect(contents.meditateOnTheBiggerPicture).toEqual(['Following section question.']);
 	});
 
+	// Fixture headers record the source, layout variation, and expected image associations.
+	// English source pages for lessons 15–17 showed the same background layout signals.
+	// That comparison verifies the signal; it does not add English extraction support.
+	// Postman independently checks exact question arrays, reference labels, and figure captions.
 	it.each([
 		{ lesson: 14, figures: [null, null, 'f3', 'f4'], reflectionFigures: [null, 'f5', null] },
 		{ lesson: 15, figures: ['f3', null, null, 'f4'], reflectionFigures: ['f5', null, null] },
@@ -400,6 +404,8 @@ describe('extractWcgContents', () => {
 		});
 	});
 
+	// WCG docClass-15 covers two stencils: a header image at #f2 identifies a section
+	// introduction; a direct body table identifies a timeline when that image is absent.
 	it('separates section introductions from timelines even though both use docClass-15', async () => {
 		const sectionIntro = await extractWcgContents({
 			html: article({
@@ -445,6 +451,9 @@ describe('extractWcgContents', () => {
 		expect((timeline.contents as any).footnotes).toEqual(['a Año aproximado.']);
 	});
 
+	// WCG docClass-13 is shared by lessons, the introduction, and the conclusion.
+	// A body pull quote identifies a lesson before h3 headings can identify a conclusion.
+	// Without either signal, the page is an introduction. Titles are language-dependent.
 	it('detects front matter, introduction, conclusion, and index pages', async () => {
 		const cases = [
 			['39', '<h1>Seamos valientes al andar con Dios</h1>', '', 'COVER'],
